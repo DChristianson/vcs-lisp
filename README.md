@@ -6,6 +6,7 @@ Goals
  Change bkfg colors
  Change sprite
  Be able to ~play the pong game from AB
+ See https://huguesjohnson.com/programming/atari-2600-basic/ 
 
 Repl Screen
   Free space
