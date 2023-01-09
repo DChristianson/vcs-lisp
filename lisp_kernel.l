@@ -1,6 +1,15 @@
 (define (square x)
  (* x x))
 
+(define (cube5 x)
+ (* x x x x x))
+
+(define (cube10 x)
+ (* x x x x x x x x x x))
+
+(define (cube31 x)
+ (* x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x))
+
 (define (average x y)
   (/ (+ x y) 2))
 
@@ -15,3 +24,43 @@
             (fact-iter (* counter product)
                        (+ counter 1)
                         max-count)))
+
+
+(define (biggest x)
+  (+
+    (+ 
+      (+ 
+        (+ x y z)
+        (+ x y z)
+        (+ x y z)
+      ) 
+      (+ 
+        (+ x y z)
+        (+ x y z)
+        (+ x y z)
+      )
+      (+ 
+        (+ x y z)
+        (+ x y z)
+        (+ x y z)
+      )
+    )
+    (+
+      (+ 
+        (+ x y z)
+        (+ x y z)
+        (+ x y z)
+      ) 
+      (+ 
+        (+ x y z)
+        (+ x y z)
+        (+ x y z)
+      )
+      (+ 
+        (+ x y z)
+        (+ x y z)
+        (+ x y z)
+      )
+    )
+ )
+)

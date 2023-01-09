@@ -1,3 +1,7 @@
+#
+# convert lisp code into vcs lisp binary
+#
+
 import sys
 
 _symbols = [
@@ -34,7 +38,10 @@ _comment = ';'
 class Null:
 
     def __new__(cls, *args, **kwargs):
-        if not cls._instance:
+        try:
+            if not cls._instance:
+                raise Exception()
+        except:
             cls._instance = super(Null, cls).__new__(cls, *args, **kwargs)
         return cls._instance
 
@@ -47,21 +54,21 @@ class Null:
 #
 class Symbol:
 
-    def __init__(self, index, name):
-        self.index = index
+    def __init__(self, address, name):
+        self.address = address
         self.token = name
 
     def isref(self):
         return False
 
     def ref(self):
-        return '%' + format(0xc0 | self.index, '08b')
+        return '%' + format(0xc0 | self.address, '08b')
 
 #
 class Pair:
 
-    def __init__(self, index):
-        self.index = index
+    def __init__(self, address):
+        self.address = address
         self.car = Null()
         self.cdr = Null()
 
@@ -69,17 +76,16 @@ class Pair:
         return True
 
     def ref(self):
-        return '%' + format(0x80 | self.index, '08b')
+        return '%' + format(0x80 | self.address, '08b')
 
     def code(self):
-        return self.car.ref() + ',' + self.cdr.ref()
-
+        return f'lda #{self.car.ref()}\nsta heap,x\ninx\nlda #{self.cdr.ref()}\nsta heap,x\ninx\n'
 
 #
 class Heap:
 
     def __init__(self, size):
-        self.cells = list([Pair(index) for index in range(0, size)])
+        self.cells = list([Pair(index * 2) for index in range(0, size)])
         for i in range(len(self.cells) - 1):
             self.cells[i].cdr = self.cells[i + 1]
         self.free = self.cells[0]
@@ -162,6 +168,8 @@ def compile_decl(decl):
 ast = parse(tokenize(sys.stdin))
 
 for node in ast:
+    sig = ' '.join(node[1])
+    print(f';\n;({sig})\n;')
     program = compile_decl(node)
     stack = [program]
     while len(stack) > 0:
@@ -171,3 +179,5 @@ for node in ast:
             stack.append(pair.car)
         if pair.cdr.isref():
             stack.append(pair.cdr)
+    
+    print('')
