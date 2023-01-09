@@ -1,3 +1,25 @@
+Goals
+ Joystick compatible
+ Repl Fib(n) from SICP
+ Repl Sqrt(x) from SICP
+ Play Music 
+ Change bkfg colors
+ Change sprite
+ Be able to ~play the pong game from AB
+
+Repl Screen
+  Free space
+  Repl editor space
+  Eval buttons. Function buttons 
+  Choice buttons
+Epl Screen
+  Sprite
+  Ball
+
+Fundamentals
+  Memory divides into cells of 2 bytes
+  Cells are either reference pairs or numbers
+  References can refer to heap or to symtab
 
 ;
 ; 
