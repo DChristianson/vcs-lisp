@@ -15,7 +15,8 @@ Repl Screen
 Epl Screen
   Sprite
   Ball
-
+Shoutouts
+  sicp authors, basic author, source contribs
 Fundamentals
   Memory divides into cells of 2 bytes
   Cells are either reference pairs or numbers
