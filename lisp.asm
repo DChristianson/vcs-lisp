@@ -35,7 +35,7 @@ HEAP_CDR_ADDR = $0001
 NULL      = $00
 
 HEADER_HEIGHT = 85
-FOOTER_HEIGHT = 85
+FOOTER_HEIGHT = 65
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 
@@ -59,14 +59,19 @@ output             ds CELL_SIZE
 
 ; scratchpad vars for all kernel routines and stack
 
-frame        ds 1
+frame         ds 1
 repl_gx_addr
-repl_s5_addr ds 2
-repl_s4_addr ds 2
-repl_s3_addr ds 2
-repl_s2_addr ds 2
-repl_s1_addr ds 2
-repl_s0_addr ds 2
+free_pf1
+repl_s5_addr  ds 2
+free_pf2
+repl_s4_addr  ds 2
+free_pf3
+repl_s3_addr  ds 2
+free_pf4
+repl_s2_addr  ds 2
+repl_s1_addr  ds 2
+repl_s0_addr  ds 2
+tmp_cell_addr ds 1
 
 ; ----------------------------------
 ; code
@@ -78,6 +83,10 @@ Reset
 CleanStart
     ; do the clean start macro
             CLEAN_START
+
+    ; one PF color
+            lda #WHITE
+            sta COLUPF
 
     ; bootstrap heap
             ldx #(HEAP_SIZE - 1)
@@ -98,20 +107,23 @@ _bootstrap_heap_loop
             bpl _bootstrap_heap_loop
 
     ; dummy program
-            ldx #$00
-            lda #%11000000
+            ldx #0
+            ;
+            ;(average x y)
+            ;
+            lda #%11000011
             sta heap,x
             inx
             lda #%10000010
             sta heap,x
             inx
-            lda #%11001111
-            sta heap,x
-            inx
             lda #%10000100
             sta heap,x
             inx
-            lda #%11001111
+            lda #%10001010
+            sta heap,x
+            inx
+            lda #%11000001
             sta heap,x
             inx
             lda #%10000110
@@ -123,18 +135,19 @@ _bootstrap_heap_loop
             lda #%10001000
             sta heap,x
             inx
-            lda #%11001111
-            sta heap,x
-            inx
-            lda #%10001010
-            sta heap,x
-            inx
-            lda #%11001111
+            lda #%11010000
             sta heap,x
             inx
             lda #%00000000
             sta heap,x
             inx
+            lda #%11010101
+            sta heap,x
+            inx
+            lda #%00000000
+            sta heap,x
+            inx
+
 
         ; %11000011,%10000001
         ; %10000010,%10000101
@@ -145,7 +158,7 @@ _bootstrap_heap_loop
 
 
     ; set free cell list
-            lda #%10001010            
+            lda #%10010010            
             sta free
             lda #%10000000            
             sta repl
@@ -326,7 +339,7 @@ _end_switches
             ; prep symbol graphics
             ldy #(DISPLAY_COLS - 1) * 2
 _prep_repl_loop
-            lda #>LOOKUP_SYMBOL_GRAPHICS
+            lda #>SYMBOL_GRAPHICS_S00_MULT
             sta repl_gx_addr + 1,y
             dey
             dey
@@ -355,6 +368,8 @@ _header_loop
             ; PROMPT
             ; draw repl cell tree
 prompt
+            lda #42    ; vblank timer will land us ~ on scanline + 34
+            sta TIM64T
             ; do one repos loop at the top 
             ; use HMOVE to handle indenting
             sta WSYNC
@@ -383,33 +398,45 @@ _prompt_repos_loop
             SLEEP 23              ;23  52
             sta HMOVE             ;3   55
 
+
 prompt_encode
-            ldx repl
+            lda #0
+            pha
+            lda repl
+prompt_next_line
             ldy #(DISPLAY_COLS - 1) * 2
 _prompt_encode_loop
-            txs
+            tax
             lda HEAP_CAR_ADDR,x ; read car
-            bpl _prompt_encode_clear
+            bpl _prompt_encode_clear ; BUGBUG: handle #
             cmp #$40
-            beq _prompt_encode_recurse
+            bpl _prompt_encode_recurse
 _prompt_encode_addchar
+            stx tmp_cell_addr ; push down current cell
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
             sta repl_gx_addr,y
-            tsx
+            ldx tmp_cell_addr 
             lda HEAP_CDR_ADDR,x ; read cdr
-            tax
             beq _prompt_encode_clear
             dey
             dey
             bpl _prompt_encode_loop
             ; list is too long, we need to indent
-            ; BUGBUG: just punt for now
+            ; push next address on the stack
+            pha
             jmp prompt_encode_end
 _prompt_encode_recurse
-            ; we need to recurse so we need to indent
-            ; BUGBUG: just punt for now
-            ; BUGBUG: will need to be careful about stack
+            ; we need to recurse so we need push t
+            ; contents of the cdr
+            ; contents of the car
+            sta tmp_cell_addr ; set car aside
+            lda HEAP_CDR_ADDR,x 
+            beq _prompt_encode_recurse_skip_cdr
+            pha 
+_prompt_encode_recurse_skip_cdr
+            lda tmp_cell_addr
+            pha
 _prompt_encode_clear
             dey
             dey
@@ -420,11 +447,9 @@ _prompt_encode_clear_loop
             dey
             bpl _prompt_encode_clear_loop
 prompt_encode_end
-            ; BUGBUG may need to variably time
-            ldx #$ff ; BUGBUG: restore stack
-            txs
-
             
+            sta WSYNC ; shim
+
             ldy #CHAR_HEIGHT - 1
             lda #1
             bit frame
@@ -482,9 +507,17 @@ _prompt_draw_odd_loop
             bpl _prompt_draw_odd_loop ;2/3 46/47
             jmp prompt_draw_end
 prompt_draw_end
+            pla
+            beq prompt_done
+            jmp prompt_next_line
+prompt_done
+            jsr waitOnVBlank
+
             ; FREEBAR
 freebar
             ldy #0
+            sty NUSIZ0
+            sty NUSIZ1
             ldx free
 _free_bar_loop
             lda HEAP_CDR_ADDR,x
@@ -493,18 +526,60 @@ _free_bar_loop
             tax
             jmp _free_bar_loop
 _free_bar_len
+            tya
+            sec
+            sbc #16
+            bcs _free_gt_16
+            adc #16 
+            ldx #00
+            stx free_pf3 
+            stx free_pf4 
+            jmp _free_half
+_free_gt_16
+            ldx #$ff
+            stx free_pf1
+            stx free_pf2
+            ldx #2
+_free_half
+            sec
+            sbc #8
+            bcs _free_gt_8
+            ldy #0
+            sty free_pf2,x
+            jmp _free_quarter
+_free_gt_8
+            ldy #$ff
+            sty free_pf1,x
+            inx
+_free_quarter
+            tay
+            lda FREE_LOOKUP_TABLE,y
+            sta free_pf1,x
+
+            ldx #4
+_free_draw_loop
             sta WSYNC
-            sty PF1
-            sty PF2
-            lda #WHITE
-            sta COLUPF
-            sta WSYNC
-            sta WSYNC
-            sta WSYNC
+            lda #$ee         ;2   2
+            sta GRP0        ;3   5
+            lda #$ee         ;2   7
+            sta GRP1        ;3  10
+            lda free_pf1    ;3  13
+            sta PF1         ;3  16
+            lda free_pf2    ;3  19
+            sta PF2         ;3  22
+            SLEEP 15        ;15 37
+            lda free_pf3    ;3  40
+            sta PF1         ;3  43
+            SLEEP 7         ;7  50 
+            lda free_pf4    ;3  53
+            sta PF2         ;3  56
+            dex             ;2  58
+            bpl _free_draw_loop
             lda #0
-            sta COLUPF
             sta PF1
             sta PF2
+            sta GRP0
+            sta GRP1
             
             ; BUGBUG: TODO: OUTPUT / MENU
 
@@ -541,7 +616,7 @@ waitOnVBlank_loop
 ; ----------------------------------
 ; data
 
-    ORG $FF00
+    ORG $FE00
 
     ; standard lookup for hmoves
 STD_HMOVE_BEGIN
@@ -549,8 +624,11 @@ STD_HMOVE_BEGIN
 STD_HMOVE_END
 LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
 
+FREE_LOOKUP_TABLE
+    byte $00, $01, $03, $07, $0f, $1f, $3f, $7f, $ff
+
 SYMBOL_GRAPHICS_EMPTY
-   byte $00,$00,$00,$00,$00,$00,$00,$00; 8
+    byte $00,$00,$00,$00,$00,$00,$00,$00; 8
 SYMBOL_GRAPHICS_S00_MULT
     byte $0,$88,$d8,$50,$20,$50,$d8,$88; 8
 SYMBOL_GRAPHICS_S01_MULT
@@ -582,17 +660,19 @@ SYMBOL_GRAPHICS_S0D_MULT
 SYMBOL_GRAPHICS_S0E_MULT
     byte $0,$e0,$e0,$0,$a0,$a0,$40,$80; 8
 SYMBOL_GRAPHICS_S0F_A0
-    byte $0,$f8,$88,$88,$f8,$8,$8,$f8; 8
+    byte $0,$70,$88,$88,$78,$8,$88,$70; 8
 SYMBOL_GRAPHICS_S10_A1
-    byte $0,$f0,$88,$88,$f8,$88,$88,$f0; 8
-SYMBOL_GRAPHICS_S11_MULT
+    byte $0,$f0,$88,$88,$88,$f0,$80,$80; 8
+SYMBOL_GRAPHICS_S11_A2
+    byte $0,$70,$88,$80,$80,$80,$88,$70; 8
+SYMBOL_GRAPHICS_S12_A3
+    byte $0,$78,$88,$88,$88,$78,$8,$8; 8
+SYMBOL_GRAPHICS_S13_ZERO
     byte $0,$40,$a0,$a0,$a0,$a0,$a0,$40; 8
-SYMBOL_GRAPHICS_S12_MULT
+SYMBOL_GRAPHICS_S14_ONE
     byte $0,$e0,$40,$40,$40,$40,$40,$c0; 8
-SYMBOL_GRAPHICS_S13_MULT
+SYMBOL_GRAPHICS_S15_TWO
     byte $0,$e0,$80,$80,$e0,$20,$20,$e0; 8
-SYMBOL_GRAPHICS_S14_MULT
-SYMBOL_GRAPHICS_S15_MULT
 SYMBOL_GRAPHICS_S16_MULT
 SYMBOL_GRAPHICS_S17_MULT
 SYMBOL_GRAPHICS_S18_MULT
@@ -631,11 +711,11 @@ SYMBOL_GRAPHICS_LOOKUP_TABLE
     byte #<SYMBOL_GRAPHICS_S0E_MULT
     byte #<SYMBOL_GRAPHICS_S0F_A0
     byte #<SYMBOL_GRAPHICS_S10_A1
-    byte #<SYMBOL_GRAPHICS_S11_MULT
-    byte #<SYMBOL_GRAPHICS_S12_MULT
-    byte #<SYMBOL_GRAPHICS_S13_MULT
-    byte #<SYMBOL_GRAPHICS_S14_MULT
-    byte #<SYMBOL_GRAPHICS_S15_MULT
+    byte #<SYMBOL_GRAPHICS_S11_A2
+    byte #<SYMBOL_GRAPHICS_S12_A3
+    byte #<SYMBOL_GRAPHICS_S13_ZERO
+    byte #<SYMBOL_GRAPHICS_S14_ONE
+    byte #<SYMBOL_GRAPHICS_S15_TWO
     byte #<SYMBOL_GRAPHICS_S16_MULT
     byte #<SYMBOL_GRAPHICS_S17_MULT
     byte #<SYMBOL_GRAPHICS_S18_MULT

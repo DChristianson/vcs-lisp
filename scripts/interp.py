@@ -79,7 +79,7 @@ class Pair:
         return '%' + format(0x80 | self.address, '08b')
 
     def code(self):
-        return f'lda #{self.car.ref()}\nsta heap,x\ninx\nlda #{self.cdr.ref()}\nsta heap,x\ninx\n'
+        return f';{self.address}\nlda #{self.car.ref()}\nsta heap,x\ninx\nlda #{self.cdr.ref()}\nsta heap,x\ninx'
 
 #
 class Heap:
@@ -163,21 +163,16 @@ def compile_decl(decl):
     for i, arg in enumerate(args[1:]):
         symtab[arg] = symtab['a' + str(i)]
     body = decl[2]
-    return compile_exp(body, heap, symtab)
+    return compile_exp(body, heap, symtab), heap
         
 ast = parse(tokenize(sys.stdin))
 
 for node in ast:
     sig = ' '.join(node[1])
     print(f';\n;({sig})\n;')
-    program = compile_decl(node)
-    stack = [program]
-    while len(stack) > 0:
-        pair = stack.pop()
-        print(pair.code())
-        if pair.car.isref():
-            stack.append(pair.car)
-        if pair.cdr.isref():
-            stack.append(pair.cdr)
-    
+    program, heap = compile_decl(node)
+    for pair in heap.cells:
+        if pair.car == Null():
+            break
+        print(pair.code())    
     print('')
