@@ -1,3 +1,6 @@
+(define (simple)
+ (+ 1 2))
+
 (define (square x)
  (* x x))
 

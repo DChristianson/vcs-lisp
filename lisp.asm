@@ -54,15 +54,17 @@ functab            ds FUNCTAB_SIZE
 free               ds 1
 ; pointer to repl cell
 repl               ds 1
-; output number
-output             ds CELL_SIZE
+; return value 
+return_value       ds CELL_SIZE
 
 ; scratchpad vars for all kernel routines and stack
 
 frame         ds 1
+tmp_func_ptr
 repl_gx_addr
 free_pf1
 repl_s5_addr  ds 2
+tmp_prev_stack
 free_pf2
 repl_s4_addr  ds 2
 free_pf3
@@ -109,44 +111,70 @@ _bootstrap_heap_loop
     ; dummy program
             ldx #0
             ;
-            ;(average x y)
+            ;(simple)
             ;
-            lda #%11000011
+            ;0
+            lda #%11000001
             sta heap,x
             inx
             lda #%10000010
             sta heap,x
             inx
+            ;2
+            lda #%11010100
+            sta heap,x
+            inx
             lda #%10000100
             sta heap,x
             inx
-            lda #%10001010
-            sta heap,x
-            inx
-            lda #%11000001
-            sta heap,x
-            inx
-            lda #%10000110
-            sta heap,x
-            inx
-            lda #%11001111
-            sta heap,x
-            inx
-            lda #%10001000
-            sta heap,x
-            inx
-            lda #%11010000
-            sta heap,x
-            inx
-            lda #%00000000
-            sta heap,x
-            inx
+            ;4
             lda #%11010101
             sta heap,x
             inx
             lda #%00000000
             sta heap,x
             inx
+
+
+            ; ;
+            ; ;(average x y)
+            ; ;
+            ; lda #%11000011
+            ; sta heap,x
+            ; inx
+            ; lda #%10000010
+            ; sta heap,x
+            ; inx
+            ; lda #%10000100
+            ; sta heap,x
+            ; inx
+            ; lda #%10001010
+            ; sta heap,x
+            ; inx
+            ; lda #%11000001
+            ; sta heap,x
+            ; inx
+            ; lda #%10000110
+            ; sta heap,x
+            ; inx
+            ; lda #%11001111
+            ; sta heap,x
+            ; inx
+            ; lda #%10001000
+            ; sta heap,x
+            ; inx
+            ; lda #%11010000
+            ; sta heap,x
+            ; inx
+            ; lda #%00000000
+            ; sta heap,x
+            ; inx
+            ; lda #%11010101
+            ; sta heap,x
+            ; inx
+            ; lda #%00000000
+            ; sta heap,x
+            ; inx
 
 
         ; %11000011,%10000001
@@ -400,8 +428,6 @@ _prompt_repos_loop
 
 
 prompt_encode
-            lda #0
-            pha
             lda repl
 prompt_next_line
             ldy #(DISPLAY_COLS - 1) * 2
@@ -507,8 +533,10 @@ _prompt_draw_odd_loop
             bpl _prompt_draw_odd_loop ;2/3 46/47
             jmp prompt_draw_end
 prompt_draw_end
-            pla
+            tsx
+            inx
             beq prompt_done
+            pla
             jmp prompt_next_line
 prompt_done
             jsr waitOnVBlank
@@ -591,6 +619,58 @@ _footer_loop
             dex
             bpl _footer_loop
 
+            jmp waitOnOverscan
+
+;-------------------
+; Eval kernel
+;
+;  
+;
+;
+;
+eval
+            lda repl
+eval_iter
+            tsx
+            stx tmp_prev_stack
+            tax
+            lda HEAP_CAR_ADDR,x ; read car            
+            bpl _eval_number 
+            cmp #$40
+            bpl _eval_lambda
+_eval_funcall
+            pha
+_eval_funcall_push_args
+            lda HEAP_CDR_ADDR,x ; read cdr
+            beq _eval_funcall_exec
+            tax
+            lda HEAP_CAR_ADDR,x 
+            pha
+            jmp _eval_funcall_push_args
+_eval_funcall_exec
+            lda tmp_prev_stack
+            ; exec frame
+            tax
+            lda #0,x
+            asl
+            tax
+            lda SYMBOL_FUNCTION_LOOKUP_TABLE,x
+            sta tmp_func_ptr
+            lda SYMBOL_FUNCTION_LOOKUP_TABLE+1,x
+            sta tmp_func_ptr+1
+            jmp (tmp_func_ptr)
+exec_frame_return
+            ldx tmp_prev_stack
+            ; get return value off stack
+            lda #0,x
+            sta return_value
+            lda #1,x
+            sta return_value + 1
+            txs ; clear frame
+_eval_number
+_eval_lambda
+
+
 ;--------------------
 ; Overscan start
 
@@ -612,9 +692,60 @@ waitOnVBlank_loop
             bmi waitOnVBlank_loop
             stx VBLANK
             rts 
+;-----------------------------------
+; function kernels
+
+FUNC_S01_ADD
+FUNC_S02_SUB
+FUNC_S03_DIV
+FUNC_S04_EQUALS
+FUNC_S05_GT
+FUNC_S06_LT
+FUNC_S07_AND
+FUNC_S08_OR
+FUNC_S09_NOT
+FUNC_S0A_IF
+FUNC_S0B_F0
+FUNC_S0C_F1
+FUNC_S0D_F2
+FUNC_S0E_F3
+FUNC_S0F_A0
+FUNC_S10_A1
+FUNC_S11_A2
+FUNC_S12_A3
+FUNC_S13_ZERO
+FUNC_S14_ONE
+FUNC_S15_TWO
+            jmp exec_frame_return
 
 ; ----------------------------------
 ; data
+
+    ORG $FD00
+
+SYMBOL_FUNCTION_LOOKUP_TABLE
+    word FUNC_S01_ADD
+    word FUNC_S02_SUB
+    word FUNC_S03_DIV
+    word FUNC_S04_EQUALS
+    word FUNC_S05_GT
+    word FUNC_S06_LT
+    word FUNC_S07_AND
+    word FUNC_S08_OR
+    word FUNC_S09_NOT
+    word FUNC_S0A_IF
+    word FUNC_S0B_F0
+    word FUNC_S0C_F1
+    word FUNC_S0D_F2
+    word FUNC_S0E_F3
+    word FUNC_S0F_A0
+    word FUNC_S10_A1
+    word FUNC_S11_A2
+    word FUNC_S12_A3
+    word FUNC_S13_ZERO
+    word FUNC_S14_ONE
+    word FUNC_S15_TWO   
+
 
     ORG $FE00
 
@@ -627,37 +758,38 @@ LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
 FREE_LOOKUP_TABLE
     byte $00, $01, $03, $07, $0f, $1f, $3f, $7f, $ff
 
+   
 SYMBOL_GRAPHICS_EMPTY
     byte $00,$00,$00,$00,$00,$00,$00,$00; 8
 SYMBOL_GRAPHICS_S00_MULT
     byte $0,$88,$d8,$50,$20,$50,$d8,$88; 8
-SYMBOL_GRAPHICS_S01_MULT
+SYMBOL_GRAPHICS_S01_ADD
     byte $0,$0,$40,$40,$e0,$40,$40,$0; 8
-SYMBOL_GRAPHICS_S02_MULT
+SYMBOL_GRAPHICS_S02_SUB
     byte $0,$0,$0,$0,$e0,$0,$0,$0; 8
-SYMBOL_GRAPHICS_S03_MULT
+SYMBOL_GRAPHICS_S03_DIV
     byte $0,$80,$80,$40,$40,$40,$20,$20; 8
-SYMBOL_GRAPHICS_S04_MULT
+SYMBOL_GRAPHICS_S04_EQUALS
     byte $0,$0,$0,$e0,$0,$e0,$0,$0; 8
-SYMBOL_GRAPHICS_S05_MULT
+SYMBOL_GRAPHICS_S05_GT
     byte $0,$0,$80,$40,$20,$40,$80,$0; 8
-SYMBOL_GRAPHICS_S06_MULT
+SYMBOL_GRAPHICS_S06_LT
     byte $0,$0,$20,$40,$80,$40,$20,$0; 8
-SYMBOL_GRAPHICS_S07_MULT
+SYMBOL_GRAPHICS_S07_AND
     byte $0,$40,$e0,$80,$e0,$80,$e0,$40; 8
-SYMBOL_GRAPHICS_S08_MULT
+SYMBOL_GRAPHICS_S08_OR
     byte $0,$40,$40,$40,$40,$40,$40,$40; 8
-SYMBOL_GRAPHICS_S09_MULT
+SYMBOL_GRAPHICS_S09_NOT
     byte $0,$40,$40,$0,$40,$40,$40,$40; 8
-SYMBOL_GRAPHICS_S0A_MULT
+SYMBOL_GRAPHICS_S0A_IF
     byte $0,$40,$0,$40,$60,$20,$a0,$e0; 8
-SYMBOL_GRAPHICS_S0B_MULT
+SYMBOL_GRAPHICS_S0B_F0
     byte $0,$0,$0,$0,$a0,$a0,$40,$80; 8
-SYMBOL_GRAPHICS_S0C_MULT
+SYMBOL_GRAPHICS_S0C_F1
     byte $0,$40,$40,$0,$a0,$a0,$40,$80; 8
-SYMBOL_GRAPHICS_S0D_MULT
+SYMBOL_GRAPHICS_S0D_F2
     byte $0,$a0,$a0,$0,$a0,$a0,$40,$80; 8
-SYMBOL_GRAPHICS_S0E_MULT
+SYMBOL_GRAPHICS_S0E_F3
     byte $0,$e0,$e0,$0,$a0,$a0,$40,$80; 8
 SYMBOL_GRAPHICS_S0F_A0
     byte $0,$70,$88,$88,$78,$8,$88,$70; 8
@@ -695,20 +827,20 @@ SYMBOL_GRAPHICS_S1F_MULT
 LOOKUP_SYMBOL_GRAPHICS = $FF00
 SYMBOL_GRAPHICS_LOOKUP_TABLE
     byte #<SYMBOL_GRAPHICS_S00_MULT
-    byte #<SYMBOL_GRAPHICS_S01_MULT
-    byte #<SYMBOL_GRAPHICS_S02_MULT
-    byte #<SYMBOL_GRAPHICS_S03_MULT
-    byte #<SYMBOL_GRAPHICS_S04_MULT
-    byte #<SYMBOL_GRAPHICS_S05_MULT
-    byte #<SYMBOL_GRAPHICS_S06_MULT
-    byte #<SYMBOL_GRAPHICS_S07_MULT
-    byte #<SYMBOL_GRAPHICS_S08_MULT
-    byte #<SYMBOL_GRAPHICS_S09_MULT
-    byte #<SYMBOL_GRAPHICS_S0A_MULT
-    byte #<SYMBOL_GRAPHICS_S0B_MULT
-    byte #<SYMBOL_GRAPHICS_S0C_MULT
-    byte #<SYMBOL_GRAPHICS_S0D_MULT
-    byte #<SYMBOL_GRAPHICS_S0E_MULT
+    byte #<SYMBOL_GRAPHICS_S01_ADD
+    byte #<SYMBOL_GRAPHICS_S02_SUB
+    byte #<SYMBOL_GRAPHICS_S03_DIV
+    byte #<SYMBOL_GRAPHICS_S04_EQUALS
+    byte #<SYMBOL_GRAPHICS_S05_GT
+    byte #<SYMBOL_GRAPHICS_S06_LT
+    byte #<SYMBOL_GRAPHICS_S07_AND
+    byte #<SYMBOL_GRAPHICS_S08_OR 
+    byte #<SYMBOL_GRAPHICS_S09_NOT
+    byte #<SYMBOL_GRAPHICS_S0A_IF
+    byte #<SYMBOL_GRAPHICS_S0B_F0
+    byte #<SYMBOL_GRAPHICS_S0C_F1
+    byte #<SYMBOL_GRAPHICS_S0D_F2
+    byte #<SYMBOL_GRAPHICS_S0E_F3
     byte #<SYMBOL_GRAPHICS_S0F_A0
     byte #<SYMBOL_GRAPHICS_S10_A1
     byte #<SYMBOL_GRAPHICS_S11_A2
