@@ -7,6 +7,7 @@ Goals
  Change sprite
  Be able to ~play the pong game from AB
  See https://huguesjohnson.com/programming/atari-2600-basic/ 
+ See sample programs in Atari Basic manual
 
 Repl Screen
   Free space
