@@ -54,7 +54,7 @@ functab            ds FUNCTAB_SIZE
 free               ds 1
 ; pointer to repl cell
 repl               ds 1
-; return value 
+; return value from functions
 return_value       ds CELL_SIZE
 
 ; scratchpad vars for all kernel routines and stack
@@ -108,222 +108,7 @@ _bootstrap_heap_loop
             dex
             bpl _bootstrap_heap_loop
 
-    ; dummy program
-            ldx #0
-            ;
-            ;(simple)
-            ;
-            ;0
-            lda #%11000001
-            sta heap,x
-            inx
-            lda #%10000010
-            sta heap,x
-            inx
-            ;2
-            lda #%11010100
-            sta heap,x
-            inx
-            lda #%10000100
-            sta heap,x
-            inx
-            ;4
-            lda #%11010101
-            sta heap,x
-            inx
-            lda #%00000000
-            sta heap,x
-            inx
-
-
-            ; ;
-            ; ;(average x y)
-            ; ;
-            ; lda #%11000011
-            ; sta heap,x
-            ; inx
-            ; lda #%10000010
-            ; sta heap,x
-            ; inx
-            ; lda #%10000100
-            ; sta heap,x
-            ; inx
-            ; lda #%10001010
-            ; sta heap,x
-            ; inx
-            ; lda #%11000001
-            ; sta heap,x
-            ; inx
-            ; lda #%10000110
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%10001000
-            ; sta heap,x
-            ; inx
-            ; lda #%11010000
-            ; sta heap,x
-            ; inx
-            ; lda #%00000000
-            ; sta heap,x
-            ; inx
-            ; lda #%11010101
-            ; sta heap,x
-            ; inx
-            ; lda #%00000000
-            ; sta heap,x
-            ; inx
-
-
-        ; %11000011,%10000001
-        ; %10000010,%10000101
-        ; %11010101,%00000000
-        ; %11000001,%10000011
-        ; %11001111,%10000100
-        ; %11010000,%00000000
-
-
-    ; set free cell list
-            lda #%10010010            
-            sta free
-            lda #%10000000            
-            sta repl
-
-        ; ;
-        ; ;(square x)
-        ; ;
-        ; %11000000,%10000001
-        ; %11001111,%10000010
-        ; %11001111,%00000000
-            ; ldx #$00
-            ; lda #%11000000
-            ; sta heap,x
-            ; inx
-            ; lda #%10000010
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%10000100
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%00000000
-            ; sta heap,x
-
-
-        ; ;
-        ; ;(cube5 x)
-        ; ;
-        ; %11000000,%10000001
-        ; %11001111,%10000010
-        ; %11001111,%10000011
-        ; %11001111,%10000100
-        ; %11001111,%10000101
-        ; %11001111,%00000000
-            ; ldx #$00
-            ; lda #%11000000
-            ; sta heap,x
-            ; inx
-            ; lda #%10000010
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%10000100
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%10000110
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%10001000
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%10001010
-            ; sta heap,x
-            ; inx
-            ; lda #%11001111
-            ; sta heap,x
-            ; inx
-            ; lda #%00000000
-            ; sta heap,x
-
-        ; ;
-        ; ;(cube10 x)
-        ; ;
-        ; %11000000,%10000001
-        ; %11001111,%10000010
-        ; %11001111,%10000011
-        ; %11001111,%10000100
-        ; %11001111,%10000101
-        ; %11001111,%10000110
-        ; %11001111,%10000111
-        ; %11001111,%10001000
-        ; %11001111,%10001001
-        ; %11001111,%10001010
-        ; %11001111,%00000000
-
-        ; ;
-        ; ;(cube31 x)
-        ; ;
-        ; %11000000,%10000001
-        ; %11001111,%10000010
-        ; %11001111,%10000011
-        ; %11001111,%10000100
-        ; %11001111,%10000101
-        ; %11001111,%10000110
-        ; %11001111,%10000111
-        ; %11001111,%10001000
-        ; %11001111,%10001001
-        ; %11001111,%10001010
-        ; %11001111,%10001011
-        ; %11001111,%10001100
-        ; %11001111,%10001101
-        ; %11001111,%10001110
-        ; %11001111,%10001111
-        ; %11001111,%10010000
-        ; %11001111,%10010001
-        ; %11001111,%10010010
-        ; %11001111,%10010011
-        ; %11001111,%10010100
-        ; %11001111,%10010101
-        ; %11001111,%10010110
-        ; %11001111,%10010111
-        ; %11001111,%10011000
-        ; %11001111,%10011001
-        ; %11001111,%10011010
-        ; %11001111,%10011011
-        ; %11001111,%10011100
-        ; %11001111,%10011101
-        ; %11001111,%10011110
-        ; %11001111,%10011111
-        ; %11001111,%00000000
-
-        ; ;
-        ; ;(average x y)
-        ; ;
-        ; %11000011,%10000001
-        ; %10000010,%10000101
-        ; %11010101,%00000000
-        ; %11000001,%10000011
-        ; %11001111,%10000100
-        ; %11010000,%00000000
-
+    include "_heap_init.asm"
 
 newFrame
 
@@ -359,317 +144,22 @@ _end_switches
 
 
 ;---------------------
-; repl mode
-
-            ; update frame
-            inc frame
-
-            ; prep symbol graphics
-            ldy #(DISPLAY_COLS - 1) * 2
-_prep_repl_loop
-            lda #>SYMBOL_GRAPHICS_S00_MULT
-            sta repl_gx_addr + 1,y
-            dey
-            dey
-            bpl _prep_repl_loop
-
+;  modes
+            ;jsr sub_eval_update
+            jsr sub_repl_update
 
 ;---------------------
 ; end vblank
 
-            jsr waitOnVBlank ; SL 34
+            jsr waitOnTimer
+
             sta WSYNC ; SL 35
             lda #1
             sta CTRLPF ; reflect playfield
             lda #LOGO_COLOR
             sta COLUPF
 
-
-            ; OK
-header
-            ldx #HEADER_HEIGHT
-_header_loop
-            sta WSYNC
-            dex
-            bpl _header_loop
-
-            ; PROMPT
-            ; draw repl cell tree
-prompt
-            lda #42    ; vblank timer will land us ~ on scanline + 34
-            sta TIM64T
-            ; do one repos loop at the top 
-            ; use HMOVE to handle indenting
-            sta WSYNC
-            lda #8
-_prompt_repos_loop
-            sbc #15
-            bcs _prompt_repos_loop
-            tay
-            lda LOOKUP_STD_HMOVE,y
-            sta HMP0
-            sta HMP1
-            sta RESP0
-            sta RESP1
-            sta WSYNC             ;--
-            sta HMOVE             ;3    3
-            lda #3                ;2    5
-            sta NUSIZ0            ;3    8
-            sta NUSIZ1            ;3   11
-            lda #WHITE            ;2   13
-            sta COLUP0            ;3   16
-            sta COLUP1            ;3   19
-            lda #0                ;2   21
-            ldx #$70              ;2   23
-            sta HMP0              ;3   26
-            stx HMP1              ;3   29
-            SLEEP 23              ;23  52
-            sta HMOVE             ;3   55
-
-
-prompt_encode
-            lda repl
-prompt_next_line
-            ldy #(DISPLAY_COLS - 1) * 2
-_prompt_encode_loop
-            tax
-            lda HEAP_CAR_ADDR,x ; read car
-            bpl _prompt_encode_clear ; BUGBUG: handle #
-            cmp #$40
-            bpl _prompt_encode_recurse
-_prompt_encode_addchar
-            stx tmp_cell_addr ; push down current cell
-            tax
-            lda LOOKUP_SYMBOL_GRAPHICS,x
-            sta repl_gx_addr,y
-            ldx tmp_cell_addr 
-            lda HEAP_CDR_ADDR,x ; read cdr
-            beq _prompt_encode_clear
-            dey
-            dey
-            bpl _prompt_encode_loop
-            ; list is too long, we need to indent
-            ; push next address on the stack
-            pha
-            jmp prompt_encode_end
-_prompt_encode_recurse
-            ; we need to recurse so we need push t
-            ; contents of the cdr
-            ; contents of the car
-            sta tmp_cell_addr ; set car aside
-            lda HEAP_CDR_ADDR,x 
-            beq _prompt_encode_recurse_skip_cdr
-            pha 
-_prompt_encode_recurse_skip_cdr
-            lda tmp_cell_addr
-            pha
-_prompt_encode_clear
-            dey
-            dey
-            lda #<SYMBOL_GRAPHICS_EMPTY
-_prompt_encode_clear_loop
-            sta repl_gx_addr,y
-            dey
-            dey
-            bpl _prompt_encode_clear_loop
-prompt_encode_end
-            
-            sta WSYNC ; shim
-
-            ldy #CHAR_HEIGHT - 1
-            lda #1
-            bit frame
-            bne prompt_draw_odd
-prompt_draw_even
-_prompt_draw_even_loop
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP1                   ;3    5
-            lda (repl_s0_addr),y       ;5   10
-            sta GRP0                   ;3   13
-            SLEEP 5                    ;5   18
-            lda (repl_s2_addr),y       ;5   23
-            sta GRP0                   ;3   26
-            lda (repl_s4_addr),y       ;5   31
-            sta GRP0                   ;3   33
-            dey                        ;2   35
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP0                   ;3    5
-            lda (repl_s1_addr),y       ;5   10
-            sta GRP1                   ;3   13
-            SLEEP 8                    ;8   21
-            lda (repl_s3_addr),y       ;5   26
-            sta GRP1                   ;3   29
-            lda (repl_s5_addr),y       ;5   34
-            sta GRP1                   ;3   37
-            dey                        ;2   39
-            bpl _prompt_draw_even_loop ;2/3 41/42
-            jmp prompt_draw_end
-prompt_draw_odd
-_prompt_draw_odd_loop
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP0                   ;3    5
-            lda (repl_s1_addr),y       ;5   10
-            sta GRP1                   ;3   13
-            SLEEP 8                    ;5   18
-            lda (repl_s3_addr),y       ;5   23
-            sta GRP1                   ;3   26
-            lda (repl_s5_addr),y       ;5   31
-            sta GRP1                   ;3   34
-            dey                        ;2   36
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP1                   ;3    5
-            lda (repl_s0_addr),y       ;5   10
-            sta GRP0                   ;3   13
-            SLEEP 5                    ;2   15
-            lda (repl_s2_addr),y       ;5   20
-            sta GRP0                   ;3   23
-            lda (repl_s4_addr),y       ;5   28
-            sta GRP0                   ;3   31
-            dey                        ;2   33
-            bpl _prompt_draw_odd_loop ;2/3 46/47
-            jmp prompt_draw_end
-prompt_draw_end
-            tsx
-            inx
-            beq prompt_done
-            pla
-            jmp prompt_next_line
-prompt_done
-            jsr waitOnVBlank
-
-            ; FREEBAR
-freebar
-            ldy #0
-            sty NUSIZ0
-            sty NUSIZ1
-            ldx free
-_free_bar_loop
-            lda HEAP_CDR_ADDR,x
-            bpl _free_bar_len
-            iny
-            tax
-            jmp _free_bar_loop
-_free_bar_len
-            tya
-            sec
-            sbc #16
-            bcs _free_gt_16
-            adc #16 
-            ldx #00
-            stx free_pf3 
-            stx free_pf4 
-            jmp _free_half
-_free_gt_16
-            ldx #$ff
-            stx free_pf1
-            stx free_pf2
-            ldx #2
-_free_half
-            sec
-            sbc #8
-            bcs _free_gt_8
-            ldy #0
-            sty free_pf2,x
-            jmp _free_quarter
-_free_gt_8
-            ldy #$ff
-            sty free_pf1,x
-            inx
-_free_quarter
-            tay
-            lda FREE_LOOKUP_TABLE,y
-            sta free_pf1,x
-
-            ldx #4
-_free_draw_loop
-            sta WSYNC
-            lda #$ee         ;2   2
-            sta GRP0        ;3   5
-            lda #$ee         ;2   7
-            sta GRP1        ;3  10
-            lda free_pf1    ;3  13
-            sta PF1         ;3  16
-            lda free_pf2    ;3  19
-            sta PF2         ;3  22
-            SLEEP 15        ;15 37
-            lda free_pf3    ;3  40
-            sta PF1         ;3  43
-            SLEEP 7         ;7  50 
-            lda free_pf4    ;3  53
-            sta PF2         ;3  56
-            dex             ;2  58
-            bpl _free_draw_loop
-            lda #0
-            sta PF1
-            sta PF2
-            sta GRP0
-            sta GRP1
-            
-            ; BUGBUG: TODO: OUTPUT / MENU
-
-            ; FOOTER
-footer
-            ldx #FOOTER_HEIGHT
-_footer_loop
-            sta WSYNC
-            dex
-            bpl _footer_loop
-
-            jmp waitOnOverscan
-
-;-------------------
-; Eval kernel
-;
-;  
-;
-;
-;
-eval
-            lda repl
-eval_iter
-            tsx
-            stx tmp_prev_stack
-            tax
-            lda HEAP_CAR_ADDR,x ; read car            
-            bpl _eval_number 
-            cmp #$40
-            bpl _eval_lambda
-_eval_funcall
-            pha
-_eval_funcall_push_args
-            lda HEAP_CDR_ADDR,x ; read cdr
-            beq _eval_funcall_exec
-            tax
-            lda HEAP_CAR_ADDR,x 
-            pha
-            jmp _eval_funcall_push_args
-_eval_funcall_exec
-            lda tmp_prev_stack
-            ; exec frame
-            tax
-            lda #0,x
-            asl
-            tax
-            lda SYMBOL_FUNCTION_LOOKUP_TABLE,x
-            sta tmp_func_ptr
-            lda SYMBOL_FUNCTION_LOOKUP_TABLE+1,x
-            sta tmp_func_ptr+1
-            jmp (tmp_func_ptr)
-exec_frame_return
-            ldx tmp_prev_stack
-            ; get return value off stack
-            lda #0,x
-            sta return_value
-            lda #1,x
-            sta return_value + 1
-            txs ; clear frame
-_eval_number
-_eval_lambda
-
+            jmp repl_draw
 
 ;--------------------
 ; Overscan start
@@ -682,16 +172,25 @@ waitOnOverscan_loop
             bne waitOnOverscan_loop
             jmp newFrame
 
-;------------------------
-; vblank sub
+;-------------------
+; Timer sub
 
-waitOnVBlank
+waitOnTimer
             ldx #$00
-waitOnVBlank_loop          
+waitOnTimer_loop          
             cpx INTIM
-            bmi waitOnVBlank_loop
+            bmi waitOnTimer_loop
             stx VBLANK
-            rts 
+            rts
+
+; -------------------
+; Display kernels
+
+    include "_repl_kernel.asm"
+
+    include "_eval_kernel.asm"
+
+
 ;-----------------------------------
 ; function kernels
 

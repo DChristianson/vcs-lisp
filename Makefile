@@ -2,7 +2,8 @@
 DEFAULT_TARGET: all
 
 ROMDIR = roms
-ASMS = $(wildcard *.asm) 
+INCS = $(wildcard _*.asm) $(wildcard include/*.h)
+ASMS = lisp.asm 
 SYSTEMS = NTSC PAL60
 ROMS = $(foreach ASM, $(ASMS), $(foreach SYSTEM,$(SYSTEMS),$(ROMDIR)/$(ASM:.asm=)_$(SYSTEM).bin))
 TIMESTAMP = `date +"%Y%m%d"`
@@ -18,7 +19,7 @@ $(ROMDIR):
 	mkdir -p $@
 	touch $@
 
-$(ROMS): $(ASMS)
+$(ROMS): $(ASMS) $(INCS)
 	$(eval ASM := $(word 2,$(subst _, ,$(subst /, ,$@))))
 	$(eval SYSTEM := $(word 2,$(subst ., ,$(subst _, ,$@))))
 	dasm $(ASM).asm -Iinclude -p10 -f3 -v4 -o$@ -s$(@:.bin=.sym) -l$(@:.bin=.lst) -MSYSTEM=$(SYSTEM) > $(@:.bin=.log)
