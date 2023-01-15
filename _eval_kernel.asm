@@ -1,13 +1,6 @@
 ;-------------------
 ; Eval kernel
 ;
-; Each frame contains 1 - n + 1 bytes
-;
-;  arg n
-;   ...
-;  arg 0
-;  function ref (pushed first)
-;
 sub_eval_update
             lda repl
 eval_iter
@@ -21,10 +14,13 @@ eval_iter
 _eval_funcall
             pha
 _eval_funcall_push_args
+            ; iterate through all the args
+            ; args should either be a cell ref or symbol
             lda HEAP_CDR_ADDR,x ; read cdr
             beq _eval_funcall_exec
             tax
-            lda HEAP_CAR_ADDR,x 
+            lda HEAP_CAR_ADDR,x
+            pha
             pha
             jmp _eval_funcall_push_args
 _eval_funcall_exec
@@ -32,6 +28,7 @@ _eval_funcall_exec
             ; exec frame
             tax
             lda #0,x
+            and #$3f
             asl
             tax
             lda SYMBOL_FUNCTION_LOOKUP_TABLE,x
@@ -43,10 +40,12 @@ exec_frame_return
             ldx tmp_prev_stack
             ; get return value off stack
             lda #0,x
-            sta return_value
+            sta accumulator
             lda #1,x
-            sta return_value + 1
+            sta accumulator + 1
             txs ; clear frame
 _eval_number
 _eval_lambda
             rts
+
+

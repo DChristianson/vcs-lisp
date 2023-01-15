@@ -26,13 +26,13 @@ LOGO_COLOR = $53
 SCANLINES = 262
 #endif
 
-FUNCTAB_SIZE = 4
-CELL_SIZE = 2
-HEAP_CELLS = 32
-HEAP_SIZE = HEAP_CELLS * CELL_SIZE
-HEAP_CAR_ADDR = $0000
-HEAP_CDR_ADDR = $0001
-NULL      = $00
+FUNCTION_TABLE_SIZE = 4
+CELL_SIZE           = 2
+HEAP_CELLS          = 32
+HEAP_SIZE           = HEAP_CELLS * CELL_SIZE
+HEAP_CAR_ADDR       = $0000
+HEAP_CDR_ADDR       = $0001
+NULL                = $00
 
 HEADER_HEIGHT = 85
 FOOTER_HEIGHT = 65
@@ -49,13 +49,13 @@ CHAR_HEIGHT = 8
 ; 32 cell heap
 heap               ds HEAP_SIZE 
 ; heap pointers to user defined symbols
-functab            ds FUNCTAB_SIZE
+function_table     ds FUNCTION_TABLE_SIZE
 ; pointer to free cell list
 free               ds 1
 ; pointer to repl cell
 repl               ds 1
 ; return value from functions
-return_value       ds CELL_SIZE
+accumulator       ds CELL_SIZE
 
 ; scratchpad vars for all kernel routines and stack
 
@@ -145,7 +145,7 @@ _end_switches
 
 ;---------------------
 ;  modes
-            ;jsr sub_eval_update
+            jsr sub_eval_update
             jsr sub_repl_update
 
 ;---------------------
