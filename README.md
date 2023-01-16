@@ -243,6 +243,10 @@ eval `(/ (+ 1 2) 2)
   s <- () ; a <- #1.5; f <- 0
     --> return 
 
+eval `(- 2 (+ 1 2))
+eval `(- 2 (+ 1 (* 3 4))))
+
+
 eval `(square 2)
   x <- 'square' ; t <- (2) ; f <- 0
     --> call 'square' -->

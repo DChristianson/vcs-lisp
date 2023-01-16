@@ -34,20 +34,28 @@ HEAP_CAR_ADDR       = $0000
 HEAP_CDR_ADDR       = $0001
 NULL                = $00
 
-HEADER_HEIGHT = 85
+HEADER_HEIGHT = 75
 FOOTER_HEIGHT = 65
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 
 ; ----------------------------------
-; variables
+; heap
 
-  SEG.U variables
+  SEG.U HEAP
 
     ORG $80
 
 ; 32 cell heap
 heap               ds HEAP_SIZE 
+
+; ----------------------------------
+; vars
+
+  SEG.U VARS
+
+    ORG $C0
+
 ; heap pointers to user defined symbols
 function_table     ds FUNCTION_TABLE_SIZE
 ; pointer to free cell list
@@ -55,25 +63,54 @@ free               ds 1
 ; pointer to repl cell
 repl               ds 1
 ; return value from functions
-accumulator       ds CELL_SIZE
+accumulator        ds CELL_SIZE
+; frame-based "clock"
+clock              ds 1
 
-; scratchpad vars for all kernel routines and stack
+; ----------------------------------
+; repl kernel vars
+; for repl display
 
-frame         ds 1
-tmp_func_ptr
+  SEG.U REPL
+
+    ORG $C9
+
 repl_gx_addr
-free_pf1
-repl_s5_addr  ds 2
-tmp_prev_stack
-free_pf2
-repl_s4_addr  ds 2
-free_pf3
-repl_s3_addr  ds 2
-free_pf4
-repl_s2_addr  ds 2
-repl_s1_addr  ds 2
-repl_s0_addr  ds 2
-tmp_cell_addr ds 1
+repl_s5_addr   ds 2
+repl_s4_addr   ds 2
+repl_s3_addr   ds 2
+repl_s2_addr   ds 2
+repl_s1_addr   ds 2
+repl_s0_addr   ds 2
+repl_cell_addr ds 1
+
+; ----------------------------------
+; free kernel vars
+; for free list display
+
+  SEG.U FREE
+
+    ORG $C9
+
+free_pf1 ds 1
+free_pf2 ds 1
+free_pf3 ds 1
+free_pf4 ds 1
+
+
+; ----------------------------------
+; eval kernel vars
+; for expression eval
+  SEG.U EVAL
+
+    ORG $C9
+
+;eval_x           ds 1
+eval_args        ds 1
+;eval_env         ds 1
+eval_frame       ds 1
+eval_func_ptr    ds 2
+
 
 ; ----------------------------------
 ; code
@@ -144,7 +181,11 @@ _end_switches
 
 
 ;---------------------
-;  modes
+;  update kernels
+
+            ; update clock
+            inc clock
+            ; do eval and repl updates BUGBUG: only one at a time
             jsr sub_eval_update
             jsr sub_repl_update
 
@@ -194,7 +235,18 @@ waitOnTimer_loop
 ;-----------------------------------
 ; function kernels
 
+FUNC_S00_MULT
+    jmp exec_frame_return
 FUNC_S01_ADD
+    ldx eval_frame
+    lda -2,x
+    clc
+    adc -4,x
+    sta accumulator
+    lda -1,x
+    adc -3,x
+    sta accumulator+1
+    jmp exec_frame_return
 FUNC_S02_SUB
 FUNC_S03_DIV
 FUNC_S04_EQUALS
@@ -208,13 +260,6 @@ FUNC_S0B_F0
 FUNC_S0C_F1
 FUNC_S0D_F2
 FUNC_S0E_F3
-FUNC_S0F_A0
-FUNC_S10_A1
-FUNC_S11_A2
-FUNC_S12_A3
-FUNC_S13_ZERO
-FUNC_S14_ONE
-FUNC_S15_TWO
             jmp exec_frame_return
 
 ; ----------------------------------
@@ -222,7 +267,9 @@ FUNC_S15_TWO
 
     ORG $FD00
 
-SYMBOL_FUNCTION_LOOKUP_TABLE
+LOOKUP_SYMBOL_FUNCTION
+LOOKUP_SYMBOL_VALUE
+    word FUNC_S00_MULT
     word FUNC_S01_ADD
     word FUNC_S02_SUB
     word FUNC_S03_DIV
@@ -237,13 +284,13 @@ SYMBOL_FUNCTION_LOOKUP_TABLE
     word FUNC_S0C_F1
     word FUNC_S0D_F2
     word FUNC_S0E_F3
-    word FUNC_S0F_A0
-    word FUNC_S10_A1
-    word FUNC_S11_A2
-    word FUNC_S12_A3
-    word FUNC_S13_ZERO
-    word FUNC_S14_ONE
-    word FUNC_S15_TWO   
+    word #$0000
+    word #$0000
+    word #$0000
+    word #$0000
+    word #$0000 ; S13_ZERO
+    word #$0001 ; S14_ONE
+    word #$0002 ; S15_TWO   
 
 
     ORG $FE00

@@ -1,16 +1,15 @@
 ;-------------------
 ; Eval kernel
 ;
+
 sub_eval_update
             lda repl
 eval_iter
             tsx
-            stx tmp_prev_stack
+            stx eval_frame
             tax
             lda HEAP_CAR_ADDR,x ; read car            
             bpl _eval_number 
-            cmp #$40
-            bpl _eval_lambda
 _eval_funcall
             pha
 _eval_funcall_push_args
@@ -18,34 +17,42 @@ _eval_funcall_push_args
             ; args should either be a cell ref or symbol
             lda HEAP_CDR_ADDR,x ; read cdr
             beq _eval_funcall_exec
+_eval_funcall_args_loop
             tax
+            lda HEAP_CDR_ADDR,x
+            sta eval_args
             lda HEAP_CAR_ADDR,x
-            pha
-            pha
-            jmp _eval_funcall_push_args
-_eval_funcall_exec
-            lda tmp_prev_stack
-            ; exec frame
+            bpl _eval_funcall_args_number
+            cmp #$40
+            bpl _eval_funcall_args_expression
+            and #$03f
+            asl
             tax
-            lda #0,x
+            lda LOOKUP_SYMBOL_VALUE+1,x
+            pha
+            lda LOOKUP_SYMBOL_VALUE,x
+            pha
+_eval_funcall_args_number
+_eval_funcall_args_expression
+            lda eval_args
+            bne _eval_funcall_args_loop
+_eval_funcall_exec
+            ; exec frame
+            ldx eval_frame
+            lda 0,x
             and #$3f
             asl
             tax
-            lda SYMBOL_FUNCTION_LOOKUP_TABLE,x
-            sta tmp_func_ptr
-            lda SYMBOL_FUNCTION_LOOKUP_TABLE+1,x
-            sta tmp_func_ptr+1
-            jmp (tmp_func_ptr)
+            lda LOOKUP_SYMBOL_FUNCTION,x
+            sta eval_func_ptr
+            lda LOOKUP_SYMBOL_FUNCTION+1,x
+            sta eval_func_ptr+1
+            jmp (eval_func_ptr)
 exec_frame_return
-            ldx tmp_prev_stack
-            ; get return value off stack
-            lda #0,x
-            sta accumulator
-            lda #1,x
-            sta accumulator + 1
-            txs ; clear frame
+            ; clear frame
+            ldx eval_frame
+            txs 
 _eval_number
-_eval_lambda
             rts
 
 

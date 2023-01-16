@@ -1,6 +1,4 @@
 sub_repl_update
-            ; update frame
-            inc frame
             ; prep symbol graphics
             ldy #(DISPLAY_COLS - 1) * 2
 _prep_repl_loop
@@ -69,11 +67,11 @@ _prompt_encode_loop
             cmp #$40
             bpl _prompt_encode_recurse
 _prompt_encode_addchar
-            stx tmp_cell_addr ; push down current cell
+            stx repl_cell_addr ; push down current cell
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
             sta repl_gx_addr,y
-            ldx tmp_cell_addr 
+            ldx repl_cell_addr 
             lda HEAP_CDR_ADDR,x ; read cdr
             beq _prompt_encode_clear
             dey
@@ -87,12 +85,12 @@ _prompt_encode_recurse
             ; we need to recurse so we need push t
             ; contents of the cdr
             ; contents of the car
-            sta tmp_cell_addr ; set car aside
+            sta repl_cell_addr ; set car aside
             lda HEAP_CDR_ADDR,x 
             beq _prompt_encode_recurse_skip_cdr
             pha 
 _prompt_encode_recurse_skip_cdr
-            lda tmp_cell_addr
+            lda repl_cell_addr
             pha
 _prompt_encode_clear
             dey
@@ -109,7 +107,7 @@ prompt_encode_end
 
             ldy #CHAR_HEIGHT - 1
             lda #1
-            bit frame
+            bit clock
             bne prompt_draw_odd
 prompt_draw_even
 _prompt_draw_even_loop
@@ -240,6 +238,24 @@ _free_draw_loop
             sta GRP0
             sta GRP1
             
+; ACCUMULATOR
+accumulator_draw
+            sta WSYNC
+            sta WSYNC
+            lda accumulator + 1
+            sta GRP0
+            lda accumulator
+            sta GRP1
+            ldx #8
+            sta WSYNC
+_accumulator_draw_loop
+            dex
+            bpl _accumulator_draw_loop
+            lda #0
+            sta GRP0
+            sta GRP1
+
+
             ; BUGBUG: TODO: OUTPUT / MENU
 
             ; FOOTER
