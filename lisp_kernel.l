@@ -1,23 +1,5 @@
-(define (s1)
- (+ 1 2))
- 
-(define (s2)
- (/ (+ 1 2) 2))
-
-(define (s3)
-  (* 2 (+ 1 2)))
-
 (define (square x)
  (* x x))
-
-(define (cube5 x)
- (* x x x x x))
-
-(define (cube10 x)
- (* x x x x x x x x x x))
-
-(define (cube31 x)
- (* x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x))
 
 (define (average x y)
   (/ (+ x y) 2))
@@ -39,7 +21,6 @@
                        (+ counter 1)
                         max-count)))
 
-
 (define (sqrt x)
     (sqrt-iter 1.0 x))
 
@@ -53,43 +34,3 @@
                        (+ counter 1)
                         max-count)))
 
-
-
-(define (biggest x)
-  (+
-    (+ 
-      (+ 
-        (+ x y z)
-        (+ x y z)
-        (+ x y z)
-      ) 
-      (+ 
-        (+ x y z)
-        (+ x y z)
-        (+ x y z)
-      )
-      (+ 
-        (+ x y z)
-        (+ x y z)
-        (+ x y z)
-      )
-    )
-    (+
-      (+ 
-        (+ x y z)
-        (+ x y z)
-        (+ x y z)
-      ) 
-      (+ 
-        (+ x y z)
-        (+ x y z)
-        (+ x y z)
-      )
-      (+ 
-        (+ x y z)
-        (+ x y z)
-        (+ x y z)
-      )
-    )
- )
-)

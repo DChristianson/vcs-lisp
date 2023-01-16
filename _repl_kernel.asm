@@ -25,7 +25,7 @@ _header_loop
             ; PROMPT
             ; draw repl cell tree
 prompt
-            lda #42    ; timer will land us ~ on scanline + 34
+            lda #(PROMPT_HEIGHT * 76 / 64)
             sta TIM64T
             ; do one repos loop at the top 
             ; use HMOVE to handle indenting
@@ -63,7 +63,7 @@ prompt_next_line
 _prompt_encode_loop
             tax
             lda HEAP_CAR_ADDR,x ; read car
-            bpl _prompt_encode_clear ; BUGBUG: handle #
+            bpl _prompt_encode_clear_dec ; BUGBUG: handle #
             cmp #$40
             bpl _prompt_encode_recurse
 _prompt_encode_addchar
@@ -73,7 +73,7 @@ _prompt_encode_addchar
             sta repl_gx_addr,y
             ldx repl_cell_addr 
             lda HEAP_CDR_ADDR,x ; read cdr
-            beq _prompt_encode_clear
+            beq _prompt_encode_clear_dec
             dey
             dey
             bpl _prompt_encode_loop
@@ -92,9 +92,11 @@ _prompt_encode_recurse
 _prompt_encode_recurse_skip_cdr
             lda repl_cell_addr
             pha
+            jmp _prompt_encode_clear
+_prompt_encode_clear_dec
+            dey
+            dey
 _prompt_encode_clear
-            dey
-            dey
             lda #<SYMBOL_GRAPHICS_EMPTY
 _prompt_encode_clear_loop
             sta repl_gx_addr,y

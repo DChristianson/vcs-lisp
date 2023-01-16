@@ -2,14 +2,19 @@
 ; Eval kernel
 ;
 
-sub_eval_update
+eval_update
             lda repl
 eval_iter
             tsx
             stx eval_frame
             tax
             lda HEAP_CAR_ADDR,x ; read car            
-            bpl _eval_number 
+            bmi _eval_funcall
+_eval_number
+            sta accumulator + 1
+            lda HEAP_CDR_ADDR,x
+            sta accumulator
+            jmp exec_frame_return
 _eval_funcall
             pha
 _eval_funcall_push_args
@@ -22,7 +27,6 @@ _eval_funcall_args_loop
             lda HEAP_CDR_ADDR,x
             sta eval_args
             lda HEAP_CAR_ADDR,x
-            bpl _eval_funcall_args_number
             cmp #$40
             bpl _eval_funcall_args_expression
             and #$03f
@@ -32,8 +36,16 @@ _eval_funcall_args_loop
             pha
             lda LOOKUP_SYMBOL_VALUE,x
             pha
-_eval_funcall_args_number
+            jmp _eval_funcall_args_next
 _eval_funcall_args_expression
+            tay
+            lda eval_args
+            pha
+            lda eval_frame
+            pha
+            tya
+            jmp eval_iter ; recurse
+_eval_funcall_args_next
             lda eval_args
             bne _eval_funcall_args_loop
 _eval_funcall_exec
@@ -52,7 +64,19 @@ exec_frame_return
             ; clear frame
             ldx eval_frame
             txs 
-_eval_number
-            rts
+            inx
+            beq _eval_return
+            ; pop up from recursion
+            pla 
+            sta eval_frame
+            pla 
+            sta eval_args
+            lda accumulator+1
+            pha
+            lda accumulator
+            pha
+            jmp _eval_funcall_args_next
+_eval_return
+            jmp eval_update_return
 
 

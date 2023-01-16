@@ -34,8 +34,9 @@ HEAP_CAR_ADDR       = $0000
 HEAP_CDR_ADDR       = $0001
 NULL                = $00
 
-HEADER_HEIGHT = 75
-FOOTER_HEIGHT = 65
+HEADER_HEIGHT = 55
+PROMPT_HEIGHT = 72
+FOOTER_HEIGHT = 55
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 
@@ -186,7 +187,8 @@ _end_switches
             ; update clock
             inc clock
             ; do eval and repl updates BUGBUG: only one at a time
-            jsr sub_eval_update
+            jmp eval_update
+eval_update_return
             jsr sub_repl_update
 
 ;---------------------
@@ -248,7 +250,19 @@ FUNC_S01_ADD
     sta accumulator+1
     jmp exec_frame_return
 FUNC_S02_SUB
+    ; TODO: BOGUS implementation
+    jmp exec_frame_return
 FUNC_S03_DIV
+    ; TODO: BOGUS implementation
+    ldx eval_frame
+    clc
+    lda -1,x
+    ror
+    sta accumulator+1
+    lda -2,x
+    ror
+    sta accumulator
+    jmp exec_frame_return
 FUNC_S04_EQUALS
 FUNC_S05_GT
 FUNC_S06_LT
