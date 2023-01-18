@@ -9,6 +9,15 @@ Goals
  See https://huguesjohnson.com/programming/atari-2600-basic/ 
  See sample programs in Atari Basic manual
 
+Other ideas
+ Pong mode
+ Music mode
+ Maze
+ Hanoi
+ Mastermind
+ Core war
+ Ant (genetic algo)
+
 Repl Screen
   Free space
   Repl editor space
