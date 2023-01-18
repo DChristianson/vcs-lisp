@@ -13,8 +13,11 @@
 (define (f2)
   (* 2 (+ 1 2)))
 
-(define (f3 x)
- (* x x))
+(define (f0 a0)
+ (* a0 a0))
+
+(define (f0)
+ (f0 2))
 
 (define (cube5 x)
  (* x x x x x))

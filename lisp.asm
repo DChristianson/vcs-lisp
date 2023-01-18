@@ -34,6 +34,9 @@ HEAP_CAR_ADDR       = $0000
 HEAP_CDR_ADDR       = $0001
 NULL                = $00
 
+FUNCTION_SYMBOL_F0  = 11 ; beginning of function symbols
+ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
+NUMERIC_SYMBOL_ZERO = 19
 HEADER_HEIGHT = 55
 PROMPT_HEIGHT = 72
 FOOTER_HEIGHT = 55
@@ -59,6 +62,10 @@ heap               ds HEAP_SIZE
 
 ; heap pointers to user defined symbols
 function_table     ds FUNCTION_TABLE_SIZE
+f0 = function_table
+f1 = function_table + 1
+f2 = function_table + 2
+f3 = function_table + 3
 ; pointer to free cell list
 free               ds 1
 ; pointer to repl cell
@@ -108,9 +115,10 @@ free_pf4 ds 1
 
 ;eval_x           ds 1
 eval_args        ds 1
-;eval_env         ds 1
 eval_frame       ds 1
+eval_env         ds 1
 eval_func_ptr    ds 2
+
 
 
 ; ----------------------------------
@@ -238,6 +246,15 @@ waitOnTimer_loop
 ; function kernels
 
 FUNC_S00_MULT
+    ; TODO: BOGUS implementation
+    ldx eval_frame
+    clc
+    lda -2,x
+    rol
+    sta accumulator
+    lda -1,x
+    rol
+    sta accumulator + 1
     jmp exec_frame_return
 FUNC_S01_ADD
     ldx eval_frame
@@ -270,10 +287,6 @@ FUNC_S07_AND
 FUNC_S08_OR
 FUNC_S09_NOT
 FUNC_S0A_IF
-FUNC_S0B_F0
-FUNC_S0C_F1
-FUNC_S0D_F2
-FUNC_S0E_F3
             jmp exec_frame_return
 
 ; ----------------------------------
