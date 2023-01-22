@@ -2,6 +2,7 @@
 ; Eval kernel
 ;
 
+
 eval_update
             lda repl
 eval_iter
@@ -9,7 +10,17 @@ eval_iter
             stx eval_frame
             tax
             lda HEAP_CAR_ADDR,x ; read car            
-            bmi _eval_funcall
+            bpl _eval_number
+            cmp #FUNCTION_REF_IF
+            bne _eval_funcall
+_eval_test
+            lda HEAP_CDR_ADDR,x ; read cdr
+            tax
+            lda HEAP_CDR_ADDR,x
+            pha
+            lda #2 ; KLUDGE: signals test
+            sta eval_next
+            jmp _eval_funcall_arg  
 _eval_number
             sta accumulator + 1
             lda HEAP_CDR_ADDR,x
@@ -25,7 +36,8 @@ _eval_funcall_push_args
 _eval_funcall_args_loop
             tax
             lda HEAP_CDR_ADDR,x
-            sta eval_args
+            sta eval_next
+_eval_funcall_arg
             lda HEAP_CAR_ADDR,x
             cmp #$40
             bpl _eval_funcall_args_expression
@@ -35,33 +47,41 @@ _eval_funcall_args_loop
             asl
             tax
             lda LOOKUP_SYMBOL_VALUE+1,x
+            sta accumulator + 1
             pha
             lda LOOKUP_SYMBOL_VALUE,x
+            sta accumulator
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_env
             sec
             sbc #ARGUMENT_SYMBOL_A0
             asl
+            eor #$ff
+            clc
+            adc #1
             clc
             adc eval_env ; find arg 
             tax
             lda #-1,x
+            sta accumulator + 1
             pha
             lda #-2,x
+            sta accumulator
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_expression
             tay
-            lda eval_args
+            lda eval_next
             pha
             lda eval_frame
             pha
             tya
             jmp eval_iter ; recurse
 _eval_funcall_args_next
-            lda eval_args
-            bne _eval_funcall_args_loop
+            lda eval_next
+            bmi _eval_funcall_args_loop
+            bne exec_frame_return
 _eval_funcall_exec
             ; exec frame
             ldx eval_frame
@@ -79,7 +99,9 @@ exec_frame_return
             ldx eval_frame
             txs 
             inx
-            beq _eval_return
+            bne _eval_pop_frame
+            jmp eval_update_return
+_eval_pop_frame
             ; pop up from recursion
             pla 
             bmi _eval_old_env
@@ -88,21 +110,38 @@ exec_frame_return
             pla
 _eval_old_env
             sta eval_frame
-            pla 
-            bmi _eval_continue_args
-            beq _eval_continue_args
-            lda #0
-            sta eval_args ; BUGBUG may not be needed?
+            pla ; pull args from frame
+            bmi _eval_continue_args ; if negative, eval next arg cell
+            beq _eval_continue_args ; if zero, eval next arg cell (will be nil)
+            ; args is 1 = return or 2 = test
+            lsr
+            beq _eval_return
+            ; evaluate test expression
+            sta eval_next ; a should be = 1, which will 
+            ldx eval_frame ; pull 
+            txs
+            lda #0,x
+            tax
+            lda accumulator+1
+            ora accumulator
+            beq _eval_test_true
+_eval_test_false
+            lda HEAP_CDR_ADDR,x
+            tax
+_eval_test_true
+            jmp _eval_funcall_arg
+_eval_return
+            sta eval_next ; BUGBUG may not be needed?
             jmp exec_frame_return
 _eval_continue_args
-            sta eval_args
+            sta eval_next
             lda accumulator+1
             pha
             lda accumulator
             pha
             jmp _eval_funcall_args_next
-_eval_return
-            jmp eval_update_return
+
+            
 
 
 FUNC_S0B_F0

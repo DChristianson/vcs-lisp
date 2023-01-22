@@ -34,6 +34,7 @@ HEAP_CAR_ADDR       = $0000
 HEAP_CDR_ADDR       = $0001
 NULL                = $00
 
+FUNCTION_REF_IF  = $ca   
 FUNCTION_SYMBOL_F0  = 11 ; beginning of function symbols
 ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
@@ -114,10 +115,10 @@ free_pf4 ds 1
     ORG $C9
 
 ;eval_x           ds 1
-eval_args        ds 1
-eval_frame       ds 1
-eval_env         ds 1
-eval_func_ptr    ds 2
+eval_next        ds 1 ; next action to take
+eval_frame       ds 1 ; top of stack for current frame
+eval_env         ds 1 ; top of stack for calling frame
+eval_func_ptr    ds 2 ; tmp pointer to function we are calling
 
 
 
@@ -268,6 +269,14 @@ FUNC_S01_ADD
     jmp exec_frame_return
 FUNC_S02_SUB
     ; TODO: BOGUS implementation
+    ldx eval_frame
+    lda -1,x
+    sec
+    sbc -3,x
+    sta accumulator
+    lda -2,x
+    sbc -4,x
+    sta accumulator+1
     jmp exec_frame_return
 FUNC_S03_DIV
     ; TODO: BOGUS implementation
@@ -281,6 +290,16 @@ FUNC_S03_DIV
     sta accumulator
     jmp exec_frame_return
 FUNC_S04_EQUALS
+    ; TODO: BOGUS implementation
+    ldx eval_frame
+    lda -1,x
+    sec
+    sbc -3,x
+    sta accumulator
+    lda -2,x
+    sbc -4,x
+    sta accumulator+1
+    jmp exec_frame_return
 FUNC_S05_GT
 FUNC_S06_LT
 FUNC_S07_AND
@@ -318,7 +337,13 @@ LOOKUP_SYMBOL_VALUE
     word #$0000 ; S13_ZERO
     word #$0001 ; S14_ONE
     word #$0002 ; S15_TWO   
-
+    word #$0003 ; S16_THREE  
+    word #$0004 ; S17_FOUR   
+    word #$0005 ; S18_FIVE   
+    word #$0006 ; S19_SIX 
+    word #$0007 ; S1A_SEVEN   
+    word #$0008 ; S1B_EIGHT  
+    word #$0009 ; S1C_NINE  
 
     ORG $FE00
 
@@ -378,13 +403,13 @@ SYMBOL_GRAPHICS_S14_ONE
     byte $0,$e0,$40,$40,$40,$40,$40,$c0; 8
 SYMBOL_GRAPHICS_S15_TWO
     byte $0,$e0,$80,$80,$e0,$20,$20,$e0; 8
-SYMBOL_GRAPHICS_S16_MULT
-SYMBOL_GRAPHICS_S17_MULT
-SYMBOL_GRAPHICS_S18_MULT
-SYMBOL_GRAPHICS_S19_MULT
-SYMBOL_GRAPHICS_S1A_MULT
-SYMBOL_GRAPHICS_S1B_MULT
-SYMBOL_GRAPHICS_S1C_MULT
+SYMBOL_GRAPHICS_S16_THREE
+SYMBOL_GRAPHICS_S17_FOUR
+SYMBOL_GRAPHICS_S18_FIVE
+SYMBOL_GRAPHICS_S19_SIX
+SYMBOL_GRAPHICS_S1A_SEVEN
+SYMBOL_GRAPHICS_S1B_EIGHT
+SYMBOL_GRAPHICS_S1C_NINE
 SYMBOL_GRAPHICS_S1D_MULT
 SYMBOL_GRAPHICS_S1E_MULT
 SYMBOL_GRAPHICS_S1F_MULT
@@ -421,13 +446,13 @@ SYMBOL_GRAPHICS_LOOKUP_TABLE
     byte #<SYMBOL_GRAPHICS_S13_ZERO
     byte #<SYMBOL_GRAPHICS_S14_ONE
     byte #<SYMBOL_GRAPHICS_S15_TWO
-    byte #<SYMBOL_GRAPHICS_S16_MULT
-    byte #<SYMBOL_GRAPHICS_S17_MULT
-    byte #<SYMBOL_GRAPHICS_S18_MULT
-    byte #<SYMBOL_GRAPHICS_S19_MULT
-    byte #<SYMBOL_GRAPHICS_S1A_MULT
-    byte #<SYMBOL_GRAPHICS_S1B_MULT
-    byte #<SYMBOL_GRAPHICS_S1C_MULT
+    byte #<SYMBOL_GRAPHICS_S16_THREE
+    byte #<SYMBOL_GRAPHICS_S17_FOUR
+    byte #<SYMBOL_GRAPHICS_S18_FIVE
+    byte #<SYMBOL_GRAPHICS_S19_SIX
+    byte #<SYMBOL_GRAPHICS_S1A_SEVEN
+    byte #<SYMBOL_GRAPHICS_S1B_EIGHT
+    byte #<SYMBOL_GRAPHICS_S1C_NINE
     byte #<SYMBOL_GRAPHICS_S1D_MULT
     byte #<SYMBOL_GRAPHICS_S1E_MULT
     byte #<SYMBOL_GRAPHICS_S1F_MULT
