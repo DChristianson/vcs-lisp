@@ -1,4 +1,10 @@
-sub_repl_update
+repl_update
+            ; check input
+            lda INPT4
+            bmi _repl_update_skip_eval
+            lda #GAME_STATE_EVAL
+            sta game_state
+_repl_update_skip_eval
             ; prep symbol graphics
             ldy #(DISPLAY_COLS - 1) * 2
 _prep_repl_loop
@@ -7,7 +13,8 @@ _prep_repl_loop
             dey
             dey
             bpl _prep_repl_loop
-            rts
+            ; done
+            jmp update_return
 
 ;----------------------
 ; Repl display

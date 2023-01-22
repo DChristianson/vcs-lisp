@@ -4,6 +4,27 @@
 
 
 eval_update
+            lda game_state
+            and #$0f
+            beq eval_start
+eval_apply
+            lda #1 ; 1 = return
+            pha
+            lda eval_frame
+            pha
+            tax
+            lda eval_env
+            and #$7f
+            pha
+            stx eval_env
+            lda 0,x
+            and #$3f
+            sec
+            sbc #FUNCTION_SYMBOL_F0
+            tax
+            lda function_table,x
+            jmp eval_iter
+eval_start
             lda repl
 eval_iter
             tsx
@@ -100,7 +121,10 @@ exec_frame_return
             txs 
             inx
             bne _eval_pop_frame
-            jmp eval_update_return
+            ; done with eval
+            lda #GAME_STATE_EDIT
+            sta game_state
+            jmp update_return
 _eval_pop_frame
             ; pop up from recursion
             pla 
@@ -141,8 +165,6 @@ _eval_continue_args
             lda accumulator
             pha
             jmp _eval_funcall_args_next
-
-            
 
 
 FUNC_S0B_F0
@@ -197,19 +219,15 @@ _apply_shift_loop
             ldx eval_next
             stx eval_frame
 _apply
-            lda #1 ; 1 = return
-            pha
-            lda eval_frame
-            pha
-            tax
-            lda eval_env
-            and #$7f
-            pha
-            stx eval_env
-            lda 0,x
-            and #$3f
-            sec
-            sbc #FUNCTION_SYMBOL_F0
-            tax
-            lda function_table,x
-            jmp eval_iter
+            lda #GAME_STATE_EVAL_APPLY
+            sta game_state
+            jmp update_return
+
+eval_draw
+            ldx #194
+_eval_draw_loop
+            sta WSYNC
+            dex
+            bne _eval_draw_loop
+
+            jmp waitOnOverscan

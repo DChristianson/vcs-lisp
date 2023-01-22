@@ -26,6 +26,12 @@ LOGO_COLOR = $53
 SCANLINES = 262
 #endif
 
+; REPL 0xxxyyyy (x = game type, y = controls)
+GAME_STATE_EDIT       = %00000000
+; EVAL 1xxxyyyy (x = game type, y = controls)
+GAME_STATE_EVAL       = %10000000
+GAME_STATE_EVAL_APPLY = %10000001 ; returning from suspend
+
 FUNCTION_TABLE_SIZE = 4
 CELL_SIZE           = 2
 HEAP_CELLS          = 32
@@ -75,6 +81,8 @@ repl               ds 1
 accumulator        ds CELL_SIZE
 ; frame-based "clock"
 clock              ds 1
+; game state
+game_state         ds 1
 
 ; ----------------------------------
 ; repl kernel vars
@@ -82,8 +90,9 @@ clock              ds 1
 
   SEG.U REPL
 
-    ORG $C9
+    ORG $CA
 
+repl_cursor    ds 1
 repl_gx_addr
 repl_s5_addr   ds 2
 repl_s4_addr   ds 2
@@ -99,27 +108,25 @@ repl_cell_addr ds 1
 
   SEG.U FREE
 
-    ORG $C9
+    ORG $CA
 
 free_pf1 ds 1
 free_pf2 ds 1
 free_pf3 ds 1
 free_pf4 ds 1
 
-
 ; ----------------------------------
 ; eval kernel vars
 ; for expression eval
   SEG.U EVAL
 
-    ORG $C9
+    ORG $CA
 
 ;eval_x           ds 1
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
 eval_env         ds 1 ; top of stack for calling frame
 eval_func_ptr    ds 2 ; tmp pointer to function we are calling
-
 
 
 ; ----------------------------------
@@ -195,15 +202,22 @@ _end_switches
 
             ; update clock
             inc clock
+
+            ; 
             ; do eval and repl updates BUGBUG: only one at a time
+            lda game_state
+            beq repl_update
             jmp eval_update
-eval_update_return
-            jsr sub_repl_update
+update_return
 
 ;---------------------
 ; end vblank
 
-            jsr waitOnTimer
+            ldx #$00
+endVBlank_loop          
+            cpx INTIM
+            bmi endVBlank_loop
+            stx VBLANK
 
             sta WSYNC ; SL 35
             lda #1
@@ -211,7 +225,9 @@ eval_update_return
             lda #LOGO_COLOR
             sta COLUPF
 
-            jmp repl_draw
+            lda game_state
+            beq repl_draw
+            jmp eval_draw
 
 ;--------------------
 ; Overscan start
@@ -226,7 +242,7 @@ waitOnOverscan_loop
 
 ;-------------------
 ; Timer sub
-
+; BUGBUG: need - or inline?
 waitOnTimer
             ldx #$00
 waitOnTimer_loop          
