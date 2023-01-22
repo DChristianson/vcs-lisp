@@ -273,10 +273,10 @@ FUNC_S02_SUB
     lda -1,x
     sec
     sbc -3,x
-    sta accumulator
+    sta accumulator + 1
     lda -2,x
     sbc -4,x
-    sta accumulator+1
+    sta accumulator
     jmp exec_frame_return
 FUNC_S03_DIV
     ; TODO: BOGUS implementation

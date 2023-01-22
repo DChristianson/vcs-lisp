@@ -117,7 +117,8 @@ _eval_old_env
             lsr
             beq _eval_return
             ; evaluate test expression
-            sta eval_next ; a should be = 1, which will 
+            ; BUGBUG: potentially we can optimize the stack here
+            sta eval_next ; a should be = 1
             ldx eval_frame ; pull 
             txs
             lda #0,x
@@ -148,7 +149,55 @@ FUNC_S0B_F0
 FUNC_S0C_F1
 FUNC_S0D_F2
 FUNC_S0E_F3
-            lda #1 ; KLUDGE in place of args
+            ; check for tail call here
+            ldx eval_frame
+_apply_tail_call_loop
+            cpx #$ff
+            beq _apply_tail_call_end_search; top of stack
+            ; we need to look at the frame above us on the stack
+            ; if it's marked for return we are a tail call
+            ; if we are a tail call we can shrink the stack
+            ; BUGBUG: if we reorder frame ... or always push static ref we can simplify this logic
+            lda #1,x ; check next frame 
+            bmi _apply_tail_call_bare_frame
+            lda #3,x ; get eval_next skipping env and frame
+            cmp #1
+            bne _apply_tail_call_end_search
+            lda #2,x
+            jmp _apply_tail_call_found
+_apply_tail_call_bare_frame
+            lda #2,x ; get_eval_next skipping frame
+            cmp #1
+            bne _apply_tail_call_end_search
+            lda #1,x ; loop stack
+_apply_tail_call_found
+            tax
+            jmp _apply_tail_call_loop
+_apply_tail_call_end_search
+            ; shift eval_frame to x
+            cpx eval_frame
+            beq _apply
+            stx eval_next ; use eval_next as scratch
+            tsx ; get stack pointer
+            txa ; move stack pointer to a
+            eor #$ff ; invert (we need  -sp - 1)
+            clc
+            ; optimization - no adc #1 
+            adc eval_frame
+            tay
+            ldx eval_next
+            txs
+            ldx eval_frame
+_apply_shift_loop
+            lda #0,x
+            pha
+            dex
+            dey
+            bpl _apply_shift_loop
+            ldx eval_next
+            stx eval_frame
+_apply
+            lda #1 ; 1 = return
             pha
             lda eval_frame
             pha
