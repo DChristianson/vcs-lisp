@@ -44,9 +44,9 @@ FUNCTION_REF_IF  = $ca
 FUNCTION_SYMBOL_F0  = 11 ; beginning of function symbols
 ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
-HEADER_HEIGHT = 55
+HEADER_HEIGHT = 51
 PROMPT_HEIGHT = 72
-FOOTER_HEIGHT = 55
+FOOTER_HEIGHT = 51
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 
@@ -93,6 +93,9 @@ game_state         ds 1
     ORG $CA
 
 repl_cursor    ds 1
+repl_bcd       ds 3
+repl_tmp_accumulator
+repl_cell_addr ds 1
 repl_gx_addr
 repl_s5_addr   ds 2
 repl_s4_addr   ds 2
@@ -100,7 +103,6 @@ repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2
 repl_s0_addr   ds 2
-repl_cell_addr ds 1
 
 ; ----------------------------------
 ; free kernel vars
@@ -361,50 +363,44 @@ LOOKUP_SYMBOL_VALUE
     word #$0008 ; S1B_EIGHT  
     word #$0009 ; S1C_NINE  
 
+
+; ----------------------------------
+; symbol graphics 
+
     ORG $FE00
 
-    ; standard lookup for hmoves
-STD_HMOVE_BEGIN
-    byte $80, $70, $60, $50, $40, $30, $20, $10, $00, $f0, $e0, $d0, $c0, $b0, $a0, $90
-STD_HMOVE_END
-LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
-
-FREE_LOOKUP_TABLE
-    byte $00, $01, $03, $07, $0f, $1f, $3f, $7f, $ff
-
-   
 SYMBOL_GRAPHICS_EMPTY
     byte $00,$00,$00,$00,$00,$00,$00,$00; 8
 SYMBOL_GRAPHICS_S00_MULT
-    byte $0,$88,$d8,$50,$20,$50,$d8,$88; 8
+    byte $0,$0,$50,$70,$20,$70,$50,$0; 8
 SYMBOL_GRAPHICS_S01_ADD
-    byte $0,$0,$40,$40,$e0,$40,$40,$0; 8
+    byte $0,$20,$20,$20,$f8,$20,$20,$20; 8
 SYMBOL_GRAPHICS_S02_SUB
-    byte $0,$0,$0,$0,$e0,$0,$0,$0; 8
+    byte $0,$0,$0,$0,$f8,$0,$0,$0; 8
 SYMBOL_GRAPHICS_S03_DIV
-    byte $0,$80,$80,$40,$40,$40,$20,$20; 8
+    byte $0,$80,$c0,$e0,$70,$38,$18,$8; 8
 SYMBOL_GRAPHICS_S04_EQUALS
-    byte $0,$0,$0,$e0,$0,$e0,$0,$0; 8
+    byte $0,$0,$0,$f0,$0,$f0,$0,$0; 8
 SYMBOL_GRAPHICS_S05_GT
-    byte $0,$0,$80,$40,$20,$40,$80,$0; 8
+    byte $0,$c0,$60,$30,$18,$30,$60,$c0; 8
 SYMBOL_GRAPHICS_S06_LT
-    byte $0,$0,$20,$40,$80,$40,$20,$0; 8
+    byte $0,$18,$30,$60,$c0,$60,$30,$18; 8
 SYMBOL_GRAPHICS_S07_AND
-    byte $0,$40,$e0,$80,$e0,$80,$e0,$40; 8
+    byte $0,$20,$f0,$80,$60,$80,$f0,$20; 8
 SYMBOL_GRAPHICS_S08_OR
-    byte $0,$40,$40,$40,$40,$40,$40,$40; 8
+    byte $0,$20,$20,$20,$20,$20,$20,$20; 8
 SYMBOL_GRAPHICS_S09_NOT
-    byte $0,$40,$40,$0,$40,$40,$40,$40; 8
+    byte $0,$20,$20,$0,$20,$20,$20,$20; 8
 SYMBOL_GRAPHICS_S0A_IF
-    byte $0,$40,$0,$40,$60,$20,$a0,$e0; 8
+    byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
 SYMBOL_GRAPHICS_S0B_F0
-    byte $0,$0,$0,$0,$a0,$a0,$40,$80; 8
+    byte $0,$88,$90,$50,$20,$20,$20,$40; 8
 SYMBOL_GRAPHICS_S0C_F1
-    byte $0,$40,$40,$0,$a0,$a0,$40,$80; 8
+    byte $0,$20,$20,$0,$d8,$50,$20,$40; 8
 SYMBOL_GRAPHICS_S0D_F2
-    byte $0,$a0,$a0,$0,$a0,$a0,$40,$80; 8
+    byte $0,$50,$50,$0,$d8,$50,$20,$40; 8
 SYMBOL_GRAPHICS_S0E_F3
-    byte $0,$e0,$e0,$0,$a0,$a0,$40,$80; 8
+    byte $0,$70,$70,$0,$d8,$50,$20,$40; 8
 SYMBOL_GRAPHICS_S0F_A0
     byte $0,$70,$88,$88,$78,$8,$88,$70; 8
 SYMBOL_GRAPHICS_S10_A1
@@ -414,21 +410,41 @@ SYMBOL_GRAPHICS_S11_A2
 SYMBOL_GRAPHICS_S12_A3
     byte $0,$78,$88,$88,$88,$78,$8,$8; 8
 SYMBOL_GRAPHICS_S13_ZERO
-    byte $0,$40,$a0,$a0,$a0,$a0,$a0,$40; 8
+    byte $0,$70,$88,$88,$88,$88,$88,$70; 8
 SYMBOL_GRAPHICS_S14_ONE
-    byte $0,$e0,$40,$40,$40,$40,$40,$c0; 8
+    byte $0,$70,$20,$20,$20,$20,$20,$60; 8
 SYMBOL_GRAPHICS_S15_TWO
-    byte $0,$e0,$80,$80,$e0,$20,$20,$e0; 8
+    byte $0,$f8,$80,$80,$f8,$8,$8,$f8; 8
 SYMBOL_GRAPHICS_S16_THREE
+    byte $0,$f8,$8,$8,$f8,$8,$8,$f8; 8
 SYMBOL_GRAPHICS_S17_FOUR
+    byte $0,$8,$8,$8,$f8,$88,$88,$88; 8
 SYMBOL_GRAPHICS_S18_FIVE
+    byte $0,$f8,$8,$8,$f8,$80,$80,$f8; 8
 SYMBOL_GRAPHICS_S19_SIX
+    byte $0,$f8,$88,$88,$f8,$80,$80,$f8; 8
 SYMBOL_GRAPHICS_S1A_SEVEN
+    byte $0,$8,$8,$8,$8,$8,$8,$f8; 8
 SYMBOL_GRAPHICS_S1B_EIGHT
+    byte $0,$f8,$88,$88,$f8,$88,$88,$f8; 8
 SYMBOL_GRAPHICS_S1C_NINE
-SYMBOL_GRAPHICS_S1D_MULT
+    byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
+SYMBOL_GRAPHICS_S1D_HASH
+    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
 SYMBOL_GRAPHICS_S1E_MULT
 SYMBOL_GRAPHICS_S1F_MULT
+
+
+    ORG $FF00
+
+    ; standard lookup for hmoves
+STD_HMOVE_BEGIN
+    byte $80, $70, $60, $50, $40, $30, $20, $10, $00, $f0, $e0, $d0, $c0, $b0, $a0, $90
+STD_HMOVE_END
+LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
+
+FREE_LOOKUP_TABLE
+    byte $00, $01, $03, $07, $0f, $1f, $3f, $7f, $ff
 
 
 ; ----------------------------------
@@ -469,7 +485,7 @@ SYMBOL_GRAPHICS_LOOKUP_TABLE
     byte #<SYMBOL_GRAPHICS_S1A_SEVEN
     byte #<SYMBOL_GRAPHICS_S1B_EIGHT
     byte #<SYMBOL_GRAPHICS_S1C_NINE
-    byte #<SYMBOL_GRAPHICS_S1D_MULT
+    byte #<SYMBOL_GRAPHICS_S1D_HASH
     byte #<SYMBOL_GRAPHICS_S1E_MULT
     byte #<SYMBOL_GRAPHICS_S1F_MULT
 

@@ -5,6 +5,33 @@ repl_update
             lda #GAME_STATE_EVAL
             sta game_state
 _repl_update_skip_eval
+            ; convert accumulator to BCD
+            ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
+            sed
+            lda #0
+            sta repl_bcd
+            sta repl_bcd+1
+            sta repl_bcd+2
+            lda accumulator
+            sta repl_tmp_accumulator
+            lda accumulator+1
+            sta repl_tmp_accumulator+1
+            ldx #16
+_repl_update_bin2bcd16_bit
+            asl repl_tmp_accumulator
+            rol repl_tmp_accumulator + 1
+            lda repl_bcd
+            adc repl_bcd
+            sta repl_bcd
+            lda repl_bcd+1
+            adc repl_bcd+1
+            sta repl_bcd+1
+            lda repl_bcd+2
+            adc repl_bcd+2
+            sta repl_bcd+2
+            dex
+            bne _repl_update_bin2bcd16_bit
+            cld
             ; prep symbol graphics
             ldy #(DISPLAY_COLS - 1) * 2
 _prep_repl_loop
@@ -179,11 +206,85 @@ prompt_draw_end
 prompt_done
             jsr waitOnTimer
 
+            
+; ACCUMULATOR
+accumulator_draw
+            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr
+            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr
+            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr
+            WRITE_DIGIT_LO repl_bcd+1, repl_s3_addr
+            WRITE_DIGIT_HI repl_bcd, repl_s4_addr
+            WRITE_DIGIT_LO repl_bcd, repl_s5_addr
+            sta WSYNC
+            ldy #CHAR_HEIGHT - 1
+            lda #1
+            bit clock
+            bne accumulator_draw_odd
+accumulator_draw_even
+_accumulator_draw_even_loop
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP1                   ;3    5
+            lda (repl_s0_addr),y       ;5   10
+            sta GRP0                   ;3   13
+            SLEEP 5                    ;5   18
+            lda (repl_s2_addr),y       ;5   23
+            sta GRP0                   ;3   26
+            lda (repl_s4_addr),y       ;5   31
+            sta GRP0                   ;3   33
+            dey                        ;2   35
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP0                   ;3    5
+            lda (repl_s1_addr),y       ;5   10
+            sta GRP1                   ;3   13
+            SLEEP 8                    ;8   21
+            lda (repl_s3_addr),y       ;5   26
+            sta GRP1                   ;3   29
+            lda (repl_s5_addr),y       ;5   34
+            sta GRP1                   ;3   37
+            dey                        ;2   39
+            bpl _accumulator_draw_even_loop ;2/3 41/42
+            jmp accumulator_draw_end
+accumulator_draw_odd
+_accumulator_draw_odd_loop
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP0                   ;3    5
+            lda (repl_s1_addr),y       ;5   10
+            sta GRP1                   ;3   13
+            SLEEP 8                    ;5   18
+            lda (repl_s3_addr),y       ;5   23
+            sta GRP1                   ;3   26
+            lda (repl_s5_addr),y       ;5   31
+            sta GRP1                   ;3   34
+            dey                        ;2   36
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP1                   ;3    5
+            lda (repl_s0_addr),y       ;5   10
+            sta GRP0                   ;3   13
+            SLEEP 5                    ;2   15
+            lda (repl_s2_addr),y       ;5   20
+            sta GRP0                   ;3   23
+            lda (repl_s4_addr),y       ;5   28
+            sta GRP0                   ;3   31
+            dey                        ;2   33
+            bpl _accumulator_draw_odd_loop ;2/3 46/47
+            jmp accumulator_draw_end
+accumulator_draw_end
+            sta WSYNC
+            lda #0
+            sta NUSIZ0
+            sta NUSIZ1
+            sta PF1
+            sta PF2
+            sta GRP0
+            sta GRP1
+
             ; FREEBAR
 freebar
             ldy #0
-            sty NUSIZ0
-            sty NUSIZ1
             ldx free
 _free_bar_loop
             lda HEAP_CDR_ADDR,x
@@ -210,6 +311,7 @@ _free_half
             sec
             sbc #8
             bcs _free_gt_8
+            adc #8
             ldy #0
             sty free_pf2,x
             jmp _free_quarter
@@ -246,26 +348,8 @@ _free_draw_loop
             sta PF2
             sta GRP0
             sta GRP1
-            
-; ACCUMULATOR
-accumulator_draw
-            sta WSYNC
-            sta WSYNC
-            lda accumulator + 1
-            sta GRP0
-            lda accumulator
-            sta GRP1
-            ldx #8
-            sta WSYNC
-_accumulator_draw_loop
-            dex
-            bpl _accumulator_draw_loop
-            lda #0
-            sta GRP0
-            sta GRP1
 
 
-            ; BUGBUG: TODO: OUTPUT / MENU
 
             ; FOOTER
 footer
@@ -276,3 +360,25 @@ _footer_loop
             bpl _footer_loop
 
             jmp waitOnOverscan
+
+    MAC WRITE_DIGIT_HI 
+            lda {1}
+            and #$f0
+            lsr
+            lsr
+            clc
+            adc #<SYMBOL_GRAPHICS_S13_ZERO
+            sta {2}
+    ENDM
+
+    MAC WRITE_DIGIT_LO
+            lda {1}
+            and #$0f
+            asl
+            asl
+            asl
+            clc
+            adc #<SYMBOL_GRAPHICS_S13_ZERO
+            sta {2}
+    ENDM
+
