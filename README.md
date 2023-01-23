@@ -9,13 +9,26 @@ Goals
  See https://huguesjohnson.com/programming/atari-2600-basic/ 
  See sample programs in Atari Basic manual
 
-Other ideas
+MVP: 
+  indented code 
+  code edit
+  parens, separators in code
+  number input
+  eval/repl/puzzle modes buttons
+  safeties against stack overflow
+  unit tests?
+  float math
+  music functions
+  graphics functions
+  song that plays during eval
+  
+Game ideas
+ Sequence matcher (fib, square, sqrt, etc)
  Pong mode
  Music mode
  Maze
  Hanoi
  Mastermind
- Core war
  Ant (genetic algo)
 
 Repl Screen
