@@ -129,7 +129,8 @@ eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
 eval_env         ds 1 ; top of stack for calling frame
 eval_func_ptr    ds 2 ; tmp pointer to function we are calling
-
+temp1  ds 1 ; KLUDGE
+temp2  ds 1 ; KLUDGE
 
 ; ----------------------------------
 ; code
@@ -260,7 +261,7 @@ waitOnTimer_loop
 
     include "_eval_kernel.asm"
 
-
+    include "_logo_kernel.asm"
 ;-----------------------------------
 ; function kernels
 

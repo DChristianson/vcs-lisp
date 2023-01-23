@@ -224,10 +224,11 @@ _apply
             jmp update_return
 
 eval_draw
-            ldx #194
+            ldx #58
 _eval_draw_loop
             sta WSYNC
             dex
             bne _eval_draw_loop
-
+            jmp logo_draw
+logo_draw_return
             jmp waitOnOverscan
