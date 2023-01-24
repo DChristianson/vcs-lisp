@@ -63,6 +63,9 @@ prompt
             sta TIM64T
             ; do one repos loop at the top 
             ; use HMOVE to handle indenting
+            lda #2
+            sta RESMP0
+            sta RESMP1
             sta WSYNC
             lda #8
 _prompt_repos_loop
@@ -76,18 +79,22 @@ _prompt_repos_loop
             sta RESP1
             sta WSYNC             ;--
             sta HMOVE             ;3    3
-            lda #3                ;2    5
-            sta NUSIZ0            ;3    8
-            sta NUSIZ1            ;3   11
-            lda #WHITE            ;2   13
-            sta COLUP0            ;3   16
-            sta COLUP1            ;3   19
-            lda #0                ;2   21
-            ldx #$70              ;2   23
-            sta HMP0              ;3   26
-            stx HMP1              ;3   29
-            SLEEP 23              ;23  52
-            sta HMOVE             ;3   55
+            lda #WHITE            ;2    5
+            sta COLUP0            ;3    8
+            sta COLUP1            ;3   11
+            lda #0                ;2   13
+            ldx #$10              ;2   15
+            ldy #$60              ;2   17
+            SLEEP 10              ;10  27
+            sta RESMP0            ;3   30
+            sta RESMP1            ;3   33
+            sta HMP0              ;3   36
+            stx HMP1              ;3   39
+            sty HMM0              ;3   42
+            lda #$70              ;2   44
+            sta HMM1              ;3   47
+            SLEEP 13              ;13  60
+            sta HMOVE             ;3   63
 
 
 prompt_encode
@@ -114,6 +121,9 @@ _prompt_encode_addchar
             ; list is too long, we need to indent
             ; push next address on the stack
             pha
+            tya
+            lsr
+            tax
             jmp prompt_encode_end
 _prompt_encode_recurse
             ; we need to recurse so we need push t
@@ -131,6 +141,9 @@ _prompt_encode_clear_dec
             dey
             dey
 _prompt_encode_clear
+            tya
+            lsr
+            tax
             lda #<SYMBOL_GRAPHICS_EMPTY
 _prompt_encode_clear_loop
             sta repl_gx_addr,y
@@ -138,8 +151,21 @@ _prompt_encode_clear_loop
             dey
             bpl _prompt_encode_clear_loop
 prompt_encode_end
-            
+            lda DISPLAY_COLS_NUSIZ0,x
+            ora #$30
+            sta NUSIZ0 
+            lda DISPLAY_COLS_NUSIZ1,x
+            ora #$30
+            sta NUSIZ1              
             sta WSYNC ; shim
+            lda #2
+            sta ENAM0
+            sta ENAM1
+            sta WSYNC ; shim
+            lda DISPLAY_COLS_NUSIZ0,x
+            sta NUSIZ0 
+            lda DISPLAY_COLS_NUSIZ1,x
+            sta NUSIZ1              
 
             ldy #CHAR_HEIGHT - 1
             lda #1
@@ -198,6 +224,19 @@ _prompt_draw_odd_loop
             bpl _prompt_draw_odd_loop ;2/3 46/47
             jmp prompt_draw_end
 prompt_draw_end
+            sta WSYNC
+            lda DISPLAY_COLS_NUSIZ0,x
+            ora #$30
+            sta NUSIZ0 
+            lda DISPLAY_COLS_NUSIZ1,x
+            ora #$30
+            sta NUSIZ1              
+            sta WSYNC
+            lda #0
+            sta GRP0
+            sta GRP1
+            sta ENAM0
+            sta ENAM1
             tsx
             inx
             beq prompt_done
@@ -209,6 +248,9 @@ prompt_done
             
 ; ACCUMULATOR
 accumulator_draw
+            lda #3
+            sta NUSIZ0
+            sta NUSIZ1
             WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr
             WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr
             WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr
@@ -360,6 +402,11 @@ _footer_loop
             bpl _footer_loop
 
             jmp waitOnOverscan
+
+DISPLAY_COLS_NUSIZ0
+    byte 3,3
+DISPLAY_COLS_NUSIZ1
+    byte 1,1,0,0,0,0
 
     MAC WRITE_DIGIT_HI 
             lda {1}
