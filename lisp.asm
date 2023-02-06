@@ -44,9 +44,9 @@ FUNCTION_REF_IF  = $ca
 FUNCTION_SYMBOL_F0  = 11 ; beginning of function symbols
 ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
-HEADER_HEIGHT = 51
-PROMPT_HEIGHT = 72
-FOOTER_HEIGHT = 51
+HEADER_HEIGHT = 26
+PROMPT_HEIGHT = 96
+FOOTER_HEIGHT = 26
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 
@@ -93,6 +93,7 @@ game_state         ds 1
     ORG $CA
 
 repl_cursor    ds 1
+repl_level     ds 1
 repl_bcd       ds 3
 repl_tmp_accumulator
 repl_cell_addr ds 1
@@ -103,6 +104,7 @@ repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2
 repl_s0_addr   ds 2
+
 
 ; ----------------------------------
 ; free kernel vars
@@ -129,8 +131,8 @@ eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
 eval_env         ds 1 ; top of stack for calling frame
 eval_func_ptr    ds 2 ; tmp pointer to function we are calling
-temp1  ds 1 ; KLUDGE
-temp2  ds 1 ; KLUDGE
+temp1            ds 1 ; KLUDGE
+temp2            ds 1 ; KLUDGE
 
 ; ----------------------------------
 ; code

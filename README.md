@@ -9,18 +9,51 @@ Goals
  See https://huguesjohnson.com/programming/atari-2600-basic/ 
  See sample programs in Atari Basic manual
 
-MVP: 
-  indented code 
-  code edit
-  parens, separators in code
-  number input
-  eval/repl/puzzle modes buttons
-  safeties against stack overflow
-  unit tests?
-  float math
-  music functions
-  graphics functions
-  song that plays during eval
+DONE
+  - basic eval
+  - stubbed out math functions
+  - bcd conversion function
+  - tail recursion optimization
+
+TASKS
+  - edit code 
+     - clean display tests
+       1. tester 1 (all positions indent with separators)
+       2. tester 2 (include numbers)
+       3. tester 3 (cursor draw)
+     - cursor dynamics
+       - display cursor
+       - joystick to move cursor around
+     - virtual keyboard
+         - navigation and selection
+         - undo / cancel
+     - number edit
+  - zones design
+     - graphics zone
+     - function table
+     - code area
+     - accumulator display
+     - switch game modes
+     - free space indicator
+  - interpreter
+     - safeties against stack overflow
+     - some way to do unit tests?
+  - font
+     - tune font / symbols
+  - library
+     - modulo function
+     - float math
+     - music functions
+     - graphics (paddle game) functions
+     - graphics (maze game) functions
+     - graphics (towers game) functions
+  - eval graphics kernel
+     - graphics zone
+     - stack / heap / free accumulator
+     - song that plays during eval
+  - title screen
+     - logo 
+     - shoutouts
   
 Game ideas
  Sequence matcher (fib, square, sqrt, etc)
@@ -31,16 +64,9 @@ Game ideas
  Mastermind
  Ant (genetic algo)
 
-Repl Screen
-  Free space
-  Repl editor space
-  Eval buttons. Function buttons 
-  Choice buttons
-Epl Screen
-  Sprite
-  Ball
+
 Shoutouts
-  sicp authors, basic author, source contribs
+  sicp authors, basic author, source contribs, atari age forums, picolisp, scheme
 Fundamentals
   Memory divides into cells of 2 bytes
   Cells are either reference pairs or numbers
@@ -50,7 +76,7 @@ References
 https://dwheeler.com/6502/
 https://huguesjohnson.com/programming/atari-2600-basic/ 
 http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/
-
+https://www.cs.unm.edu/~williams/cs491/three-imp.pdf
 
 Implementation
 

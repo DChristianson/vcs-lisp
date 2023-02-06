@@ -59,47 +59,55 @@ _header_loop
             ; PROMPT
             ; draw repl cell tree
 prompt
+            lda #8
+            sta repl_level
             lda #(PROMPT_HEIGHT * 76 / 64)
             sta TIM64T
-            ; do one repos loop at the top 
-            ; use HMOVE to handle indenting
+            lda repl
+            pha ; push repl to stack
+            tsx ; 
+prompt_next_line
+            ; lock missiles to players
             lda #2
             sta RESMP0
             sta RESMP1
-            sta WSYNC
-            lda #8
+            ; load repl level
+            lda repl_level
+            sta WSYNC              ; --
+            sec                    ;2    2
 _prompt_repos_loop
-            sbc #15
-            bcs _prompt_repos_loop
-            tay
-            lda LOOKUP_STD_HMOVE,y
-            sta HMP0
-            sta HMP1
-            sta RESP0
-            sta RESP1
-            sta WSYNC             ;--
-            sta HMOVE             ;3    3
-            lda #WHITE            ;2    5
-            sta COLUP0            ;3    8
-            sta COLUP1            ;3   11
-            lda #0                ;2   13
-            ldx #$10              ;2   15
-            ldy #$60              ;2   17
-            SLEEP 10              ;10  27
-            sta RESMP0            ;3   30
-            sta RESMP1            ;3   33
-            sta HMP0              ;3   36
-            stx HMP1              ;3   39
-            sty HMM0              ;3   42
-            lda #$70              ;2   44
-            sta HMM1              ;3   47
-            SLEEP 13              ;13  60
-            sta HMOVE             ;3   63
-
+            sbc #15                ;2    4
+            bcs _prompt_repos_loop ;2/3  6
+            tay                    ;2    8
+            lda LOOKUP_STD_HMOVE,y ;4   12
+            sta HMP0               ;3   15
+            sta HMP1               ;3   18
+            sta RESP0              ;3   21
+            sta RESP1              ;3   24
+            sta WSYNC              ;--
+            sta HMOVE              ;3    3
+            lda #WHITE             ;2    5
+            sta COLUP0             ;3    8
+            sta COLUP1             ;3   11
+            lda #0                 ;2   13
+            ldx #$10               ;2   15
+            ldy #$60               ;2   17
+            SLEEP 10               ;10  27
+            sta RESMP0             ;3   30
+            sta RESMP1             ;3   33
+            sta HMP0               ;3   36
+            stx HMP1               ;3   39
+            sty HMM0               ;3   42
+            lda #$70               ;2   44
+            sta HMM1               ;3   47
+            SLEEP 13               ;13  60
+            sta HMOVE              ;3   63
 
 prompt_encode
-            lda repl
-prompt_next_line
+            pla
+            bne _prompt_encode_start
+            jmp prompt_done
+_prompt_encode_start
             ldy #(DISPLAY_COLS - 1) * 2
 _prompt_encode_loop
             tax
@@ -121,9 +129,11 @@ _prompt_encode_addchar
             ; list is too long, we need to indent
             ; push next address on the stack
             pha
-            tya
-            lsr
-            tax
+            lda #8 ; BUGBUG: may not be enough
+            clc
+            adc repl_level
+            pha
+            ldx #0            
             jmp prompt_encode_end
 _prompt_encode_recurse
             ; we need to recurse so we need push t
@@ -131,15 +141,24 @@ _prompt_encode_recurse
             ; contents of the car
             sta repl_cell_addr ; set car aside
             lda HEAP_CDR_ADDR,x 
-            beq _prompt_encode_recurse_skip_cdr
             pha 
-_prompt_encode_recurse_skip_cdr
+            lda #8 ; BUGBUG: may not be enough
+            clc
+            adc repl_level
+            pha
             lda repl_cell_addr
+            pha
+            lda #8 ; BUGBUG: duplicate code
+            clc
+            adc repl_level
             pha
             jmp _prompt_encode_clear
 _prompt_encode_clear_dec
             dey
             dey
+            bpl _prompt_encode_clear
+            ldx #0
+            jmp prompt_encode_end
 _prompt_encode_clear
             tya
             lsr
@@ -165,64 +184,79 @@ prompt_encode_end
             lda DISPLAY_COLS_NUSIZ0,x
             sta NUSIZ0 
             lda DISPLAY_COLS_NUSIZ1,x
-            sta NUSIZ1              
-
+            sta NUSIZ1   
             ldy #CHAR_HEIGHT - 1
             lda #1
             bit clock
             bne prompt_draw_odd
 prompt_draw_even
 _prompt_draw_even_loop
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP1                   ;3    5
-            lda (repl_s0_addr),y       ;5   10
-            sta GRP0                   ;3   13
-            SLEEP 5                    ;5   18
-            lda (repl_s2_addr),y       ;5   23
-            sta GRP0                   ;3   26
-            lda (repl_s4_addr),y       ;5   31
-            sta GRP0                   ;3   33
-            dey                        ;2   35
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP0                   ;3    5
-            lda (repl_s1_addr),y       ;5   10
-            sta GRP1                   ;3   13
-            SLEEP 8                    ;8   21
-            lda (repl_s3_addr),y       ;5   26
-            sta GRP1                   ;3   29
-            lda (repl_s5_addr),y       ;5   34
-            sta GRP1                   ;3   37
-            dey                        ;2   39
+            lda repl_level
+            sec
+            sta WSYNC                    ;--
+_prompt_draw_even_i_0
+            sbc #8                       ;2    2
+            bcs _prompt_draw_even_i_0    ;2    4
+            lda (repl_s0_addr),y         ;5    9
+            sta GRP0                     ;3   12
+            lda #0                       ;2   14
+            sta GRP1                     ;3   17
+            lda (repl_s2_addr),y         ;5   22
+            sta GRP0                     ;3   25
+            lda (repl_s4_addr),y         ;5   30
+            sta GRP0                     ;3   33
+            dey                          ;2   35
+            lda repl_level               ;3   38
+            sec                          ;2   40
+            sta WSYNC                    ;--
+_prompt_draw_even_i_1
+            sbc #8                       ;2    2
+            bcs _prompt_draw_even_i_1    ;2    4
+            lda #0                       ;2    6
+            sta GRP0                     ;3    9
+            lda (repl_s1_addr),y         ;5   14
+            sta GRP1                     ;3   17
+            SLEEP 4                      ;4   21
+            lda (repl_s3_addr),y         ;5   26
+            sta GRP1                     ;3   29
+            lda (repl_s5_addr),y         ;5   34
+            sta GRP1                     ;3   37
+            dey                          ;2   39
             bpl _prompt_draw_even_loop ;2/3 41/42
             jmp prompt_draw_end
 prompt_draw_odd
 _prompt_draw_odd_loop
+            lda repl_level
+            sec
             sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP0                   ;3    5
-            lda (repl_s1_addr),y       ;5   10
-            sta GRP1                   ;3   13
-            SLEEP 8                    ;5   18
-            lda (repl_s3_addr),y       ;5   23
-            sta GRP1                   ;3   26
-            lda (repl_s5_addr),y       ;5   31
-            sta GRP1                   ;3   34
-            dey                        ;2   36
+_prompt_draw_odd_i_0
+            sbc #8                     ;2    2
+            bcs _prompt_draw_odd_i_0   ;2    4
+            lda #0                     ;2    6
+            sta GRP0                   ;3    9
+            lda (repl_s1_addr),y       ;5   14
+            sta GRP1                   ;3   17
+            lda (repl_s3_addr),y       ;5   22
+            sta GRP1                   ;3   25
+            lda (repl_s5_addr),y       ;5   30
+            sta GRP1                   ;3   33
+            dey                        ;2   38
+            lda repl_level
+            sec
             sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP1                   ;3    5
-            lda (repl_s0_addr),y       ;5   10
-            sta GRP0                   ;3   13
-            SLEEP 5                    ;2   15
-            lda (repl_s2_addr),y       ;5   20
-            sta GRP0                   ;3   23
-            lda (repl_s4_addr),y       ;5   28
-            sta GRP0                   ;3   31
-            dey                        ;2   33
-            bpl _prompt_draw_odd_loop ;2/3 46/47
-            jmp prompt_draw_end
+_prompt_draw_odd_i_1
+            sbc #8                     ;2    2
+            bcs _prompt_draw_odd_i_1   ;2    4
+            lda (repl_s0_addr),y       ;5   14
+            sta GRP0                   ;3   17
+            lda #0                     ;2    6
+            sta GRP1                   ;3    9
+            lda (repl_s2_addr),y       ;5   23
+            sta GRP0                   ;3   26
+            lda (repl_s4_addr),y       ;5   31
+            sta GRP0                   ;3   34
+            dey                        ;2   35
+            bpl _prompt_draw_odd_loop ;2/3  37/38
 prompt_draw_end
             sta WSYNC
             lda DISPLAY_COLS_NUSIZ0,x
@@ -237,10 +271,13 @@ prompt_draw_end
             sta GRP1
             sta ENAM0
             sta ENAM1
-            tsx
-            inx
+            ; load stack + 1
+            tsx 
+            cpx #$ff
+            ; if stack at ff, we are done
             beq prompt_done
             pla
+            sta repl_level
             jmp prompt_next_line
 prompt_done
             jsr waitOnTimer
@@ -402,11 +439,18 @@ _footer_loop
             bpl _footer_loop
 
             jmp waitOnOverscan
-
+;
+; 1 - 0 0
+; 2 - 0 0
+; 3 - 1 0
+; 4 - 1 1
+; 5 - 3 1
+; 6 - 3 3
+;
 DISPLAY_COLS_NUSIZ0
-    byte 3,3
+    byte 3
 DISPLAY_COLS_NUSIZ1
-    byte 1,1,0,0,0,0
+    byte 3,1,1,0,0,0
 
     MAC WRITE_DIGIT_HI 
             lda {1}
