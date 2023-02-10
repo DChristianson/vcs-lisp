@@ -1,10 +1,28 @@
 repl_update
-            ; check input
+            ; check fire button
             lda INPT4
             bmi _repl_update_skip_eval
             lda #GAME_STATE_EVAL
             sta game_state
 _repl_update_skip_eval
+            ; check indent level
+            lda #$80
+            lda SWCHA
+            rol
+            bcs _repl_update_skip_right
+            lda #1
+            jmp _repl_update_set_indent
+_repl_update_skip_right
+            rol
+            bcs _repl_update_skip_left
+            lda #-1
+            jmp _repl_update_set_indent
+_repl_update_skip_left
+            lda #0
+_repl_update_set_indent
+            clc
+            adc repl_cursor
+            sta repl_cursor
             ; convert accumulator to BCD
             ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
             sed
@@ -59,7 +77,8 @@ _header_loop
             ; PROMPT
             ; draw repl cell tree
 prompt
-            lda #8
+            lda repl_cursor
+            and #$f8
             sta repl_level
             lda #(PROMPT_HEIGHT * 76 / 64)
             sta TIM64T
@@ -72,18 +91,18 @@ prompt_next_line
             sta RESMP0
             sta RESMP1
             ; load repl level
-            lda repl_level
             sta WSYNC              ; --
-            sec                    ;2    2
+            lda repl_level         ;3    3
+            sec                    ;2    5
 _prompt_repos_loop
-            sbc #15                ;2    4
-            bcs _prompt_repos_loop ;2/3  6
-            tay                    ;2    8
-            lda LOOKUP_STD_HMOVE,y ;4   12
-            sta HMP0               ;3   15
-            sta HMP1               ;3   18
-            sta RESP0              ;3   21
-            sta RESP1              ;3   24
+            sbc #15                ;2    7
+            bcs _prompt_repos_loop ;2/3  9
+            tay                    ;2   11
+            lda LOOKUP_STD_HMOVE,y ;4   15
+            sta HMP0               ;3   18
+            sta HMP1               ;3   21
+            sta RESP0              ;3   24
+            sta RESP1              ;3   27
             sta WSYNC              ;--
             sta HMOVE              ;3    3
             lda #WHITE             ;2    5
@@ -181,37 +200,58 @@ prompt_encode_end
             sta ENAM0
             sta ENAM1
             sta WSYNC ; shim
-            lda DISPLAY_COLS_NUSIZ0,x
-            sta NUSIZ0 
-            lda DISPLAY_COLS_NUSIZ1,x
-            sta NUSIZ1   
-            ldy #CHAR_HEIGHT - 1
-            lda #1
-            bit clock
-            bne prompt_draw_odd
+            lda DISPLAY_COLS_NUSIZ0,x    ;4    4
+            sta NUSIZ0                   ;3    7
+            lda DISPLAY_COLS_NUSIZ1,x    ;4   11
+            sta NUSIZ1                   ;3   14
+            ldy #CHAR_HEIGHT - 1         ;2   24
+            lda #1                       ;2   26
+            bit clock                    ;3   29
+            bne prompt_draw_odd    
 prompt_draw_even
+            sta WSYNC
 _prompt_draw_even_loop
-            lda repl_level
-            sec
-            sta WSYNC                    ;--
-_prompt_draw_even_i_0
-            sbc #8                       ;2    2
-            bcs _prompt_draw_even_i_0    ;2    4
-            lda (repl_s0_addr),y         ;5    9
-            sta GRP0                     ;3   12
-            lda #0                       ;2   14
-            sta GRP1                     ;3   17
-            lda (repl_s2_addr),y         ;5   22
-            sta GRP0                     ;3   25
-            lda (repl_s4_addr),y         ;5   30
-            sta GRP0                     ;3   33
-            dey                          ;2   35
-            lda repl_level               ;3   38
-            sec                          ;2   40
-            sta WSYNC                    ;--
-_prompt_draw_even_i_1
-            sbc #8                       ;2    2
-            bcs _prompt_draw_even_i_1    ;2    4
+_prompt_draw_even_loop_e
+            SLEEP 2                      ;2    2/44
+_prompt_draw_even_loop_d
+            SLEEP 3                      ;3    5
+_prompt_draw_even_loop_c
+            SLEEP 3                      ;3    8
+_prompt_draw_even_loop_b
+            SLEEP 2                      ;2    10/52
+_prompt_draw_even_loop_a
+            SLEEP 3                      ;3    13
+_prompt_draw_even_loop_9
+            SLEEP 3                      ;3    16
+_prompt_draw_even_loop_8
+            SLEEP 2                      ;2    18/60
+_prompt_draw_even_loop_7
+            SLEEP 3                      ;3    21
+_prompt_draw_even_loop_6
+            SLEEP 3                      ;3    24
+_prompt_draw_even_loop_5
+            SLEEP 2                      ;2    26/68
+_prompt_draw_even_loop_4
+            SLEEP 3                      ;3    29/71
+_prompt_draw_even_loop_3
+            SLEEP 3                      ;3    32/74
+_prompt_draw_even_loop_2
+            SLEEP 2                      ;2    34/--
+_prompt_draw_even_loop_1
+            SLEEP 3                      ;3    37/3
+_prompt_draw_even_loop_0
+            SLEEP 3                      ;3    6
+            lda (repl_s0_addr),y         ;5   11
+            sta GRP0                     ;3   14
+            lda #0                       ;2   16
+            sta GRP1                     ;3   19
+            lda (repl_s2_addr),y         ;5   24
+            sta GRP0                     ;3   27
+            lda (repl_s4_addr),y         ;5   32
+            sta GRP0                     ;3   35
+            dey                          ;2   37
+            SLEEP 39                     ;39  76
+            SLEEP 4                      ;4    4
             lda #0                       ;2    6
             sta GRP0                     ;3    9
             lda (repl_s1_addr),y         ;5   14
@@ -222,7 +262,7 @@ _prompt_draw_even_i_1
             lda (repl_s5_addr),y         ;5   34
             sta GRP1                     ;3   37
             dey                          ;2   39
-            bpl _prompt_draw_even_loop ;2/3 41/42
+            bpl _prompt_draw_even_loop   ;2/3 41/42
             jmp prompt_draw_end
 prompt_draw_odd
 _prompt_draw_odd_loop
@@ -230,7 +270,7 @@ _prompt_draw_odd_loop
             sec
             sta WSYNC                  ;--
 _prompt_draw_odd_i_0
-            sbc #8                     ;2    2
+            sbc #15                    ;2    2
             bcs _prompt_draw_odd_i_0   ;2    4
             lda #0                     ;2    6
             sta GRP0                   ;3    9
@@ -245,7 +285,7 @@ _prompt_draw_odd_i_0
             sec
             sta WSYNC                  ;--
 _prompt_draw_odd_i_1
-            sbc #8                     ;2    2
+            sbc #15                    ;2    2
             bcs _prompt_draw_odd_i_1   ;2    4
             lda (repl_s0_addr),y       ;5   14
             sta GRP0                   ;3   17
@@ -257,8 +297,8 @@ _prompt_draw_odd_i_1
             sta GRP0                   ;3   34
             dey                        ;2   35
             bpl _prompt_draw_odd_loop ;2/3  37/38
-prompt_draw_end
             sta WSYNC
+prompt_draw_end
             lda DISPLAY_COLS_NUSIZ0,x
             ora #$30
             sta NUSIZ0 

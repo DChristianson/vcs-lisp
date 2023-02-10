@@ -112,7 +112,7 @@ repl_s0_addr   ds 2
 
   SEG.U FREE
 
-    ORG $CA
+    ORG $CB
 
 free_pf1 ds 1
 free_pf2 ds 1
