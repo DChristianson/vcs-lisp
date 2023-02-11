@@ -91,36 +91,37 @@ prompt_next_line
             sta RESMP0
             sta RESMP1
             ; load repl level
-            sta WSYNC              ; --
-            lda repl_level         ;3    3
-            sec                    ;2    5
+            sta WSYNC               ; --
+            lda repl_level          ;3    3
+            sec                     ;2    5
 _prompt_repos_loop
-            sbc #15                ;2    7
-            bcs _prompt_repos_loop ;2/3  9
-            tay                    ;2   11
-            lda LOOKUP_STD_HMOVE,y ;4   15
-            sta HMP0               ;3   18
-            sta HMP1               ;3   21
-            sta RESP0              ;3   24
-            sta RESP1              ;3   27
-            sta WSYNC              ;--
-            sta HMOVE              ;3    3
-            lda #WHITE             ;2    5
-            sta COLUP0             ;3    8
-            sta COLUP1             ;3   11
-            lda #0                 ;2   13
-            ldx #$10               ;2   15
-            ldy #$60               ;2   17
-            SLEEP 10               ;10  27
-            sta RESMP0             ;3   30
-            sta RESMP1             ;3   33
-            sta HMP0               ;3   36
-            stx HMP1               ;3   39
-            sty HMM0               ;3   42
-            lda #$70               ;2   44
-            sta HMM1               ;3   47
-            SLEEP 13               ;13  60
-            sta HMOVE              ;3   63
+            sbc #15                 ;2    7
+            sbcs _prompt_repos_loop ;2/3  9
+            tay                     ;2   11
+            lda LOOKUP_STD_HMOVE,y  ;5   16
+            sta HMP0                ;3   19
+            sta HMP1                ;3   22
+            sta RESP0               ;3   25
+            sta RESP1               ;3   28
+            sta WSYNC               ;--
+            sta HMOVE               ;3    3
+            lda #WHITE              ;2    5
+            sta COLUP0              ;3    8
+            sta COLUP1              ;3   11
+            lda #0                  ;2   13 ; -- BUGBUG: messy
+            ldx #$10                ;2   15
+            ldy #$60                ;2   17
+            SLEEP 10                ;10  27
+            sta RESMP0              ;3   30
+            sta RESMP1              ;3   33
+            lda #$00                ;2   35 ; -- BUGBUG: messy
+            sta HMP0                ;3   38
+            stx HMP1                ;3   41
+            sty HMM0                ;3   44
+            lda #$70                ;2   46
+            sta HMM1                ;3   49
+            SLEEP 11                ;11  60
+            sta HMOVE               ;3   63
 
 prompt_encode
             pla
@@ -204,101 +205,41 @@ prompt_encode_end
             sta NUSIZ0                   ;3    7
             lda DISPLAY_COLS_NUSIZ1,x    ;4   11
             sta NUSIZ1                   ;3   14
-            ldy #CHAR_HEIGHT - 1         ;2   24
-            lda #1                       ;2   26
-            bit clock                    ;3   29
-            bne prompt_draw_odd    
-prompt_draw_even
+            ldy #CHAR_HEIGHT - 1         ;2   16
+            tsx                          ;2   18
+            stx repl_stack               ;3   21
+            lda #1                       ;2   23
+            sta VDELP0                   ;3   26
+            sta VDELP1                   ;3   29
+            lda repl_level               ;3   32
+            sec                          ;2   34
+_prompt_delay_loop
+            sbc #15                      ;2   36
+            bcs _prompt_delay_loop       ;2/3 38
+            SLEEP 5                      ;5   --
+            ;SLEEP 13                     ;10  40
+_prompt_draw_loop
+            SLEEP 16                     ;16  56
+            lda (repl_s0_addr),y         ;5   60
+            sta GRP0                     ;3   63
+            lda (repl_s4_addr),y         ;5   68
+            sta GRP1                     ;3   71
+            lda (repl_s3_addr),y         ;5   76
+            sta GRP0                     ;3    3
+            lax (repl_s1_addr),y         ;5    8
+            txs                          ;2   10
+            lax (repl_s2_addr),y         ;5   15
+            lda (repl_s5_addr),y         ;5   20
+_prompt_draw_entry
+            stx GRP1                     ;3   23   0 -  9  !0!8 ** ++ 32 40
+            tsx                          ;2   25   9 - 15   0!8!16 24 ++ 40
+            stx GRP0                     ;3   28  15 - 24   0 8!16!** ++ 40
+            sta GRP1                     ;3   31  24 - 33   0 8 16!24!** ++
+            sty GRP0                     ;3   34  33 - 42   0 8 16 24!32!**
+            dey                          ;2   36
+            bpl _prompt_draw_loop        ;2   38  
+ 
             sta WSYNC
-_prompt_draw_even_loop
-_prompt_draw_even_loop_e
-            SLEEP 2                      ;2    2/44
-_prompt_draw_even_loop_d
-            SLEEP 3                      ;3    5
-_prompt_draw_even_loop_c
-            SLEEP 3                      ;3    8
-_prompt_draw_even_loop_b
-            SLEEP 2                      ;2    10/52
-_prompt_draw_even_loop_a
-            SLEEP 3                      ;3    13
-_prompt_draw_even_loop_9
-            SLEEP 3                      ;3    16
-_prompt_draw_even_loop_8
-            SLEEP 2                      ;2    18/60
-_prompt_draw_even_loop_7
-            SLEEP 3                      ;3    21
-_prompt_draw_even_loop_6
-            SLEEP 3                      ;3    24
-_prompt_draw_even_loop_5
-            SLEEP 2                      ;2    26/68
-_prompt_draw_even_loop_4
-            SLEEP 3                      ;3    29/71
-_prompt_draw_even_loop_3
-            SLEEP 3                      ;3    32/74
-_prompt_draw_even_loop_2
-            SLEEP 2                      ;2    34/--
-_prompt_draw_even_loop_1
-            SLEEP 3                      ;3    37/3
-_prompt_draw_even_loop_0
-            SLEEP 3                      ;3    6
-            lda (repl_s0_addr),y         ;5   11
-            sta GRP0                     ;3   14
-            lda #0                       ;2   16
-            sta GRP1                     ;3   19
-            lda (repl_s2_addr),y         ;5   24
-            sta GRP0                     ;3   27
-            lda (repl_s4_addr),y         ;5   32
-            sta GRP0                     ;3   35
-            dey                          ;2   37
-            SLEEP 39                     ;39  76
-            SLEEP 4                      ;4    4
-            lda #0                       ;2    6
-            sta GRP0                     ;3    9
-            lda (repl_s1_addr),y         ;5   14
-            sta GRP1                     ;3   17
-            SLEEP 4                      ;4   21
-            lda (repl_s3_addr),y         ;5   26
-            sta GRP1                     ;3   29
-            lda (repl_s5_addr),y         ;5   34
-            sta GRP1                     ;3   37
-            dey                          ;2   39
-            bpl _prompt_draw_even_loop   ;2/3 41/42
-            jmp prompt_draw_end
-prompt_draw_odd
-_prompt_draw_odd_loop
-            lda repl_level
-            sec
-            sta WSYNC                  ;--
-_prompt_draw_odd_i_0
-            sbc #15                    ;2    2
-            bcs _prompt_draw_odd_i_0   ;2    4
-            lda #0                     ;2    6
-            sta GRP0                   ;3    9
-            lda (repl_s1_addr),y       ;5   14
-            sta GRP1                   ;3   17
-            lda (repl_s3_addr),y       ;5   22
-            sta GRP1                   ;3   25
-            lda (repl_s5_addr),y       ;5   30
-            sta GRP1                   ;3   33
-            dey                        ;2   38
-            lda repl_level
-            sec
-            sta WSYNC                  ;--
-_prompt_draw_odd_i_1
-            sbc #15                    ;2    2
-            bcs _prompt_draw_odd_i_1   ;2    4
-            lda (repl_s0_addr),y       ;5   14
-            sta GRP0                   ;3   17
-            lda #0                     ;2    6
-            sta GRP1                   ;3    9
-            lda (repl_s2_addr),y       ;5   23
-            sta GRP0                   ;3   26
-            lda (repl_s4_addr),y       ;5   31
-            sta GRP0                   ;3   34
-            dey                        ;2   35
-            bpl _prompt_draw_odd_loop ;2/3  37/38
-            sta WSYNC
-prompt_draw_end
             lda DISPLAY_COLS_NUSIZ0,x
             ora #$30
             sta NUSIZ0 
@@ -311,8 +252,11 @@ prompt_draw_end
             sta GRP1
             sta ENAM0
             sta ENAM1
+            sta VDELP0
+            sta VDELP1
             ; load stack + 1
-            tsx 
+            ldx repl_stack
+            txs
             cpx #$ff
             ; if stack at ff, we are done
             beq prompt_done

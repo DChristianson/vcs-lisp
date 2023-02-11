@@ -104,7 +104,7 @@ repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2
 repl_s0_addr   ds 2
-
+repl_stack     ds 1
 
 ; ----------------------------------
 ; free kernel vars
