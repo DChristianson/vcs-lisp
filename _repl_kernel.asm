@@ -195,15 +195,15 @@ prompt_encode_end
             ora #$30                     ;2    6
             sta NUSIZ0                   ;3    9
             lda DISPLAY_COLS_NUSIZ1,x    ;4   20
+            cpx #4                       ;2   16
+            bcs _prompt_skip_enam1
             ora #$30                     ;2   22
+_prompt_skip_enam1            
             sta NUSIZ1                   ;3   25
             sta WSYNC ; shim
             lda #2                       ;2   11
             sta ENAM0                    ;3   14
-            cpx #5                       ;2   16
-            bcs _prompt_skip_enam1
             sta ENAM1                    ;3   28
-_prompt_skip_enam1
             sta WSYNC ; shim
             lda DISPLAY_COLS_NUSIZ0,x    ;4    4
             sta NUSIZ0                   ;3    7
@@ -259,7 +259,10 @@ _prompt_draw_entry
             ora #$30
             sta NUSIZ0 
             lda DISPLAY_COLS_NUSIZ1,x
-            ora #$30
+            cpx #4 
+            bcs _prompt_skip_enam1_1
+            ora #$30      
+_prompt_skip_enam1_1
             sta NUSIZ1  
                         
             sta WSYNC
