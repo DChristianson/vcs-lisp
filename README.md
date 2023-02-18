@@ -14,20 +14,25 @@ DONE
   - stubbed out math functions
   - bcd conversion function
   - tail recursion optimization
+  - display tester 1 (all positions indent with separators)
 
 TASKS
   - edit code 
      - clean display tests
-       1. tester 1 (all positions indent with separators)
-       2. tester 2 (include numbers)
-       3. tester 3 (cursor draw)
-     - cursor dynamics
-       - display cursor
-       - joystick to move cursor around
+       - display tester 2 (symmetric indent)
+         - create display plan in vblank to allow closer spacing of cells
+         - encode indent level + display type
+       - tester 3 (cursor movement dynamics)
+         - display cursor
+         - joystick to move cursor around
+         - scrolling
+       - tester 4 (eval button)
+       - tester 5 (include numbers)
+       - tester 6 cleanups (end of cell list terminators)
      - virtual keyboard
          - navigation and selection
          - undo / cancel
-     - number edit
+         - number edit
   - zones design
      - graphics zone
      - function table
