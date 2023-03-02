@@ -45,7 +45,8 @@ FUNCTION_SYMBOL_F0  = 11 ; beginning of function symbols
 ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
 HEADER_HEIGHT = 26
-PROMPT_HEIGHT = 96
+EDITOR_LINES  = 6
+PROMPT_HEIGHT = EDITOR_LINES * 16
 FOOTER_HEIGHT = 26
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
@@ -92,11 +93,16 @@ game_state         ds 1
 
     ORG $CA
 
+repl_scroll    ds 1 ; lines to scroll
 repl_cursor    ds 1
-repl_level     ds 1
-repl_bcd       ds 3
+
+repl_display_list   ds EDITOR_LINES ; 6 line display
+repl_display_indent ds EDITOR_LINES ; 6 line display
+
+repl_level     ds 1 ; BUGBUG: temp indent
+repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
 repl_tmp_accumulator
-repl_cell_addr ds 1
+repl_cell_addr ds 1 ; temporary cell storage during encoding BUGBUG: need?
 repl_gx_addr
 repl_s5_addr   ds 2
 repl_s4_addr   ds 2
@@ -104,8 +110,9 @@ repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2
 repl_s0_addr   ds 2
-repl_stack     ds 1
-repl_width     ds 1
+repl_stack     ds 1 ; temporary stack storage during draw BUGBUG: need?
+repl_width     ds 1 ; temporary NUSIZ storage during draw BUGBUG: need?
+repl_editor_line ds 1; temporary line counter storage
 
 ; ----------------------------------
 ; free kernel vars
@@ -232,8 +239,10 @@ endVBlank_loop
             sta COLUPF
 
             lda game_state
-            beq repl_draw
+            beq _jmp_repl_draw ; BUGBUG is there a better way -- jump table?
             jmp eval_draw
+_jmp_repl_draw
+            jmp repl_draw
 
 ;--------------------
 ; Overscan start

@@ -58,6 +58,57 @@ _prep_repl_loop
             dey
             dey
             bpl _prep_repl_loop
+
+            ; BUGBUG: TODO: add scrolling
+            ldy #(EDITOR_LINES - 1)
+            lda repl_cursor
+            and #$f8
+            sta repl_display_indent,y
+            lda repl
+_prep_repl_line_loop
+            sta repl_display_list,y
+_prep_repl_line_scan
+            tax
+            lda HEAP_CAR_ADDR,x ; read car
+            bpl _prep_repl_line_complex
+            cmp #$40
+            bpl _prep_repl_line_complex
+            lda HEAP_CDR_ADDR,x ; read cdr
+            bne _prep_repl_line_scan
+            jmp _prep_repl_line_next
+_prep_repl_line_complex
+            ldx repl_display_list,y; BUGBUG: TODO; re-use dl
+            lda HEAP_CDR_ADDR,x ; read cdr
+            pha
+            lda HEAP_CAR_ADDR,x ; read head car
+            sta repl_display_list,y
+            bpl _prep_repl_line_next
+            cmp #$40
+            bmi _prep_repl_line_next
+            jmp _prep_repl_line_scan
+_prep_repl_line_next
+            dey
+            bmi _prep_repl_line_end
+            lda repl_display_indent-1,y
+            sta repl_display_indent,y
+            tsx ; check stack
+            cmp #$ff
+            beq _prep_repl_line_clear
+            pla ; pull from stack
+            bpl _prep_repl_line_next ; null
+            sta repl_display_list,y
+            jmp _prep_repl_line_complex
+_prep_repl_line_clear
+            lda #0
+_prep_repl_line_clear_loop
+            sta repl_display_list,y
+            dey
+            ; BUGBUG: need to set indent? probably not
+            bpl _prep_repl_line_clear_loop
+_prep_repl_line_end
+            ldx #$ff ; clean stack
+            txs 
+
             ; done
             jmp update_return
 
@@ -77,120 +128,88 @@ _header_loop
             ; PROMPT
             ; draw repl cell tree
 prompt
-            lda repl_cursor
-            and #$f8
-            sta repl_level
             lda #(PROMPT_HEIGHT * 76 / 64)
             sta TIM64T
-            lda repl
-            pha ; push repl to stack
-            tsx ; 
+            lda #(EDITOR_LINES - 1)
+            sta repl_editor_line
 prompt_next_line
             ; lock missiles to players
             lda #2
             sta RESMP0
             sta RESMP1
             ; load repl level
+            ldy repl_editor_line
             sta WSYNC               ; --
-            lda repl_level          ;3    3
-            sec                     ;2    5
+            lda repl_display_indent,y ;4  4
+            sec                     ;2    6
 _prompt_repos_loop
-            sbc #15                 ;2    7
-            sbcs _prompt_repos_loop ;2/3  9
-            tay                     ;2   11
-            lda LOOKUP_STD_HMOVE,y  ;5   16
-            sta HMP0                ;3   19
-            sta HMP1                ;3   22
-            sta RESP0               ;3   25
-            sta RESP1               ;3   28
+            sbc #15                 ;2    8
+            sbcs _prompt_repos_loop ;2/3 10
+            tax                     ;2   12
+            lda LOOKUP_STD_HMOVE,x  ;5   17
+            sta HMP0                ;3   20
+            sta HMP1                ;3   23
+            sta RESP0               ;3   26
+            sta RESP1               ;3   29
             sta WSYNC               ;--
             sta HMOVE               ;3    3
             lda #WHITE              ;2    5
             sta COLUP0              ;3    8
             sta COLUP1              ;3   11
-            lda #0                  ;2   13 ; -- BUGBUG: messy
-            ldx #$10                ;2   15
-            ldy #$60                ;2   17
-            SLEEP 10                ;10  27
-            sta RESMP0              ;3   30
-            sta RESMP1              ;3   33
-            lda #$00                ;2   35 ; -- BUGBUG: messy
-            sta HMP0                ;3   38
-            stx HMP1                ;3   41
-            sty HMM0                ;3   44
-            lda #$70                ;2   46
-            sta HMM1                ;3   49
-            SLEEP 11                ;11  60
+            SLEEP 10                ;10  21
+            lda #0                  ;2   23 
+            sta RESMP0              ;3   26
+            sta RESMP1              ;3   29
+            sta HMP0                ;3   32
+            lda #$10                ;2   34
+            sta HMP1                ;3   37
+            lda #$60                ;2   39
+            sta HMM0                ;3   42
+            lda #$70                ;2   44
+            sta HMM1                ;3   47
+            SLEEP 13                ;13  60
             sta HMOVE               ;3   63
 
 prompt_encode
-            pla
-            bne _prompt_encode_start
-            jmp prompt_done
-_prompt_encode_start
-            ldy #(DISPLAY_COLS - 1) * 2
-_prompt_encode_loop
-            tax
-            lda HEAP_CAR_ADDR,x ; read car
-            bpl _prompt_encode_clear_dec ; BUGBUG: handle #
+            lda repl_display_list,y
+            beq _prompt_encode_blank
+            bpl _prompt_encode_blank ; BUGBUG: TODO: number
             cmp #$40
-            bpl _prompt_encode_recurse
-_prompt_encode_addchar
-            stx repl_cell_addr ; push down current cell
+            bmi _prompt_encode_list
+_prompt_encode_symbol
+            ldy #(DISPLAY_COLS - 1) * 2
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
             sta repl_gx_addr,y
-            ldx repl_cell_addr 
-            lda HEAP_CDR_ADDR,x ; read cdr
-            beq _prompt_encode_clear_dec
             dey
             dey
-            bpl _prompt_encode_loop
-            ; list is too long, we need to indent
-            ; push next address on the stack
-            pha
-            lda #8 ; BUGBUG: may not be enough
-            clc
-            adc repl_level
-            pha
-            ldx #0            
-            jmp prompt_encode_end
-_prompt_encode_recurse
-            ; we need to recurse so we need push t
-            ; contents of the cdr
-            ; contents of the car
-            sta repl_cell_addr ; set car aside
-            lda HEAP_CDR_ADDR,x 
-            pha 
-            lda #8 ; BUGBUG: may not be enough
-            clc
-            adc repl_level
-            pha
-            lda repl_cell_addr
-            pha
-            lda #8 ; BUGBUG: duplicate code
-            clc
-            adc repl_level
-            pha
-            tya
-            lsr
-            tax
             jmp _prompt_encode_clear
-_prompt_encode_clear_dec
+_prompt_encode_list
+            ldy #(DISPLAY_COLS - 1) * 2
+_prompt_encode_list_loop
+            tax
+            lda HEAP_CAR_ADDR,x ; read car
+            lda LOOKUP_SYMBOL_GRAPHICS,x
+            sta repl_gx_addr,y
+            dey
+            dey
+            bmi _prompt_encode_end ; BUGBUG: TODO: set x
+            lda HEAP_CDR_ADDR,x
+            beq _prompt_encode_clear
+            jmp _prompt_encode_list_loop
+_prompt_encode_blank
+            ldy #(DISPLAY_COLS - 1) * 2
+_prompt_encode_clear
             tya
             lsr
             tax
-            dey
-            dey
-            bmi prompt_encode_end
-_prompt_encode_clear
-            lda #<SYMBOL_GRAPHICS_EMPTY
+            lda #$0
 _prompt_encode_clear_loop
             sta repl_gx_addr,y
             dey
             dey
             bpl _prompt_encode_clear_loop
-prompt_encode_end
+_prompt_encode_end            
             lda DISPLAY_COLS_NUSIZ0,x    ;4    4
             ora #$30                     ;2    6
             sta NUSIZ0                   ;3    9
@@ -266,21 +285,8 @@ _prompt_skip_enam1_1
             sta NUSIZ1  
                         
             sta WSYNC
-            lda #0
-            sta VDELP0
-            sta VDELP1
-            sta GRP0
-            sta GRP1
-            sta ENAM0
-            sta ENAM1
-            ; load stack + 1
-            ldx repl_stack
-            txs
-            cpx #$ff
-            ; if stack at ff, we are done
-            beq prompt_done
-            pla
-            sta repl_level
+            dec repl_editor_line
+            bmi prompt_done
             jmp prompt_next_line
 prompt_done
             jsr waitOnTimer
