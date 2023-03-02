@@ -175,7 +175,7 @@ prompt_encode
             beq _prompt_encode_blank
             bpl _prompt_encode_blank ; BUGBUG: TODO: number
             cmp #$40
-            bmi _prompt_encode_list
+            bpl _prompt_encode_list
 _prompt_encode_symbol
             ldy #(DISPLAY_COLS - 1) * 2
             tax
@@ -187,13 +187,16 @@ _prompt_encode_symbol
 _prompt_encode_list
             ldy #(DISPLAY_COLS - 1) * 2
 _prompt_encode_list_loop
+            sta repl_cell_addr
             tax
             lda HEAP_CAR_ADDR,x ; read car
+            tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
             sta repl_gx_addr,y
             dey
             dey
             bmi _prompt_encode_end ; BUGBUG: TODO: set x
+            ldx repl_cell_addr
             lda HEAP_CDR_ADDR,x
             beq _prompt_encode_clear
             jmp _prompt_encode_list_loop
