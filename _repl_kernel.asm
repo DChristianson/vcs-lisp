@@ -89,11 +89,14 @@ _prep_repl_line_complex
 _prep_repl_line_next
             dey
             bmi _prep_repl_line_end
-            lda repl_display_indent-1,y
-            sta repl_display_indent,y
             tsx ; check stack
-            cmp #$ff
+            txa
+            eor #$ff ; invert
             beq _prep_repl_line_clear
+            asl ; multiply by 8
+            asl
+            asl
+            sta repl_display_indent,y
             pla ; pull from stack
             bpl _prep_repl_line_next ; null
             sta repl_display_list,y
@@ -101,6 +104,7 @@ _prep_repl_line_next
 _prep_repl_line_clear
             lda #0
 _prep_repl_line_clear_loop
+            sta repl_display_indent,y
             sta repl_display_list,y
             dey
             ; BUGBUG: need to set indent? probably not
@@ -128,7 +132,7 @@ _header_loop
             ; PROMPT
             ; draw repl cell tree
 prompt
-            lda #(PROMPT_HEIGHT * 76 / 64)
+            lda #(PROMPT_HEIGHT * 76 / 64) 
             sta TIM64T
             lda #(EDITOR_LINES - 1)
             sta repl_editor_line
@@ -195,11 +199,14 @@ _prompt_encode_list_loop
             sta repl_gx_addr,y
             dey
             dey
-            bmi _prompt_encode_end ; BUGBUG: TODO: set x
+            bmi _prompt_encode_list_end 
             ldx repl_cell_addr
             lda HEAP_CDR_ADDR,x
-            beq _prompt_encode_clear
-            jmp _prompt_encode_list_loop
+            bne _prompt_encode_list_loop
+            jmp _prompt_encode_clear
+_prompt_encode_list_end
+            ldx #0
+            jmp _prompt_encode_end
 _prompt_encode_blank
             ldy #(DISPLAY_COLS - 1) * 2
 _prompt_encode_clear
@@ -286,8 +293,16 @@ _prompt_draw_entry
             ora #$30      
 _prompt_skip_enam1_1
             sta NUSIZ1  
-                        
+            ldx repl_stack 
+            txs           
             sta WSYNC
+            lda #0
+            sta VDELP0
+            sta VDELP1                  
+            sta GRP0
+            sta GRP1
+            sta ENAM0
+            sta ENAM1
             dec repl_editor_line
             bmi prompt_done
             jmp prompt_next_line

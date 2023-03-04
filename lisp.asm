@@ -263,7 +263,6 @@ waitOnTimer
 waitOnTimer_loop          
             cpx INTIM
             bmi waitOnTimer_loop
-            stx VBLANK
             rts
 
 ; -------------------
