@@ -46,7 +46,7 @@ ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
 HEADER_HEIGHT = 26
 EDITOR_LINES  = 6
-PROMPT_HEIGHT = EDITOR_LINES * 16
+PROMPT_HEIGHT = EDITOR_LINES * 18
 FOOTER_HEIGHT = 26
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
@@ -99,7 +99,6 @@ repl_cursor    ds 1
 repl_display_list   ds EDITOR_LINES ; 6 line display
 repl_display_indent ds EDITOR_LINES ; 6 line display
 
-repl_level     ds 1 ; BUGBUG: temp indent
 repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
 repl_tmp_accumulator
 repl_cell_addr ds 1 ; temporary cell storage during encoding BUGBUG: need?
@@ -120,7 +119,7 @@ repl_editor_line ds 1; temporary line counter storage
 
   SEG.U FREE
 
-    ORG $CB
+    ORG $CC
 
 free_pf1 ds 1
 free_pf2 ds 1
@@ -233,10 +232,6 @@ endVBlank_loop
             stx VBLANK
 
             sta WSYNC ; SL 35
-            lda #1
-            sta CTRLPF ; reflect playfield
-            lda #LOGO_COLOR
-            sta COLUPF
 
             lda game_state
             beq _jmp_repl_draw ; BUGBUG is there a better way -- jump table?

@@ -96,6 +96,8 @@ _prep_repl_line_next
             asl ; multiply by 8
             asl
             asl
+            clc
+            adc repl_display_indent + EDITOR_LINES - 1
             sta repl_display_indent,y
             pla ; pull from stack
             bpl _prep_repl_line_next ; null
@@ -119,6 +121,7 @@ _prep_repl_line_end
 ;----------------------
 ; Repl display
 ;
+        align 256
 
 repl_draw
 
@@ -155,23 +158,28 @@ _prompt_repos_loop
             sta HMP1                ;3   23
             sta RESP0               ;3   26
             sta RESP1               ;3   29
+            SLEEP 7                 ;7   36
+            STA HMBL                ;3   39
+            sta RESBL               ;3   42
             sta WSYNC               ;--
             sta HMOVE               ;3    3
             lda #WHITE              ;2    5
             sta COLUP0              ;3    8
             sta COLUP1              ;3   11
-            SLEEP 10                ;10  21
+            sta COLUPF              ;3   14
+            SLEEP 7                 ;7   21
             lda #0                  ;2   23 
             sta RESMP0              ;3   26
             sta RESMP1              ;3   29
             sta HMP0                ;3   32
             lda #$10                ;2   34
             sta HMP1                ;3   37
-            lda #$60                ;2   39
-            sta HMM0                ;3   42
-            lda #$70                ;2   44
-            sta HMM1                ;3   47
-            SLEEP 13                ;13  60
+            sta HMBL                ;3   40
+            lda #$60                ;2   42
+            sta HMM0                ;3   45 
+            lda #$70                ;2   47
+            sta HMM1                ;3   50
+            SLEEP 10                ;10  60
             sta HMOVE               ;3   63
 
 prompt_encode
@@ -233,54 +241,59 @@ _prompt_skip_enam1
             lda #2                       ;2   11
             sta ENAM0                    ;3   14
             sta ENAM1                    ;3   28
+            cpx #0                       ;2   30
+            bne _prompt_skip_enabl       ;2   32
+            sta ENABL                    ;3   35
+_prompt_skip_enabl
             sta WSYNC ; shim
             lda DISPLAY_COLS_NUSIZ0,x    ;4    4
             sta NUSIZ0                   ;3    7
             lda DISPLAY_COLS_NUSIZ1,x    ;4   11
             sta NUSIZ1                   ;3   14
             stx repl_width               ;3   17
-            ldy #CHAR_HEIGHT - 1         ;2   19
-            tsx                          ;2   21
-            stx repl_stack               ;3   24
-            lda #1                       ;2   26
-            sta VDELP0                   ;3   29
-            sta VDELP1                   ;3   32
-            lda repl_level               ;3   35
-            sec                          ;2   37
+            tsx                          ;2   19
+            stx repl_stack               ;3   22
+            lda #1                       ;2   24
+            sta VDELP0                   ;3   27
+            sta VDELP1                   ;3   30
+            ldy repl_editor_line         ;3   33
+            lda repl_display_indent,y    ;4   37
+            ldy #CHAR_HEIGHT - 1         ;2   39
+            sec                          ;2   41
 _prompt_delay_loop
-            sbc #24                      ;2   39
-            SLEEP 3                      ;3   42
-            bcs _prompt_delay_loop       ;2/3 44
-            adc #16                      ;2   46
-            bmi _prompt_draw_entry_0     ;2   48 ; -24, transition at +0  
-            SLEEP 3                      ;3   51
-            beq _prompt_draw_entry_1     ;2   53 ;  -8, transition at +3
-            jmp _prompt_draw_entry_2     ;3   56 ; -16, transition at +5
-_prompt_draw_loop    ; 46
-            SLEEP 6                      ;5   49
-_prompt_draw_entry_0 ; 49          
-            SLEEP 2                      ;2   51
-_prompt_draw_entry_1 ; 54
-_prompt_draw_entry_2 ; 56
-            SLEEP 8                      ;8   59/62/64
-            lda (repl_s0_addr),y         ;5   64/67/69
-            sta GRP0                     ;3   67/70/72
-            lda (repl_s1_addr),y         ;5   72/75/ 1
-            sta GRP1                     ;3   75/ 2/ 4
-            lda (repl_s2_addr),y         ;5    4/ 7/ 9
-            sta GRP0                     ;3    7/10/12
-            lax (repl_s4_addr),y         ;5   12/15/17
-            txs                          ;2   14/17/19
-            lax (repl_s3_addr),y         ;5   19/22/24
-            lda (repl_s5_addr),y         ;5   24/27/29
+            sbc #24                      ;2   43
+            SLEEP 3                      ;3   46
+            sbcs _prompt_delay_loop      ;2/3 48
+            adc #16                      ;2   50
+            sbmi _prompt_draw_entry_0    ;2   52 ; -24, transition at +0  
+            SLEEP 3                      ;3   55
+            beq _prompt_draw_entry_1     ;2   57 ;  -8, transition at +3
+            jmp _prompt_draw_entry_2     ;3   60 ; -16, transition at +5
+_prompt_draw_loop    ; 41
+            SLEEP 9                      ;9   50  
+_prompt_draw_entry_0 ; 50/53          
+            SLEEP 2                      ;2   52/55
+_prompt_draw_entry_1 ; 52/55/58
+_prompt_draw_entry_2 ; 52/55/58/60
+            SLEEP 4                      ;7   56/59/62/64
+            lda (repl_s0_addr),y         ;5   61/64/67/69
+            sta GRP0                     ;3   64/67/70/72
+            lda (repl_s1_addr),y         ;5   69/72/75/ 1
+            sta GRP1                     ;3   72/75/ 2/ 4
+            lda (repl_s2_addr),y         ;5    1/ 4/ 7/ 9
+            sta GRP0                     ;3    4/ 7/10/12
+            lax (repl_s4_addr),y         ;5    9/12/15/17
+            txs                          ;2   11/14/17/19
+            lax (repl_s3_addr),y         ;5   16/19/22/24
+            lda (repl_s5_addr),y         ;5   21/24/27/29
 _prompt_draw_entry
-            stx GRP1                     ;3   23   0 -  9  !0!8 ** ++ 32 40
-            tsx                          ;2   25   9 - 15   0!8!16 24 ++ 40
-            stx GRP0                     ;3   28  15 - 24   0 8!16!** ++ 40
-            sta GRP1                     ;3   31  24 - 33   0 8 16!24!** ++
-            sty GRP0                     ;3   34  33 - 42   0 8 16 24!32!**
-            dey                          ;2   36
-            bpl _prompt_draw_loop        ;2   38  
+            stx GRP1                     ;3   24   0 -  9  !0!8 ** ++ 32 40
+            tsx                          ;2   26   9 - 15   0!8!16 24 ++ 40
+            stx GRP0                     ;3   29  15 - 24   0 8!16!** ++ 40
+            sta GRP1                     ;3   32  24 - 33   0 8 16!24!** ++
+            sty GRP0                     ;3   35  33 - 42   0 8 16 24!32!**
+            dey                          ;2   37
+            bpl _prompt_draw_loop        ;2   39  
  
             sta WSYNC
             ldx repl_width
@@ -303,6 +316,7 @@ _prompt_skip_enam1_1
             sta GRP1
             sta ENAM0
             sta ENAM1
+            sta ENABL
             dec repl_editor_line
             bmi prompt_done
             jmp prompt_next_line
@@ -390,6 +404,10 @@ accumulator_draw_end
 
             ; FREEBAR
 freebar
+            lda #1
+            sta CTRLPF ; reflect playfield
+            lda #LOGO_COLOR
+            sta COLUPF
             ldy #0
             ldx free
 _free_bar_loop
