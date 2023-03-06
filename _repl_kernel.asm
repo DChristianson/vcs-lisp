@@ -109,7 +109,6 @@ _prep_repl_line_clear_loop
             sta repl_display_indent,y
             sta repl_display_list,y
             dey
-            ; BUGBUG: need to set indent? probably not
             bpl _prep_repl_line_clear_loop
 _prep_repl_line_end
             ldx #$ff ; clean stack
@@ -251,31 +250,29 @@ _prompt_skip_enabl
             lda DISPLAY_COLS_NUSIZ1,x    ;4   11
             sta NUSIZ1                   ;3   14
             stx repl_width               ;3   17
-            tsx                          ;2   19
-            stx repl_stack               ;3   22
-            lda #1                       ;2   24
-            sta VDELP0                   ;3   27
-            sta VDELP1                   ;3   30
-            ldy repl_editor_line         ;3   33
-            lda repl_display_indent,y    ;4   37
-            ldy #CHAR_HEIGHT - 1         ;2   39
-            sec                          ;2   41
+            lda #1                       ;2   19
+            sta VDELP0                   ;3   22
+            sta VDELP1                   ;3   25
+            ldy repl_editor_line         ;3   28
+            lda repl_display_indent,y    ;4   32
+            ldy #CHAR_HEIGHT - 1         ;2   34
+            sec                          ;2   36
 _prompt_delay_loop
-            sbc #24                      ;2   43
-            SLEEP 3                      ;3   46
-            sbcs _prompt_delay_loop      ;2/3 48
-            adc #16                      ;2   50
-            sbmi _prompt_draw_entry_0    ;2   52 ; -24, transition at +0  
-            SLEEP 3                      ;3   55
-            beq _prompt_draw_entry_1     ;2   57 ;  -8, transition at +3
-            jmp _prompt_draw_entry_2     ;3   60 ; -16, transition at +5
+            sbc #24                      ;2   38
+            SLEEP 3                      ;3   41
+            sbcs _prompt_delay_loop      ;2/3 43
+            adc #16                      ;2   45
+            sbmi _prompt_draw_entry_0    ;2   47 ; -24, transition at +0  
+            SLEEP 3                      ;3   50
+            beq _prompt_draw_entry_1     ;2   52 ;  -8, transition at +3
+            jmp _prompt_draw_entry_2     ;3   55 ; -16, transition at +5
 _prompt_draw_loop    ; 41
-            SLEEP 9                      ;9   50  
-_prompt_draw_entry_0 ; 50/53          
-            SLEEP 2                      ;2   52/55
-_prompt_draw_entry_1 ; 52/55/58
-_prompt_draw_entry_2 ; 52/55/58/60
-            SLEEP 4                      ;7   56/59/62/64
+            SLEEP 4                      ;4   45  
+_prompt_draw_entry_0 ; 45/48          
+            SLEEP 2                      ;2   47/50
+_prompt_draw_entry_1 ; 47/50/53
+_prompt_draw_entry_2 ; 47/50/53/55
+            SLEEP 9                      ;9   56/59/62/64
             lda (repl_s0_addr),y         ;5   61/64/67/69
             sta GRP0                     ;3   64/67/70/72
             lda (repl_s1_addr),y         ;5   69/72/75/ 1
@@ -306,7 +303,7 @@ _prompt_draw_entry
             ora #$30      
 _prompt_skip_enam1_1
             sta NUSIZ1  
-            ldx repl_stack 
+            ldx #$ff ; reset the stack 
             txs           
             sta WSYNC
             lda #0
@@ -326,20 +323,27 @@ prompt_done
             
 ; ACCUMULATOR
 accumulator_draw
-            lda #3
-            sta NUSIZ0
-            sta NUSIZ1
-            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr
-            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr
-            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr
-            WRITE_DIGIT_LO repl_bcd+1, repl_s3_addr
-            WRITE_DIGIT_HI repl_bcd, repl_s4_addr
-            WRITE_DIGIT_LO repl_bcd, repl_s5_addr
-            sta WSYNC
-            ldy #CHAR_HEIGHT - 1
-            lda #1
-            bit clock
-            bne accumulator_draw_odd
+            sta WSYNC                               ;--  0
+            lda #3                                  ;2   2
+            sta NUSIZ0                              ;3   5
+            sta NUSIZ1                              ;3   8
+            lda #$0                                ;2  10
+            sta HMP0                                ;3  13
+            lda #$e0                                ;2  15
+            sta HMP1                                ;3  18
+            sta RESP0                               ;3  21
+            sta RESP1                               ;3  24
+            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr ;16 40
+            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr ;16 56
+            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr ;16 72
+            sta HMOVE                               ;3  75
+            WRITE_DIGIT_LO repl_bcd+1, repl_s3_addr ;16 15
+            WRITE_DIGIT_HI repl_bcd, repl_s4_addr   ;16 31
+            WRITE_DIGIT_LO repl_bcd, repl_s5_addr   ;16 47
+            ldy #CHAR_HEIGHT - 1                    ;2  49
+            lda #1                                  ;2  51
+            bit clock                               ;3  54
+            bne accumulator_draw_odd                ;3  57
 accumulator_draw_even
 _accumulator_draw_even_loop
             sta WSYNC                  ;--
@@ -497,13 +501,13 @@ DISPLAY_COLS_NUSIZ1
     byte 3,1,1,0,0,0
 
     MAC WRITE_DIGIT_HI 
-            lda {1}
-            and #$f0
-            lsr
-            lsr
-            clc
-            adc #<SYMBOL_GRAPHICS_S13_ZERO
-            sta {2}
+            lda {1}                         ;3  3
+            and #$f0                        ;2  5
+            lsr                             ;2  7
+            lsr                             ;2  9
+            clc                             ;2 11
+            adc #<SYMBOL_GRAPHICS_S13_ZERO  ;2 13
+            sta {2}                         ;3 15
     ENDM
 
     MAC WRITE_DIGIT_LO

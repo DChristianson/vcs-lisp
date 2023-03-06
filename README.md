@@ -15,15 +15,18 @@ DONE
   - bcd conversion function
   - tail recursion optimization
   - display tester 1 (all positions indent with separators)
+  - display tester 2 (symmetric indent)
+    - create display plan in vblank to allow closer spacing of cells
+    - encode indent level + display type
 
 TASKS
   - edit code 
      - clean display tests
-       - display tester 2 (symmetric indent)
-         - create display plan in vblank to allow closer spacing of cells
-         - encode indent level + display type
        - tester 3 (cursor movement dynamics)
-         - display cursor
+         - look at how basic works
+         - display cursor 
+           - bracket current line
+           - blink + pointer at current cell
          - joystick to move cursor around
          - scrolling
        - tester 4 (eval button)
@@ -38,7 +41,7 @@ TASKS
      - function table
      - code area
      - accumulator display
-     - switch game modes
+     - switch game modes (use commands?)
      - free space indicator
   - interpreter
      - safeties against stack overflow

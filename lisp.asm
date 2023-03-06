@@ -109,7 +109,6 @@ repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2
 repl_s0_addr   ds 2
-repl_stack     ds 1 ; temporary stack storage during draw BUGBUG: need?
 repl_width     ds 1 ; temporary NUSIZ storage during draw BUGBUG: need?
 repl_editor_line ds 1; temporary line counter storage
 
