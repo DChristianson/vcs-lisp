@@ -46,7 +46,7 @@ ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
 HEADER_HEIGHT = 26
 EDITOR_LINES  = 6
-PROMPT_HEIGHT = EDITOR_LINES * 18
+PROMPT_HEIGHT = EDITOR_LINES * 19
 FOOTER_HEIGHT = 26
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
@@ -84,6 +84,10 @@ accumulator        ds CELL_SIZE
 clock              ds 1
 ; game state
 game_state         ds 1
+; debounce input
+player_input       ds 2
+; reserve for game data
+game_data          ds 8
 
 ; ----------------------------------
 ; repl kernel vars
@@ -91,7 +95,8 @@ game_state         ds 1
 
   SEG.U REPL
 
-    ORG $CA
+    ORG $D4
+
 
 repl_scroll    ds 1 ; lines to scroll
 repl_cursor    ds 1
@@ -101,6 +106,7 @@ repl_display_indent ds EDITOR_LINES ; 6 line display
 
 repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
 repl_tmp_accumulator
+repl_tmp_scroll
 repl_cell_addr ds 1 ; temporary cell storage during encoding BUGBUG: need?
 repl_gx_addr
 repl_s5_addr   ds 2
@@ -113,24 +119,11 @@ repl_width     ds 1 ; temporary NUSIZ storage during draw BUGBUG: need?
 repl_editor_line ds 1; temporary line counter storage
 
 ; ----------------------------------
-; free kernel vars
-; for free list display
-
-  SEG.U FREE
-
-    ORG $CC
-
-free_pf1 ds 1
-free_pf2 ds 1
-free_pf3 ds 1
-free_pf4 ds 1
-
-; ----------------------------------
 ; eval kernel vars
 ; for expression eval
   SEG.U EVAL
 
-    ORG $CA
+    ORG $D4
 
 ;eval_x           ds 1
 eval_next        ds 1 ; next action to take

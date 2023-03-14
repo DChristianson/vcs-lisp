@@ -6,23 +6,40 @@ repl_update
             sta game_state
 _repl_update_skip_eval
             ; check indent level
-            lda #$80
-            lda SWCHA
+            lda player_input
+            eor #$f0
+            ldx SWCHA
+            stx player_input
+            ora player_input
             rol
-            bcs _repl_update_skip_right
+            rol
+            rol
+            bcs _repl_update_skip_down
             lda #1
-            jmp _repl_update_set_indent
-_repl_update_skip_right
+            jmp _repl_update_set_cursor
+_repl_update_skip_down
             rol
-            bcs _repl_update_skip_left
+            bcs _repl_update_skip_move
             lda #-1
-            jmp _repl_update_set_indent
-_repl_update_skip_left
-            lda #0
-_repl_update_set_indent
+_repl_update_set_cursor
             clc
             adc repl_cursor
+            bpl _repl_update_check_scroll_up
+            lda #0
+_repl_update_check_scroll_up
             sta repl_cursor
+            cmp repl_scroll
+            bpl _repl_update_check_scroll_down
+            sta repl_scroll
+            jmp _repl_update_skip_move
+_repl_update_check_scroll_down
+            sec 
+            sbc #(EDITOR_LINES-1)
+            cmp repl_scroll
+            bmi _repl_update_skip_move
+            sta repl_scroll
+_repl_update_skip_move
+
             ; convert accumulator to BCD
             ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
             sed
@@ -59,10 +76,11 @@ _prep_repl_loop
             dey
             bpl _prep_repl_loop
 
-            ; BUGBUG: TODO: add scrolling
+            ; calculate visiple program
             ldy #(EDITOR_LINES - 1)
-            lda repl_cursor
-            and #$f8
+            lda repl_scroll
+            sta repl_tmp_scroll
+            lda #0
             sta repl_display_indent,y
             lda repl
 _prep_repl_line_loop
@@ -87,8 +105,11 @@ _prep_repl_line_complex
             bmi _prep_repl_line_next
             jmp _prep_repl_line_scan
 _prep_repl_line_next
+            dec repl_tmp_scroll
+            bpl _prep_repl_line_next_skip_dey
             dey
             bmi _prep_repl_line_end
+_prep_repl_line_next_skip_dey
             tsx ; check stack
             txa
             eor #$ff ; invert
@@ -96,8 +117,6 @@ _prep_repl_line_next
             asl ; multiply by 8
             asl
             asl
-            clc
-            adc repl_display_indent + EDITOR_LINES - 1
             sta repl_display_indent,y
             pla ; pull from stack
             bpl _prep_repl_line_next ; null
@@ -108,6 +127,8 @@ _prep_repl_line_clear
 _prep_repl_line_clear_loop
             sta repl_display_indent,y
             sta repl_display_list,y
+            dec repl_tmp_scroll
+            bpl _prep_repl_line_clear_loop
             dey
             bpl _prep_repl_line_clear_loop
 _prep_repl_line_end
@@ -120,7 +141,6 @@ _prep_repl_line_end
 ;----------------------
 ; Repl display
 ;
-        align 256
 
 repl_draw
 
@@ -131,56 +151,158 @@ _header_loop
             dex
             bpl _header_loop
 
+; ACCUMULATOR
+accumulator_draw
+            sta WSYNC                               ;--  0
+            lda #3                                  ;2   2
+            sta NUSIZ0                              ;3   5
+            sta NUSIZ1                              ;3   8
+            lda #$0                                 ;2  10
+            sta COLUBK
+            sta HMP0                                ;3  13
+            lda #$e0                                ;2  15
+            sta HMP1                                ;3  18
+            sta RESP0                               ;3  21
+            sta RESP1                               ;3  24
+            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr ;16 40
+            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr ;16 56
+            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr ;16 72
+            sta HMOVE                               ;3  75
+            WRITE_DIGIT_LO repl_bcd+1, repl_s3_addr ;16 15
+            WRITE_DIGIT_HI repl_bcd, repl_s4_addr   ;16 31
+            WRITE_DIGIT_LO repl_bcd, repl_s5_addr   ;16 47
+            ldy #CHAR_HEIGHT - 1                    ;2  49
+            lda #1                                  ;2  51
+            bit clock                               ;3  54
+            bne accumulator_draw_odd                ;3  57
+accumulator_draw_even
+_accumulator_draw_even_loop
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP1                   ;3    5
+            lda (repl_s0_addr),y       ;5   10
+            sta GRP0                   ;3   13
+            SLEEP 5                    ;5   18
+            lda (repl_s2_addr),y       ;5   23
+            sta GRP0                   ;3   26
+            lda (repl_s4_addr),y       ;5   31
+            sta GRP0                   ;3   33
+            dey                        ;2   35
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP0                   ;3    5
+            lda (repl_s1_addr),y       ;5   10
+            sta GRP1                   ;3   13
+            SLEEP 8                    ;8   21
+            lda (repl_s3_addr),y       ;5   26
+            sta GRP1                   ;3   29
+            lda (repl_s5_addr),y       ;5   34
+            sta GRP1                   ;3   37
+            dey                        ;2   39
+            bpl _accumulator_draw_even_loop ;2/3 41/42
+            jmp accumulator_draw_end
+accumulator_draw_odd
+_accumulator_draw_odd_loop
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP0                   ;3    5
+            lda (repl_s1_addr),y       ;5   10
+            sta GRP1                   ;3   13
+            SLEEP 8                    ;5   18
+            lda (repl_s3_addr),y       ;5   23
+            sta GRP1                   ;3   26
+            lda (repl_s5_addr),y       ;5   31
+            sta GRP1                   ;3   34
+            dey                        ;2   36
+            sta WSYNC                  ;--
+            lda #0                     ;2    2
+            sta GRP1                   ;3    5
+            lda (repl_s0_addr),y       ;5   10
+            sta GRP0                   ;3   13
+            SLEEP 5                    ;2   15
+            lda (repl_s2_addr),y       ;5   20
+            sta GRP0                   ;3   23
+            lda (repl_s4_addr),y       ;5   28
+            sta GRP0                   ;3   31
+            dey                        ;2   33
+            bpl _accumulator_draw_odd_loop ;2/3 46/47
+            jmp accumulator_draw_end
+accumulator_draw_end
+            sta WSYNC
+            lda #0
+            sta NUSIZ0
+            sta NUSIZ1
+            sta PF1
+            sta PF2
+            sta GRP0
+            sta GRP1            
+                
             ; PROMPT
             ; draw repl cell tree
 prompt
             lda #(PROMPT_HEIGHT * 76 / 64) 
             sta TIM64T
-            lda #(EDITOR_LINES - 1)
-            sta repl_editor_line
+            ldy #(EDITOR_LINES - 1)
+            sty repl_editor_line
 prompt_next_line
             ; lock missiles to players
             lda #2
             sta RESMP0
-            sta RESMP1
-            ; load repl level
-            ldy repl_editor_line
             sta WSYNC               ; --
-            lda repl_display_indent,y ;4  4
-            sec                     ;2    6
+            sta RESMP1              ; 3   3
+            lda repl_display_indent,y ;4  7
+            sec                     ;2    9
 _prompt_repos_loop
-            sbc #15                 ;2    8
-            sbcs _prompt_repos_loop ;2/3 10
-            tax                     ;2   12
-            lda LOOKUP_STD_HMOVE,x  ;5   17
-            sta HMP0                ;3   20
-            sta HMP1                ;3   23
-            sta RESP0               ;3   26
-            sta RESP1               ;3   29
-            SLEEP 7                 ;7   36
-            STA HMBL                ;3   39
-            sta RESBL               ;3   42
+            sbc #15                 ;2   11
+            sbcs _prompt_repos_loop ;2/3 13
+            tax                     ;2   15
+            lda LOOKUP_STD_HMOVE,x  ;5   20
+            sta HMP0                ;3   23
+            sta HMP1                ;3   26
+            sta RESP0               ;3   29
+            sta RESP1               ;3   32
+            SLEEP 7                 ;7   40
+            sta HMBL                ;3   43
+            sta RESBL               ;3   46
             sta WSYNC               ;--
-            sta HMOVE               ;3    3
-            lda #WHITE              ;2    5
-            sta COLUP0              ;3    8
-            sta COLUP1              ;3   11
-            sta COLUPF              ;3   14
-            SLEEP 7                 ;7   21
-            lda #0                  ;2   23 
-            sta RESMP0              ;3   26
-            sta RESMP1              ;3   29
-            sta HMP0                ;3   32
-            lda #$10                ;2   34
-            sta HMP1                ;3   37
-            sta HMBL                ;3   40
-            lda #$60                ;2   42
-            sta HMM0                ;3   45 
-            lda #$70                ;2   47
-            sta HMM1                ;3   50
-            SLEEP 10                ;10  60
+            lda #WHITE              ;2    2
+            sta COLUP0              ;3    5
+            sta COLUP1              ;3    8
+            sta COLUPF              ;3   11
+            tya                     ;2   13
+            eor #$ff                ;2   15
+            clc                     ;2   17
+            adc #(EDITOR_LINES)     ;2   19
+            clc                     ;2   21   
+            adc repl_scroll         ;3   24
+            cmp repl_cursor         ;3   27
+            bne _prompt_skip_cursor_bk ;2 29
+            ldx #$02                ;2   31
+            jmp _prompt_cursor_bk   ;3   34
+_prompt_skip_cursor_bk
+            and #$01                ;2   32
+            tax                     ;2   34
+_prompt_cursor_bk
+            lda DISPLAY_REPL_COLORS,x ;4 38
+            SLEEP 32                ;32  70
+            sta HMOVE
+            sta COLUBK              ;3   76
+            SLEEP 22                ;22  22
+            lda #0                  ;2   24
+            sta RESMP0              ;3   27
+            sta RESMP1              ;3   30
+            lda #$f0                ;2   32
+            sta HMP0                ;3   35
+            lda #$10                ;2   37
+            sta HMP1                ;3   40
+            sta HMBL                ;3   43
+            lda #$60                ;2   45
+            sta HMM0                ;3   48 
+            lda #$70                ;2   50
+            sta HMM1                ;3   53
+            SLEEP 7                 ;7   60
             sta HMOVE               ;3   63
-
+            
 prompt_encode
             lda repl_display_list,y
             beq _prompt_encode_blank
@@ -263,16 +385,16 @@ _prompt_delay_loop
             sbcs _prompt_delay_loop      ;2/3 43
             adc #16                      ;2   45
             sbmi _prompt_draw_entry_0    ;2   47 ; -24, transition at +0  
-            SLEEP 3                      ;3   50
-            beq _prompt_draw_entry_1     ;2   52 ;  -8, transition at +3
-            jmp _prompt_draw_entry_2     ;3   55 ; -16, transition at +5
-_prompt_draw_loop    ; 41
-            SLEEP 4                      ;4   45  
+            SLEEP 4                      ;4   51
+            bne _prompt_draw_entry_2     ;2   53 ; -16, transition at +5
+            jmp _prompt_draw_entry_1     ;3   56 ;  -8, transition at +3
+_prompt_draw_loop    ; 40
+            SLEEP 5                      ;5   45  
 _prompt_draw_entry_0 ; 45/48          
-            SLEEP 2                      ;2   47/50
-_prompt_draw_entry_1 ; 47/50/53
-_prompt_draw_entry_2 ; 47/50/53/55
-            SLEEP 9                      ;9   56/59/62/64
+_prompt_draw_entry_2 ; 45/48/--/54
+            SLEEP 5                      ;2   50/53/--/59
+_prompt_draw_entry_1 ; 50/53/56/59
+            SLEEP 6                      ;9   56/59/62/65
             lda (repl_s0_addr),y         ;5   61/64/67/69
             sta GRP0                     ;3   64/67/70/72
             lda (repl_s1_addr),y         ;5   69/72/75/ 1
@@ -314,169 +436,15 @@ _prompt_skip_enam1_1
             sta ENAM0
             sta ENAM1
             sta ENABL
-            dec repl_editor_line
+            ldy repl_editor_line
+            dey 
             bmi prompt_done
+            sty repl_editor_line
             jmp prompt_next_line
 prompt_done
             jsr waitOnTimer
-
-            
-; ACCUMULATOR
-accumulator_draw
-            sta WSYNC                               ;--  0
-            lda #3                                  ;2   2
-            sta NUSIZ0                              ;3   5
-            sta NUSIZ1                              ;3   8
-            lda #$0                                ;2  10
-            sta HMP0                                ;3  13
-            lda #$e0                                ;2  15
-            sta HMP1                                ;3  18
-            sta RESP0                               ;3  21
-            sta RESP1                               ;3  24
-            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr ;16 40
-            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr ;16 56
-            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr ;16 72
-            sta HMOVE                               ;3  75
-            WRITE_DIGIT_LO repl_bcd+1, repl_s3_addr ;16 15
-            WRITE_DIGIT_HI repl_bcd, repl_s4_addr   ;16 31
-            WRITE_DIGIT_LO repl_bcd, repl_s5_addr   ;16 47
-            ldy #CHAR_HEIGHT - 1                    ;2  49
-            lda #1                                  ;2  51
-            bit clock                               ;3  54
-            bne accumulator_draw_odd                ;3  57
-accumulator_draw_even
-_accumulator_draw_even_loop
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP1                   ;3    5
-            lda (repl_s0_addr),y       ;5   10
-            sta GRP0                   ;3   13
-            SLEEP 5                    ;5   18
-            lda (repl_s2_addr),y       ;5   23
-            sta GRP0                   ;3   26
-            lda (repl_s4_addr),y       ;5   31
-            sta GRP0                   ;3   33
-            dey                        ;2   35
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP0                   ;3    5
-            lda (repl_s1_addr),y       ;5   10
-            sta GRP1                   ;3   13
-            SLEEP 8                    ;8   21
-            lda (repl_s3_addr),y       ;5   26
-            sta GRP1                   ;3   29
-            lda (repl_s5_addr),y       ;5   34
-            sta GRP1                   ;3   37
-            dey                        ;2   39
-            bpl _accumulator_draw_even_loop ;2/3 41/42
-            jmp accumulator_draw_end
-accumulator_draw_odd
-_accumulator_draw_odd_loop
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP0                   ;3    5
-            lda (repl_s1_addr),y       ;5   10
-            sta GRP1                   ;3   13
-            SLEEP 8                    ;5   18
-            lda (repl_s3_addr),y       ;5   23
-            sta GRP1                   ;3   26
-            lda (repl_s5_addr),y       ;5   31
-            sta GRP1                   ;3   34
-            dey                        ;2   36
-            sta WSYNC                  ;--
-            lda #0                     ;2    2
-            sta GRP1                   ;3    5
-            lda (repl_s0_addr),y       ;5   10
-            sta GRP0                   ;3   13
-            SLEEP 5                    ;2   15
-            lda (repl_s2_addr),y       ;5   20
-            sta GRP0                   ;3   23
-            lda (repl_s4_addr),y       ;5   28
-            sta GRP0                   ;3   31
-            dey                        ;2   33
-            bpl _accumulator_draw_odd_loop ;2/3 46/47
-            jmp accumulator_draw_end
-accumulator_draw_end
             sta WSYNC
-            lda #0
-            sta NUSIZ0
-            sta NUSIZ1
-            sta PF1
-            sta PF2
-            sta GRP0
-            sta GRP1
-
-            ; FREEBAR
-freebar
-            lda #1
-            sta CTRLPF ; reflect playfield
-            lda #LOGO_COLOR
-            sta COLUPF
-            ldy #0
-            ldx free
-_free_bar_loop
-            lda HEAP_CDR_ADDR,x
-            bpl _free_bar_len
-            iny
-            tax
-            jmp _free_bar_loop
-_free_bar_len
-            tya
-            sec
-            sbc #16
-            bcs _free_gt_16
-            adc #16 
-            ldx #00
-            stx free_pf3 
-            stx free_pf4 
-            jmp _free_half
-_free_gt_16
-            ldx #$ff
-            stx free_pf1
-            stx free_pf2
-            ldx #2
-_free_half
-            sec
-            sbc #8
-            bcs _free_gt_8
-            adc #8
-            ldy #0
-            sty free_pf2,x
-            jmp _free_quarter
-_free_gt_8
-            ldy #$ff
-            sty free_pf1,x
-            inx
-_free_quarter
-            tay
-            lda FREE_LOOKUP_TABLE,y
-            sta free_pf1,x
-
-            ldx #4
-_free_draw_loop
-            sta WSYNC
-            lda #$ee         ;2   2
-            sta GRP0        ;3   5
-            lda #$ee         ;2   7
-            sta GRP1        ;3  10
-            lda free_pf1    ;3  13
-            sta PF1         ;3  16
-            lda free_pf2    ;3  19
-            sta PF2         ;3  22
-            SLEEP 15        ;15 37
-            lda free_pf3    ;3  40
-            sta PF1         ;3  43
-            SLEEP 7         ;7  50 
-            lda free_pf4    ;3  53
-            sta PF2         ;3  56
-            dex             ;2  58
-            bpl _free_draw_loop
-            lda #0
-            sta PF1
-            sta PF2
-            sta GRP0
-            sta GRP1
-            sta GRP0
+            sta COLUBK
 
             ; FOOTER
 footer
@@ -499,6 +467,8 @@ DISPLAY_COLS_NUSIZ0
     byte 3
 DISPLAY_COLS_NUSIZ1
     byte 3,1,1,0,0,0
+DISPLAY_REPL_COLORS
+    byte #$7A,#$7E,#$86 ; BUGBUG: make pal safe
 
     MAC WRITE_DIGIT_HI 
             lda {1}                         ;3  3
