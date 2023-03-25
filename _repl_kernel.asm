@@ -23,11 +23,15 @@ _repl_update_skip_down
             lda #-1
 _repl_update_set_cursor
             clc
-            adc repl_cursor
+            adc repl_edit_line
             bpl _repl_update_check_scroll_up
             lda #0
 _repl_update_check_scroll_up
-            sta repl_cursor
+            cmp repl_edit_end
+            bcc _repl_update_check_limit
+            lda repl_edit_end
+_repl_update_check_limit
+            sta repl_edit_line
             cmp repl_scroll
             bpl _repl_update_check_scroll_down
             sta repl_scroll
@@ -76,25 +80,30 @@ _prep_repl_loop
             dey
             bpl _prep_repl_loop
 
-            ; calculate visiple program
+            ; calculate visible program
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll
             sta repl_tmp_scroll
             lda #0
             sta repl_display_indent,y
             lda repl
-_prep_repl_line_loop
-            sta repl_display_list,y
 _prep_repl_line_scan
+            sta repl_display_list,y
+            ldx #$ff
+            stx repl_tmp_width
+_prep_repl_line_scan_loop
             tax
             lda HEAP_CAR_ADDR,x ; read car
             bpl _prep_repl_line_complex
             cmp #$40
             bpl _prep_repl_line_complex
+            inc repl_tmp_width
             lda HEAP_CDR_ADDR,x ; read cdr
-            bne _prep_repl_line_scan
+            bne _prep_repl_line_scan_loop
             jmp _prep_repl_line_next
 _prep_repl_line_complex
+            lda #0
+            sta repl_tmp_width
             ldx repl_display_list,y; BUGBUG: TODO; re-use dl
             lda HEAP_CDR_ADDR,x ; read cdr
             pha
@@ -105,6 +114,10 @@ _prep_repl_line_complex
             bmi _prep_repl_line_next
             jmp _prep_repl_line_scan
 _prep_repl_line_next
+            lda repl_display_indent,y
+            clc
+            adc repl_tmp_width
+            sta repl_display_indent,y
             dec repl_tmp_scroll
             bpl _prep_repl_line_next_skip_dey
             dey
@@ -114,12 +127,12 @@ _prep_repl_line_next_skip_dey
             txa
             eor #$ff ; invert
             beq _prep_repl_line_clear
-            asl ; multiply by 8
             asl
             asl
-            sta repl_display_indent,y
+            asl
+            sta repl_display_indent,y ; columns to indent (from prev line)
             pla ; pull from stack
-            bpl _prep_repl_line_next ; null
+            bpl _prep_repl_line_next_skip_dey ; null
             sta repl_display_list,y
             jmp _prep_repl_line_complex
 _prep_repl_line_clear
@@ -127,11 +140,11 @@ _prep_repl_line_clear
 _prep_repl_line_clear_loop
             sta repl_display_indent,y
             sta repl_display_list,y
-            dec repl_tmp_scroll
-            bpl _prep_repl_line_clear_loop
             dey
             bpl _prep_repl_line_clear_loop
 _prep_repl_line_end
+            lda #10 ; BUGBUG: TODO: dynamic
+            sta repl_edit_end
             ldx #$ff ; clean stack
             txs 
 
@@ -141,7 +154,7 @@ _prep_repl_line_end
 ;----------------------
 ; Repl display
 ;
-
+            align 256
 repl_draw
 
 header
@@ -245,37 +258,46 @@ prompt
             ldy #(EDITOR_LINES - 1)
             sty repl_editor_line
 prompt_next_line
+
             ; lock missiles to players
             lda #2
             sta RESMP0
+            sta RESMP1     
+            ; load hpos
+            lda repl_display_indent,y ;4  4
+            and #$f8                ;2    6
+            sec                     ;2    8
+            ; get ready to strobe player position
             sta WSYNC               ; --
-            sta RESMP1              ; 3   3
-            lda repl_display_indent,y ;4  7
-            sec                     ;2    9
 _prompt_repos_loop
-            sbc #15                 ;2   11
-            sbcs _prompt_repos_loop ;2/3 13
-            tax                     ;2   15
-            lda LOOKUP_STD_HMOVE,x  ;5   20
-            sta HMP0                ;3   23
-            sta HMP1                ;3   26
-            sta RESP0               ;3   29
+            sbc #15                 ;2    2
+            sbcs _prompt_repos_loop ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            lda repl_display_indent,y ;4 21
+            and #$01                ;2   23
+            bne _prompt_repos_swap  ;2/3 25
+            sta.w RESP0             ;3   29 shim to 29
             sta RESP1               ;3   32
-            SLEEP 7                 ;7   40
-            sta HMBL                ;3   43
-            sta RESBL               ;3   46
+            jmp _prompt_repos_swap_end
+_prompt_repos_swap
+            sta RESP1               ;3   29
+            sta RESP0               ;3   32
+_prompt_repos_swap_end
             sta WSYNC               ;--
             lda #WHITE              ;2    2
             sta COLUP0              ;3    5
             sta COLUP1              ;3    8
             sta COLUPF              ;3   11
-            tya                     ;2   13
+            tya                     ;2   13 
             eor #$ff                ;2   15
             clc                     ;2   17
             adc #(EDITOR_LINES)     ;2   19
             clc                     ;2   21   
             adc repl_scroll         ;3   24
-            cmp repl_cursor         ;3   27
+            cmp repl_edit_line         ;3   27
             bne _prompt_skip_cursor_bk ;2 29
             ldx #$02                ;2   31
             jmp _prompt_cursor_bk   ;3   34
@@ -285,21 +307,35 @@ _prompt_skip_cursor_bk
 _prompt_cursor_bk
             lda DISPLAY_REPL_COLORS,x ;4 38
             SLEEP 32                ;32  70
-            sta HMOVE
+            sta HMOVE               ;3   73
             sta COLUBK              ;3   76
-            SLEEP 22                ;22  22
-            lda #0                  ;2   24
-            sta RESMP0              ;3   27
-            sta RESMP1              ;3   30
-            lda #$f0                ;2   32
-            sta HMP0                ;3   35
-            lda #$10                ;2   37
-            sta HMP1                ;3   40
-            sta HMBL                ;3   43
-            lda #$60                ;2   45
-            sta HMM0                ;3   48 
-            lda #$70                ;2   50
-            sta HMM1                ;3   53
+            SLEEP 14                ;14  14
+            lda repl_display_indent,y ;4 18
+            and #$01                ;2   10
+            bne _prompt_swap_hpos   ;2/3 22
+            lda #$f0                ;2   24
+            sta HMP0                ;3   27
+            lda #$10                ;2   29
+            sta HMP1                ;3   32
+            lda #$60                ;2   34
+            sta HMM0                ;3   37 
+            lda #$70                ;2   39
+            sta HMM1                ;3   42
+            jmp _prompt_final_hpos  ;3   45
+_prompt_swap_hpos
+            lda #$f0                ;2   25
+            sta HMP1                ;3   28
+            lda #$10                ;2   30
+            sta HMP0                ;3   33
+            lda #$60                ;2   35
+            sta HMM1                ;3   38 
+            lda #$70                ;2   40
+            sta HMM0                ;3   43
+            SLEEP 2                 ;2   45
+_prompt_final_hpos
+            lda #0                  ;2   47
+            sta RESMP0              ;3   50
+            sta RESMP1              ;3   53
             SLEEP 7                 ;7   60
             sta HMOVE               ;3   63
             
@@ -310,91 +346,109 @@ prompt_encode
             cmp #$40
             bpl _prompt_encode_list
 _prompt_encode_symbol
-            ldy #(DISPLAY_COLS - 1) * 2
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
-            sta repl_gx_addr,y
-            dey
-            dey
-            jmp _prompt_encode_clear
+            sta repl_s4_addr
+            jmp _prompt_encode_end
 _prompt_encode_list
-            ldy #(DISPLAY_COLS - 1) * 2
-_prompt_encode_list_loop
-            sta repl_cell_addr
             tax
-            lda HEAP_CAR_ADDR,x ; read car
-            tax
-            lda LOOKUP_SYMBOL_GRAPHICS,x
-            sta repl_gx_addr,y
-            dey
-            dey
-            bmi _prompt_encode_list_end 
-            ldx repl_cell_addr
-            lda HEAP_CDR_ADDR,x
-            bne _prompt_encode_list_loop
-            jmp _prompt_encode_clear
-_prompt_encode_list_end
-            ldx #0
+            ; load indent level onto stack so we can jmp
+            lda repl_display_indent,y 
+            and #$07
+            asl ; multiply by two
+            tay
+            lda PROMPT_ENCODE_JMP+1,y
+            pha
+            lda PROMPT_ENCODE_JMP,y
+            pha
+            rts
+            ; unrolled encoding loop
+_prompt_encode_s0
+            MAP_CAR repl_s0_addr
+_prompt_encode_s1
+            MAP_CAR repl_s1_addr
+_prompt_encode_s2
+            MAP_CAR repl_s2_addr
+_prompt_encode_s3
+            MAP_CAR repl_s3_addr
+_prompt_encode_s4
+            MAP_CAR repl_s4_addr
             jmp _prompt_encode_end
 _prompt_encode_blank
-            ldy #(DISPLAY_COLS - 1) * 2
-_prompt_encode_clear
-            tya
-            lsr
-            tax
-            lda #$0
-_prompt_encode_clear_loop
-            sta repl_gx_addr,y
-            dey
-            dey
-            bpl _prompt_encode_clear_loop
-_prompt_encode_end            
-            lda DISPLAY_COLS_NUSIZ0,x    ;4    4
-            ora #$30                     ;2    6
-            sta NUSIZ0                   ;3    9
-            lda DISPLAY_COLS_NUSIZ1,x    ;4   20
-            cpx #4                       ;2   16
-            bcs _prompt_skip_enam1
-            ora #$30                     ;2   22
-_prompt_skip_enam1            
-            sta NUSIZ1                   ;3   25
+            ldx #CHAR_HEIGHT + 4
+_prompt_encode_blank_loop
+            sta WSYNC
+            dex
+            bpl _prompt_encode_blank_loop
+            jmp prompt_end_line
+_prompt_encode_end
+            lda #0
+            sta repl_s5_addr
+
+            jmp prompt_display
+
+            align 256
+
+prompt_display
+            ; ------------------------------------
+            ; display kernel mechanics
+            ; NUSIZ0 / NUSIZ1
+            ;         - S0 S1  0  1  0  1  0 B1 B0
+            ; 1 - 0 0 - 30 00             30 00 00 
+            ; 2 - 2 0 - 30 31          31 30 01 00 
+            ; 3 - 2 2 - 31 31       31 31 31 01 01
+            ; 4 - 3 2 - 33 31    33 31 33 31 03 01 
+            ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03
+            ; GRP0 / GRP1
+            ;                 G0 G1 G2 G3 G4 G5
+
+            ldy repl_editor_line         ;3    3
+            lda repl_display_indent,y    ;4    7
             sta WSYNC ; shim
-            lda #2                       ;2   11
-            sta ENAM0                    ;3   14
-            sta ENAM1                    ;3   28
-            cpx #0                       ;2   30
-            bne _prompt_skip_enabl       ;2   32
-            sta ENABL                    ;3   35
-_prompt_skip_enabl
-            sta WSYNC ; shim
-            lda DISPLAY_COLS_NUSIZ0,x    ;4    4
-            sta NUSIZ0                   ;3    7
-            lda DISPLAY_COLS_NUSIZ1,x    ;4   11
-            sta NUSIZ1                   ;3   14
-            stx repl_width               ;3   17
-            lda #1                       ;2   19
-            sta VDELP0                   ;3   22
-            sta VDELP1                   ;3   25
-            ldy repl_editor_line         ;3   28
-            lda repl_display_indent,y    ;4   32
-            ldy #CHAR_HEIGHT - 1         ;2   34
-            sec                          ;2   36
+            and #$07                     ;2    2
+            tax                          ;2    4
+            lda repl_display_indent,y    ;4    8
+            and #$f8                     ;2   10
+            clc                          ;2   12
+            adc DISPLAY_COLS_INDENT,x    ;4   16
+            sec                          ;2   18
 _prompt_delay_loop
-            sbc #24                      ;2   38
-            SLEEP 3                      ;3   41
-            sbcs _prompt_delay_loop      ;2/3 43
-            adc #16                      ;2   45
-            sbmi _prompt_draw_entry_0    ;2   47 ; -24, transition at +0  
-            SLEEP 4                      ;4   51
-            bne _prompt_draw_entry_2     ;2   53 ; -16, transition at +5
-            jmp _prompt_draw_entry_1     ;3   56 ;  -8, transition at +3
+            sbc #24                      ;2   --
+            SLEEP 3                      ;3   --
+            sbcs _prompt_delay_loop      ;2/3 32
+            adc #16                      ;2   34
+            sbmi _prompt_draw_entry_0    ;2/3 36 ; -24, transition at +0  
+            SLEEP 4                      ;4   40
+            bne _prompt_draw_entry_2     ;2   42 ; -16, transition at +5
+            jmp _prompt_draw_entry_1     ;3   46 ;  -8, transition at +3
+_prompt_draw_entry_0 ; 37          
+_prompt_draw_entry_2 ; 37/--/43
+            SLEEP 5                      ;5   42/--/48  + shim
+_prompt_draw_entry_1 ; 42/45/48
+              
+            lda #1                       ;2   67
+            sta VDELP0                   ;3   69
+            sta VDELP1                   ;3   72
+            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   --
+            sta NUSIZ0                   ;3    3
+            lda DISPLAY_COLS_NUSIZ1_A,x  ;4    7
+            sta NUSIZ1                   ;3   10
+            lda #2                       ;2   12
+            sta ENAM0                    ;3   15
+            sta ENAM1                    ;3   18
+
+            ldy DISPLAY_COLS_NUSIZ1_B,x  ;4   22
+            lda DISPLAY_COLS_NUSIZ0_B,x  ;4   26
+            sty NUSIZ1                   ;3   29  24 - 33
+            sta NUSIZ0                   ;3   32  33 - 42
+            ldx #14                      ;2   34
+_prompt_draw_start_loop ; skip a line
+            dex                          ;2   36/30 (2x15 = 30)
+            bpl _prompt_draw_start_loop  ;2/3 38/32 (1x2 + 3x14 = 44)
+            ldy #CHAR_HEIGHT - 1         ;2   34
+      
 _prompt_draw_loop    ; 40
-            SLEEP 5                      ;5   45  
-_prompt_draw_entry_0 ; 45/48          
-_prompt_draw_entry_2 ; 45/48/--/54
-            SLEEP 5                      ;2   50/53/--/59
-_prompt_draw_entry_1 ; 50/53/56/59
-            SLEEP 6                      ;9   56/59/62/65
+            SLEEP 16                     ;16   56  
             lda (repl_s0_addr),y         ;5   61/64/67/69
             sta GRP0                     ;3   64/67/70/72
             lda (repl_s1_addr),y         ;5   69/72/75/ 1
@@ -412,30 +466,35 @@ _prompt_draw_entry
             sta GRP1                     ;3   32  24 - 33   0 8 16!24!** ++
             sty GRP0                     ;3   35  33 - 42   0 8 16 24!32!**
             dey                          ;2   37
-            bpl _prompt_draw_loop        ;2   39  
- 
+            sbpl _prompt_draw_loop       ;2   39  
+
+            ldx #$ff ; reset the stack   ;2   41
+            txs                          ;2   43
+            lda #0                       ;2   45
+            sta VDELP0                   ;3   48
+            sta VDELP1                   ;3   51
+            sta GRP0                     ;3   54
+            sta GRP1                     ;3   57
+
+            ldy repl_editor_line         ;3   60
+            lda repl_display_indent,y    ;4   64
+            and #$07                     ;2   66
+            tax                          ;2   68
+            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   72
+            sta NUSIZ0                   ;3   75
+            lda DISPLAY_COLS_NUSIZ1_A,x  ;4    3
+            sta NUSIZ1                   ;3    6
+            ldy DISPLAY_COLS_NUSIZ1_B,x  ;4   10
+            lda DISPLAY_COLS_NUSIZ0_B,x  ;4   14
+            SLEEP 18                     ;18  32
+            sty NUSIZ1                   ;3   35
+            sta NUSIZ0                   ;3   38
+
             sta WSYNC
-            ldx repl_width
-            lda DISPLAY_COLS_NUSIZ0,x
-            ora #$30
-            sta NUSIZ0 
-            lda DISPLAY_COLS_NUSIZ1,x
-            cpx #4 
-            bcs _prompt_skip_enam1_1
-            ora #$30      
-_prompt_skip_enam1_1
-            sta NUSIZ1  
-            ldx #$ff ; reset the stack 
-            txs           
-            sta WSYNC
-            lda #0
-            sta VDELP0
-            sta VDELP1                  
-            sta GRP0
-            sta GRP1
+            lda #0          
             sta ENAM0
             sta ENAM1
-            sta ENABL
+prompt_end_line
             ldy repl_editor_line
             dey 
             bmi prompt_done
@@ -455,18 +514,29 @@ _footer_loop
             bpl _footer_loop
 
             jmp waitOnOverscan
-;
-; 1 - 0 0
-; 2 - 0 0
-; 3 - 1 0
-; 4 - 1 1
-; 5 - 3 1
-; 6 - 3 3
-;
-DISPLAY_COLS_NUSIZ0
-    byte 3
-DISPLAY_COLS_NUSIZ1
-    byte 3,1,1,0,0,0
+            ;         - S0 S1  0  1  0  1  0 E1 B0
+            ; 1 - 0 0 - 30 00             30 00 00  
+            ; 2 - 2 0 - 30 31          31 30 01 00 
+            ; 3 - 2 2 - 31 31       31 31 31 01 01
+            ; 4 - 3 2 - 31 33    33 31 33 31 03 01 
+            ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03  
+PROMPT_ENCODE_JMP
+    word _prompt_encode_s4-1
+    word _prompt_encode_s3-1
+    word _prompt_encode_s2-1
+    word _prompt_encode_s1-1
+    word _prompt_encode_s0-1
+
+DISPLAY_COLS_INDENT
+    byte 80,88,96,104,112 
+DISPLAY_COLS_NUSIZ0_A
+    byte $30,$30,$31,$31,$33
+DISPLAY_COLS_NUSIZ1_A
+    byte $00,$31,$31,$33,$33
+DISPLAY_COLS_NUSIZ0_B
+    byte $00,$00,$01,$01,$03
+DISPLAY_COLS_NUSIZ1_B
+    byte $00,$01,$01,$03,$03
 DISPLAY_REPL_COLORS
     byte #$7A,#$7E,#$86 ; BUGBUG: make pal safe
 
@@ -491,3 +561,10 @@ DISPLAY_REPL_COLORS
             sta {2}
     ENDM
 
+    MAC MAP_CAR
+            ldy HEAP_CAR_ADDR,x ; read car
+            lda LOOKUP_SYMBOL_GRAPHICS,y
+            sta {1}
+            lda HEAP_CDR_ADDR,x
+            tax
+    ENDM

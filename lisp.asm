@@ -46,7 +46,7 @@ ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
 HEADER_HEIGHT = 60
 EDITOR_LINES  = 5
-PROMPT_HEIGHT = EDITOR_LINES * 19
+PROMPT_HEIGHT = EDITOR_LINES * 18
 FOOTER_HEIGHT = 26
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
@@ -99,23 +99,26 @@ game_data          ds 8
 
 
 repl_scroll    ds 1 ; lines to scroll
-repl_cursor    ds 1
+repl_edit_line ds 1
+repl_edit_col  ds 1
+repl_edit_cell ds 1
+repl_edit_end  ds 1 ; last line
 
-repl_display_list   ds EDITOR_LINES ; 6 line display
-repl_display_indent ds EDITOR_LINES ; 6 line display
+repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each line
+repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
 
 repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
 repl_tmp_accumulator
 repl_tmp_scroll
 repl_cell_addr ds 1 ; temporary cell storage during encoding BUGBUG: need?
 repl_gx_addr
+repl_tmp_width      ; temporary NUSIZ storage during draw BUGBUG: need?
 repl_s5_addr   ds 2
 repl_s4_addr   ds 2
 repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2
 repl_s0_addr   ds 2
-repl_width     ds 1 ; temporary NUSIZ storage during draw BUGBUG: need?
 repl_editor_line ds 1; temporary line counter storage
 
 ; ----------------------------------
