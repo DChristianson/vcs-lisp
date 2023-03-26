@@ -102,7 +102,7 @@ repl_scroll    ds 1 ; lines to scroll
 repl_edit_line ds 1
 repl_edit_col  ds 1
 repl_edit_cell ds 1
-repl_edit_end  ds 1 ; last line
+repl_last_line ds 1 ; last line
 
 repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each line
 repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width

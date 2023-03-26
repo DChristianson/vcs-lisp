@@ -27,9 +27,9 @@ _repl_update_set_cursor
             bpl _repl_update_check_scroll_up
             lda #0
 _repl_update_check_scroll_up
-            cmp repl_edit_end
+            cmp repl_last_line
             bcc _repl_update_check_limit
-            lda repl_edit_end
+            lda repl_last_line
 _repl_update_check_limit
             sta repl_edit_line
             cmp repl_scroll
@@ -136,15 +136,19 @@ _prep_repl_line_next_skip_dey
             sta repl_display_list,y
             jmp _prep_repl_line_complex
 _prep_repl_line_clear
+            lda repl_scroll
+            clc
+            adc #EDITOR_LINES
+            tax
             lda #0
 _prep_repl_line_clear_loop
             sta repl_display_indent,y
             sta repl_display_list,y
+            dex
             dey
             bpl _prep_repl_line_clear_loop
 _prep_repl_line_end
-            lda #10 ; BUGBUG: TODO: dynamic
-            sta repl_edit_end
+            stx repl_last_line ; either -1 or last cleared line
             ldx #$ff ; clean stack
             txs 
 
