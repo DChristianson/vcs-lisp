@@ -99,9 +99,10 @@ game_data          ds 8
 
 
 repl_scroll    ds 1 ; lines to scroll
-repl_edit_line ds 1
-repl_edit_col  ds 1
-repl_edit_cell ds 1
+repl_edit_line ds 1 ; editor line BUGBUG: collapse with col?
+repl_edit_col  ds 1 ; editor column BUGBUG: collapse with line?
+repl_prev_cell ds 1
+repl_curr_cell ds 1
 repl_last_line ds 1 ; last line
 
 repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each line
@@ -109,8 +110,7 @@ repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bi
 
 repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
 repl_tmp_accumulator
-repl_tmp_scroll
-repl_cell_addr ds 1 ; temporary cell storage during encoding BUGBUG: need?
+repl_tmp_scroll ds 1 ; temporary cell storage during encoding BUGBUG: need?
 repl_gx_addr
 repl_tmp_width      ; temporary NUSIZ storage during draw BUGBUG: need?
 repl_s5_addr   ds 2

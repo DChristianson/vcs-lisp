@@ -22,18 +22,18 @@ DONE
     - bracket current line
     - scrolling
     - joystick to move cursor around
-
+    - line highlight
 TASKS
   - edit code 
      - clean display tests
        - tester 3 (cursor movement dynamics)
-         - look at how basic works
          - display cursor to blink + pointer at current cell
        - tester 4 (eval button)
        - tester 5 (include numbers)
        - tester 6 cleanups (end of cell list terminators)
      - virtual keyboard
          - navigation and selection
+         - create / update / delete
          - undo / cancel
          - number edit
   - zones design
@@ -148,6 +148,12 @@ fixed symbol table
  /
  >
  <
+
+ 30/27
+ 33/30
+ 35/32
+ 49/46
+ 46/43
 
 == The stack
 
