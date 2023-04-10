@@ -23,14 +23,16 @@ DONE
     - scrolling
     - joystick to move cursor around
     - line highlight
+    - display cursor to point at current cell
 TASKS
   - edit code 
      - clean display tests
-       - tester 3 (cursor movement dynamics)
-         - display cursor to blink + pointer at current cell
-       - tester 4 (eval button)
-       - tester 5 (include numbers)
-       - tester 6 cleanups (end of cell list terminators)
+       - tester 4 (editor)
+         - display cursor stays in bounds of cells
+         - display cursor locates curr cell
+       - tester 5 (eval button)
+       - tester 6 (include numbers)
+       - tester 7 cleanups (end of cell list terminators)
      - virtual keyboard
          - navigation and selection
          - create / update / delete
@@ -55,6 +57,8 @@ TASKS
      - graphics (paddle game) functions
      - graphics (maze game) functions
      - graphics (towers game) functions
+     - graphics (tictactoe? game) functions
+     - graphics (mastermind? game) functions
   - eval graphics kernel
      - graphics zone
      - stack / heap / free accumulator
@@ -70,6 +74,7 @@ Game ideas
  Maze
  Hanoi
  Mastermind
+ Tictactoe
  Ant (genetic algo)
 
 

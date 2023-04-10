@@ -109,10 +109,6 @@ _prep_repl_line_scan
             ldx #$ff
             stx repl_tmp_width
 _prep_repl_line_scan_loop
-            cmp repl_curr_cell
-            bne _prep_repl_line_scan_cell
-            stx repl_prev_cell
-_prep_repl_line_scan_cell
             tax
             lda HEAP_CAR_ADDR,x ; read car
             bpl _prep_repl_line_complex 
@@ -128,10 +124,6 @@ _prep_repl_line_complex
             ldx repl_display_list,y; BUGBUG: TODO; re-use dl
             lda HEAP_CDR_ADDR,x ; read cdr
             pha
-            cmp repl_curr_cell
-            bne _prep_repl_line_complex_cell
-            stx repl_prev_cell
-_prep_repl_line_complex_cell
             lda HEAP_CAR_ADDR,x ; read head car
             sta repl_display_list,y
             bpl _prep_repl_line_next
@@ -177,6 +169,42 @@ _prep_repl_line_end
             ldx #$ff ; clean stack
             txs 
 _prep_repl_line_adjust
+
+            lda repl_scroll 
+            sec
+            sbc repl_edit_line    
+            clc
+            adc #(EDITOR_LINES - 1)
+            tay
+            lda repl_display_indent,y
+            and #$07
+            sta repl_tmp_width
+            lda repl_display_indent,y
+            lsr
+            lsr
+            lsr
+            eor #$ff
+            clc
+            adc #1
+            clc
+            adc repl_edit_col
+            bpl _prep_repl_line_check_wide
+            eor #$ff
+            clc
+            adc #1
+            jmp _prep_repl_line_set_col
+_prep_repl_line_check_wide
+            sec
+            sbc repl_tmp_width
+            bcc _prep_repl_line_adjust_end
+            eor #$ff
+            clc
+            adc #1
+_prep_repl_line_set_col
+            clc
+            adc repl_edit_col
+            sta repl_edit_col
+_prep_repl_line_adjust_end
             ; done
             jmp update_return
 
