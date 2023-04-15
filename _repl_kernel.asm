@@ -118,10 +118,12 @@ _prep_repl_line_scan_loop
             lda HEAP_CDR_ADDR,x ; read cdr
             bne _prep_repl_line_scan_loop
             jmp _prep_repl_line_next
+_prep_repl_line_complex_next
+            sta repl_display_list,y
 _prep_repl_line_complex
             lda #0
             sta repl_tmp_width
-            ldx repl_display_list,y; BUGBUG: TODO; re-use dl
+            ldx repl_display_list,y
             lda HEAP_CDR_ADDR,x ; read cdr
             pha
             lda HEAP_CAR_ADDR,x ; read head car
@@ -149,9 +151,12 @@ _prep_repl_line_next_skip_dey
             asl
             sta repl_display_indent,y ; columns to indent (from prev line)
             pla ; pull from stack
-            bpl _prep_repl_line_next_skip_dey ; null
+            bmi _prep_repl_line_complex_next ; not null
+            lda #$C6; SYMBOL_GRAPHICS_S06_LT
             sta repl_display_list,y
-            jmp _prep_repl_line_complex
+            dey
+            bmi _prep_repl_line_end
+            jmp _prep_repl_line_next_skip_dey 
 _prep_repl_line_clear
             lda repl_scroll
             clc

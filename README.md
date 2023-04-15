@@ -23,21 +23,28 @@ DONE
     - scrolling
     - joystick to move cursor around
     - line highlight
+  - tester 4 (editor)
     - display cursor to point at current cell
+    - display cursor stays in bounds of cells
 TASKS
-  - edit code 
-     - clean display tests
-       - tester 4 (editor)
-         - display cursor stays in bounds of cells
-         - display cursor locates curr cell
-       - tester 5 (eval button)
-       - tester 6 (include numbers)
-       - tester 7 cleanups (end of cell list terminators)
-     - virtual keyboard
-         - navigation and selection
-         - create / update / delete
-         - undo / cancel
-         - number edit
+  - tester 4 (editor)
+      - display cursor can be at end of a list
+  - virtual keyboard 1
+      - button press opens keyboard
+      - with open keyboard movement selects new value
+      - with press display cursor locates curr cell and replaces
+  - virtual keyboard 2
+      - add new cell 
+      - delete cell
+      - cancel button undoes changes
+  - controls 1
+      - eval button
+      - function assignment
+      - game mode switch
+  - display 4 
+      - show numbers
+  - virtual keyboard 3
+      - number edit
   - zones design
      - graphics zone
      - function table
