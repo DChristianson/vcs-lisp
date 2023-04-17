@@ -170,15 +170,19 @@ def find_offset_solution(compressedbits, solve_left=True, solve_right=False):
 def bitb(b):
     return '1' if b > 0 else '.'
 
-def asmfmt(name, vars, fp):
+def asmfmt(name, vars, symbols, fp):
     fp.write(f'{name.upper()}\n')
-    for col in vars:
+    for i, col in enumerate(vars):
+        if symbols is not None:
+            fp.write(f'{symbols[i]}\n')
         value = ','.join([int2asm(word) for word in reversed(col)])
         fp.write(f'    byte {value}; {len(col)}\n')
 
-def basfmt(name, vars, fp):
+def basfmt(name, vars, symbols, fp):
     fp.write(f'{name}:\n')
-    for col in vars:
+    for n, col in enumerate(vars):
+        if symbols is not None:
+            fp.write(f'{symbols[n]}\n')
         for i in col:
             fp.write(f'    {int2bas(i)}\n')
 
@@ -233,7 +237,7 @@ def emit_varmissile(varname, image, fp, reverse=False, mirror=False, fmt=asmfmt,
 
     # write output
     for name, col in [('ctrl', ctrl)]:
-        fmt(f'{varname}_{name}', [col], fp)
+        fmt(f'{varname}_{name}', [col], None, fp)
 
     if debug:
         # diagnostic output
@@ -269,7 +273,7 @@ def emit_varsprite8(varname, image, fp, reverse=False, mirror=False, fmt=asmfmt,
 
     # write output
     for name, col in [('ctrl', ctrl), ('graphics', graphics)]:
-        fmt(f'{varname}_{name}', [col], fp)
+        fmt(f'{varname}_{name}', [col], None, fp)
 
     if debug:
         # diagnostic output
@@ -280,7 +284,7 @@ def emit_varsprite8(varname, image, fp, reverse=False, mirror=False, fmt=asmfmt,
             cumulative_offset += offset
  
 # multi-player sprite
-def emit_spriteMulti(varname, image, fp, bits=24, fmt=asmfmt):
+def emit_spriteMulti(varname, image, fp, bits=24, fmt=asmfmt, symbols=None):
     width, height = image.size
     if not image.mode == 'RGBA':
         image = image.convert(mode='RGBA')
@@ -291,7 +295,7 @@ def emit_spriteMulti(varname, image, fp, bits=24, fmt=asmfmt):
         vars.append([])
     for i, word in enumerate([bits2int(chunk) for chunk in chunker(map(bit, data), 8)]):
         vars[i % cols].append(word)
-    fmt(varname, vars, fp)
+    fmt(varname, vars, symbols, fp)
 
 if __name__ == "__main__":
 
@@ -301,6 +305,7 @@ if __name__ == "__main__":
     parser.add_argument('--mirror', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--bits', type=int, choices=[1] + list(range(8, 8 * 32 + 1, 8)), default=8)
+    parser.add_argument('--symfile', type=str, default=None)
     parser.add_argument('filenames', nargs='*')
 
     args = parser.parse_args()
@@ -312,6 +317,11 @@ if __name__ == "__main__":
         aseprite_save_as(filename, f'data/{spritename}_001.png')
         sprites[spritename] = sorted(list(glob.glob(f'data/{spritename}_*.png')))
 
+    symbols = None
+    if args.symfile is not None:
+        with open(args.symfile) as fp:
+            symbols = list([line.strip() for line in fp.readlines()])
+
     fmt = formats[args.format]
     out = sys.stdout
     for spritename, files in sprites.items():
@@ -320,7 +330,7 @@ if __name__ == "__main__":
             with Image.open(filename, 'r') as image:
                 width, _ = image.size
                 if args.bits > 8:
-                    emit_spriteMulti(varname, image, out, bits=args.bits, fmt=fmt)
+                    emit_spriteMulti(varname, image, out, bits=args.bits, fmt=fmt, symbols=symbols)
                 elif width == 8:
                     emit_spriteMulti(varname, image, out, bits=8, fmt=fmt)
                 elif args.bits == 1:

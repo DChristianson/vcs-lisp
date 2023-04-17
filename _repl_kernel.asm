@@ -152,7 +152,7 @@ _prep_repl_line_next_skip_dey
             sta repl_display_indent,y ; columns to indent (from prev line)
             pla ; pull from stack
             bmi _prep_repl_line_complex_next ; not null
-            lda #$C6; SYMBOL_GRAPHICS_S06_LT
+            lda #$DE; SYMBOL_GRAPHICS_S1E_TERM
             sta repl_display_list,y
             dey
             bmi _prep_repl_line_end
@@ -183,6 +183,10 @@ _prep_repl_line_adjust
             tay
             lda repl_display_indent,y
             and #$07
+            beq _prep_repl_line_check_sw
+            clc
+            adc #1
+_prep_repl_line_check_sw
             sta repl_tmp_width
             lda repl_display_indent,y
             lsr
@@ -619,7 +623,7 @@ PROMPT_ENCODE_JMP
     word _prompt_encode_s0-1
 
 DISPLAY_COLS_INDENT
-    byte 80,88,96,104,112 
+    byte 80,88,96,104,112
 DISPLAY_COLS_NUSIZ0_A
     byte $30,$30,$31,$31,$33
 DISPLAY_COLS_NUSIZ1_A

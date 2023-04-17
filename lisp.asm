@@ -396,13 +396,13 @@ SYMBOL_GRAPHICS_S09_NOT
 SYMBOL_GRAPHICS_S0A_IF
     byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
 SYMBOL_GRAPHICS_S0B_F0
-    byte $0,$88,$90,$50,$20,$20,$20,$40; 8
+    byte $0,$88,$98,$50,$30,$20,$20,$60; 8
 SYMBOL_GRAPHICS_S0C_F1
-    byte $0,$20,$20,$0,$d8,$50,$20,$40; 8
+    byte $0,$88,$98,$50,$30,$24,$2c,$6c; 8
 SYMBOL_GRAPHICS_S0D_F2
-    byte $0,$50,$50,$0,$d8,$50,$20,$40; 8
+    byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
 SYMBOL_GRAPHICS_S0E_F3
-    byte $0,$70,$70,$0,$d8,$50,$20,$40; 8
+    byte $0,$f8,$88,$40,$4c,$2c,$24,$10; 8
 SYMBOL_GRAPHICS_S0F_A0
     byte $0,$70,$88,$88,$78,$8,$88,$70; 8
 SYMBOL_GRAPHICS_S10_A1
@@ -433,9 +433,9 @@ SYMBOL_GRAPHICS_S1C_NINE
     byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
 SYMBOL_GRAPHICS_S1D_HASH
     byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
-SYMBOL_GRAPHICS_S1E_MULT
+SYMBOL_GRAPHICS_S1E_TERM
+    byte $0,$88,$50,$0,$20,$0,$50,$88; 8
 SYMBOL_GRAPHICS_S1F_MULT
-
 
     ORG $FF00
 
@@ -488,7 +488,7 @@ SYMBOL_GRAPHICS_LOOKUP_TABLE
     byte #<SYMBOL_GRAPHICS_S1B_EIGHT
     byte #<SYMBOL_GRAPHICS_S1C_NINE
     byte #<SYMBOL_GRAPHICS_S1D_HASH
-    byte #<SYMBOL_GRAPHICS_S1E_MULT
+    byte #<SYMBOL_GRAPHICS_S1E_TERM
     byte #<SYMBOL_GRAPHICS_S1F_MULT
 
 ;-----------------------------------------------------------------------------------
