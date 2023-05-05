@@ -16,21 +16,26 @@ SYSTEM = NTSC
 ; NTSC Colors
 WHITE = $0f
 BLACK = 0
+RED = $30
 LOGO_COLOR = $C4
 SCANLINES = 262
 #else
 ; PAL Colors
 WHITE = $0E
 BLACK = 0
+RED = $42
 LOGO_COLOR = $53
 SCANLINES = 262
 #endif
 
 ; REPL 0xxxyyyy (x = game type, y = controls)
-GAME_STATE_EDIT       = %00000000
+GAME_STATE_EDIT        = %00000000
+GAME_STATE_EDIT_OPEN   = %00000001
+GAME_STATE_EDIT_SELECT = %00000010
+GAME_STATE_EDIT_CLOSE  = %00000011
 ; EVAL 1xxxyyyy (x = game type, y = controls)
-GAME_STATE_EVAL       = %10000000
-GAME_STATE_EVAL_APPLY = %10000001 ; returning from suspend
+GAME_STATE_EVAL        = %10000000
+GAME_STATE_EVAL_APPLY  = %10000001 ; returning from suspend
 
 FUNCTION_TABLE_SIZE = 4
 CELL_SIZE           = 2
@@ -46,7 +51,8 @@ ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
 NUMERIC_SYMBOL_ZERO = 19
 HEADER_HEIGHT = 60
 EDITOR_LINES  = 5
-PROMPT_HEIGHT = EDITOR_LINES * 18
+LINE_HEIGHT = CHAR_HEIGHT + 10
+PROMPT_HEIGHT = EDITOR_LINES * LINE_HEIGHT
 FOOTER_HEIGHT = 26
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
@@ -213,7 +219,7 @@ _end_switches
             ; 
             ; do eval and repl updates BUGBUG: only one at a time
             lda game_state
-            beq repl_update
+            bpl repl_update
             jmp eval_update
 update_return
 

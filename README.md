@@ -26,9 +26,8 @@ DONE
   - tester 4 (editor)
     - display cursor to point at current cell
     - display cursor stays in bounds of cells
+    - display cursor can be at end of a list
 TASKS
-  - tester 4 (editor)
-      - display cursor can be at end of a list
   - virtual keyboard 1
       - button press opens keyboard
       - with open keyboard movement selects new value
@@ -37,12 +36,19 @@ TASKS
       - add new cell 
       - delete cell
       - cancel button undoes changes
+  - virtual keyboard 3
+      - empty at first
+      - blinky cursor when in repl
   - controls 1
-      - eval button
-      - function assignment
-      - game mode switch
+      - moving past last line goes to menu
+      - moving above first line goes to menu
+      - eval when button push in menu
+      - function assignment when push in menu
+      - game mode switch when push in menu
   - display 4 
       - show numbers
+  - help / attract mode 1 
+      - occasional blinkyness of controls
   - virtual keyboard 3
       - number edit
   - zones design
