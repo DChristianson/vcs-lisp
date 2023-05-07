@@ -1,8 +1,12 @@
 repl_update
             ; check fire button
             lda INPT4
-            bmi _repl_update_skip_eval
+            bmi _repl_update_button_up
             lda #GAME_STATE_EDIT_OPEN
+            jmp _repl_update_button_save
+_repl_update_button_up
+            lda #GAME_STATE_EDIT
+_repl_update_button_save
             sta game_state
 _repl_update_skip_eval
             ; check movement
@@ -55,7 +59,7 @@ _repl_update_check_limit
             jmp _repl_update_skip_move
 _repl_update_check_scroll_down
             sec 
-            sbc #(EDITOR_LINES-1)
+            sbc #(EDITOR_LINES-2)
             cmp repl_scroll
             bmi _repl_update_skip_move
             sta repl_scroll
@@ -101,7 +105,7 @@ _prep_repl_loop
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll
             sta repl_tmp_scroll
-            lda #0
+            lda #0 ; initial indent level
             sta repl_display_indent,y
             lda repl
 _prep_repl_line_scan
@@ -142,9 +146,9 @@ _prep_repl_line_next
             dey
             bmi _prep_repl_line_end
 _prep_repl_line_next_skip_dey
-            tsx ; check stack
+            tsx ; read stack to see how indented we need to be
             txa
-            eor #$ff ; invert
+            eor #$ff ; invert and shift lef
             beq _prep_repl_line_clear
             asl
             asl
@@ -169,33 +173,32 @@ _prep_repl_line_end
             lda repl_tmp_scroll
             eor #$ff
             clc
-            adc #EDITOR_LINES - 1
+            adc #EDITOR_LINES - 2
             adc repl_scroll
             sta repl_last_line ; last cleared line
-            ldx #$ff ; clean stack
-            txs 
-_prep_repl_line_adjust
-            lda repl_scroll 
-            sec
-            sbc repl_edit_line    
-            clc
-            adc #(EDITOR_LINES - 1)
-            tay
-            lda repl_display_indent,y
-            and #$07
-            beq _prep_repl_line_check_sw
+            ; adjust cursor to stay within line bounds
+_prep_repl_line_adjust 
+            lda repl_scroll              ; get edit line y index
+            sec                          ; .
+            sbc repl_edit_line           ; .
+            clc                          ; .
+            adc #(EDITOR_LINES - 1)      ; .
+            tay                          ; .
+            lda repl_display_indent,y    ; read line width level
+            and #$07                     ; mask out indent
+            beq _prep_repl_line_check_sw 
             clc
             adc #1
 _prep_repl_line_check_sw
-            sta repl_tmp_width
-            lda repl_display_indent,y
-            lsr
-            lsr
-            lsr
-            eor #$ff
-            clc
-            adc #1
-            clc
+            sta repl_tmp_width           ; save indent level to tmp
+            lda repl_display_indent,y    ; read width
+            lsr                          ; . divide by 8
+            lsr                          ; .
+            lsr                          ; .
+            eor #$ff                     ; invert
+            clc                          ; .
+            adc #1                       ; .
+            clc                          ; .
             adc repl_edit_col
             bpl _prep_repl_line_check_wide
             eor #$ff
@@ -214,7 +217,29 @@ _prep_repl_line_set_col
             adc repl_edit_col
             sta repl_edit_col
 _prep_repl_line_adjust_end
+            ; show keyboard if we are in that game state
+            lda game_state
+            beq _prep_repl_end
+            lda repl_edit_col
+            sec
+            sbc #2
+            bpl _prep_repl_line_adjust_positive
+_prep_repl_line_adjust_negative
+            lda #0 ; force zero
+_prep_repl_line_adjust_positive
+            asl
+            asl
+            asl
+            ora #5
+            dey
+            sta repl_display_indent,y ; BUGBUG: keyboard here
+            lda #$ff
+            sta repl_display_list,y
+            ; TODO: show keyboard after y
             ; done
+_prep_repl_end
+            ldx #$ff ; clean stack
+            txs      ;
             jmp update_return
 
 ;----------------------
@@ -281,7 +306,9 @@ accumulator_draw_end
             sta PF1
             sta PF2
             sta GRP0
-            sta GRP1            
+            sta GRP1
+            ldx #$ff ; reset stack pointer
+            txs            
                 
             ; PROMPT
             ; draw repl cell tree
@@ -456,16 +483,31 @@ _prompt_encode_end
 
 prompt_display
             ; ------------------------------------
-            ; display kernel mechanics
-            ; NUSIZ0 / NUSIZ1
-            ;         - S0 S1  0  1  0  1  0 B1 B0
-            ; 1 - 0 0 - 30 00             30 00 00 
-            ; 2 - 2 0 - 30 31          31 30 01 00 
-            ; 3 - 2 2 - 31 31       31 31 31 01 01
-            ; 4 - 3 2 - 33 31    33 31 33 31 03 01 
-            ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03
-            ; GRP0 / GRP1
-            ;                 G0 G1 G2 G3 G4 G5
+            ; cell display kernel mechanics
+            ;   - cells are displayed using player / missile graphics
+            ;     - missiles are used to draw cell walls
+            ;     - players are used to draw cell contents
+            ;  - limits
+            ;     - we can display 1-3 copies of each player / missile for a total of 6 elements
+            ;     - the last missile draws the rightmost cell wall
+            ;     - this gives us max 5 cells (using 6 walls)
+            ;     - so #copies p0 / p1 = # cells + 1
+            ;   - kernel timing 
+            ;     - player 1 / missile 1 are always last
+            ;     - example: to draw top of cell
+            ;       - on first line set missile width to 8
+            ;       - while last m0 / p0 is being drawn set m1 width to 1
+            ;       - leave width 1 until last line
+            ;       - draw cell contents with a stock 48 pixel kernel
+            ;       - on last line repeat the top line logic 
+            ;
+            ; cells - copies - NUSIZ -  0  1  0  1  0  1  0
+            ; 1     - 1 / 1  - 30 00 -             30 00 00 
+            ; 2     - 1 / 2  - 30 31 -          31 30 01 00 
+            ; 3     - 2 / 2  - 31 31 -       31 31 31 01 01
+            ; 4     - 2 / 3  - 31 33 -    33 31 33 31 03 01 
+            ; 5     - 3 / 3  - 33 33 - 33 33 33 33 33 03 03
+            ;
 
             lda #1                       ;2  -15
             sta VDELP0                   ;3  -13

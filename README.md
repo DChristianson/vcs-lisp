@@ -27,7 +27,7 @@ DONE
     - display cursor to point at current cell
     - display cursor stays in bounds of cells
     - display cursor can be at end of a list
-TASKS
+ALPHA
   - virtual keyboard 1
       - button press opens keyboard
       - with open keyboard movement selects new value
@@ -36,59 +36,59 @@ TASKS
       - add new cell 
       - delete cell
       - cancel button undoes changes
-  - virtual keyboard 3
-      - empty at first
-      - blinky cursor when in repl
   - controls 1
       - moving past last line goes to menu
       - moving above first line goes to menu
       - eval when button push in menu
+  - controls 2
       - function assignment when push in menu
       - game mode switch when push in menu
-  - display 4 
-      - show numbers
-  - help / attract mode 1 
-      - occasional blinkyness of controls
+  - library 1
+      - float math
+      - beeps
+  - game modes 1
+      - scratch
+  - demo 1
+      - fib
+      - play beep
+BETA
+  - game modes 2
+      - matching shapes (boolean logic)
+      - silly goose (number sequence)
+      - towers of hanoi
+      - paddle pong
+  - library 2
+      - modulo function
+      - music functions
   - virtual keyboard 3
       - number edit
-  - zones design
-     - graphics zone
-     - function table
-     - code area
-     - accumulator display
-     - switch game modes (use commands?)
-     - free space indicator
-  - interpreter
-     - safeties against stack overflow
+  - dev support
      - some way to do unit tests?
-  - font
-     - tune font / symbols
-  - library
-     - modulo function
-     - float math
-     - music functions
-     - graphics (paddle game) functions
-     - graphics (maze game) functions
-     - graphics (towers game) functions
-     - graphics (tictactoe? game) functions
-     - graphics (mastermind? game) functions
   - eval graphics kernel
      - graphics zone
      - stack / heap / free accumulator
      - song that plays during eval
+SPRINKLES
+  - interpreter
+     - safeties against stack overflow
+  - font
+     - tune font / symbols
   - title screen
      - logo 
      - shoutouts
-  
-Game ideas
- Sequence matcher (fib, square, sqrt, etc)
- Pong mode
- Music mode
- Maze
- Hanoi
- Mastermind
- Tictactoe
- Ant (genetic algo)
+  - help / attract mode 1 
+      - occasional blinkyness of controls
+  - virtual keyboard 3
+      - empty at first
+      - blinky cursor when in repl
+  - display 4 
+      - show numbers
+BONUS 
+  - bonus game mode
+     - mouse maze
+     - tictactoe?
+     - mastermind?
+     - ant
 
 
 Shoutouts

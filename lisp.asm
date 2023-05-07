@@ -235,7 +235,7 @@ endVBlank_loop
             sta WSYNC ; SL 35
 
             lda game_state
-            beq _jmp_repl_draw ; BUGBUG is there a better way -- jump table?
+            bpl _jmp_repl_draw ; BUGBUG is there a better way -- jump table?
             jmp eval_draw
 _jmp_repl_draw
             jmp repl_draw
