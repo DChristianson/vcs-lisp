@@ -1,47 +1,24 @@
 repl_update
-            ; check fire button
-            lda INPT4
-            bmi _repl_update_button_up
-            lda #GAME_STATE_EDIT_OPEN
-            jmp _repl_update_button_save
-_repl_update_button_up
-            lda #GAME_STATE_EDIT
+            lda player_input_latch
+            bmi _repl_update_skip_eval
+            ldx game_state
+            inx
+            cpx #GAME_STATE_EDIT_SELECT
+            beq _repl_update_button_save
+            ldx #GAME_STATE_EDIT
 _repl_update_button_save
-            sta game_state
+            stx game_state
 _repl_update_skip_eval
             ; check movement
-            lda player_input
-            eor #$f0
-            ldx SWCHA
-            stx player_input
-            ora player_input
-            rol
-            bcs _repl_update_skip_right
-            lda #1
-            jmp _repl_update_set_cursor_col
-_repl_update_skip_right
-            rol
-            bcs _repl_update_skip_left
+            lda player_input_latch
+            ror
+            bcs _repl_update_skip_up
             lda #-1
-            jmp _repl_update_set_cursor_col
-_repl_update_set_cursor_col
-            clc
-            adc repl_edit_col
-            bpl _repl_update_check_col_limit
-            lda #0
-_repl_update_check_col_limit
-            sta repl_edit_col
-            jmp _repl_update_skip_move
-_repl_update_skip_left
-            rol
-            bcs _repl_update_skip_down
-            lda #1
             jmp _repl_update_set_cursor_line
-_repl_update_skip_down
-            rol
-            bcs _repl_update_skip_move
-_repl_update_up
-            lda #-1
+_repl_update_skip_up
+            ror
+            bcs _repl_update_skip_updown
+            lda #1
 _repl_update_set_cursor_line
             clc
             adc repl_edit_line
@@ -56,14 +33,33 @@ _repl_update_check_limit
             cmp repl_scroll
             bpl _repl_update_check_scroll_down
             sta repl_scroll
-            jmp _repl_update_skip_move
+            jmp _repl_update_skip_leftright
 _repl_update_check_scroll_down
             sec 
             sbc #(EDITOR_LINES-2)
             cmp repl_scroll
-            bmi _repl_update_skip_move
+            bmi _repl_update_skip_leftright
             sta repl_scroll
-_repl_update_skip_move
+            jmp _repl_update_skip_leftright
+_repl_update_skip_updown
+            ror
+            bcs _repl_update_skip_left
+            lda #-1
+            jmp _repl_update_set_cursor_col
+_repl_update_skip_left
+            ror
+            bcs _repl_update_skip_leftright
+            lda #1
+_repl_update_set_cursor_col
+            clc
+            adc repl_edit_col
+            bpl _repl_update_check_col_limit
+            lda #0
+_repl_update_check_col_limit
+
+
+            sta repl_edit_col
+_repl_update_skip_leftright
 
             ; convert accumulator to BCD
             ; http://forum.6502.org/viewtopic.php?f=2&t=4894 

@@ -28,14 +28,14 @@ LOGO_COLOR = $53
 SCANLINES = 262
 #endif
 
-; REPL 0xxxyyyy (x = game type, y = controls)
+; game state sxxxyyyi
+; s = state (edit/eval), x = game type, y = mode, i = input mask
+; REPL 0xxxyyyi
 GAME_STATE_EDIT        = %00000000
-GAME_STATE_EDIT_OPEN   = %00000001
-GAME_STATE_EDIT_SELECT = %00000010
-GAME_STATE_EDIT_CLOSE  = %00000011
-; EVAL 1xxxyyyy (x = game type, y = controls)
+GAME_STATE_EDIT_SELECT = %00000001
+; EVAL 1xxxyyyi
 GAME_STATE_EVAL        = %10000000
-GAME_STATE_EVAL_APPLY  = %10000001 ; returning from suspend
+GAME_STATE_EVAL_APPLY  = %10000001
 
 FUNCTION_TABLE_SIZE = 4
 CELL_SIZE           = 2
@@ -90,8 +90,11 @@ accumulator        ds CELL_SIZE
 clock              ds 1
 ; game state
 game_state         ds 1
-; debounce input
+; combined player input
+; bits: f...rldu
 player_input       ds 2
+; debounced p0 input
+player_input_latch ds 1
 ; reserve for game data
 game_data          ds 8
 
@@ -216,6 +219,32 @@ _end_switches
             ; update clock
             inc clock
 
+            ; update player input
+jx_update
+            ldx #1
+            lda SWCHA
+            and #$0f
+_jx_update_loop
+            sta player_input,x 
+            lda #$80
+            and INPT4,x        
+            ora player_input,x 
+            sta player_input,x 
+_jx_update_no_signal
+            dex
+            bmi _jx_update_end
+            lda SWCHA
+            lsr
+            lsr
+            lsr
+            lsr
+            ldy player_input   
+            jmp _jx_update_loop
+_jx_update_end
+            tya ; debounce p0 joystick
+            eor #$8f           
+            ora player_input   
+            sta player_input_latch
             ; 
             ; do eval and repl updates BUGBUG: only one at a time
             lda game_state
