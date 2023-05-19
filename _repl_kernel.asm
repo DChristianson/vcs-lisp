@@ -1,16 +1,23 @@
 repl_update
-            lda player_input_latch
-            bmi _repl_update_skip_eval
             ldx game_state
-            inx
             cpx #GAME_STATE_EDIT_SELECT
-            beq _repl_update_button_save
-            ldx #GAME_STATE_EDIT
-_repl_update_button_save
-            stx game_state
-_repl_update_skip_eval
-            ; check movement
+            beq _repl_update_edit_select
+
             lda player_input_latch
+            bmi _repl_update_edit_move
+            ldx #GAME_STATE_EDIT_SELECT
+            stx game_state
+            jmp _repl_update_skip_move
+
+_repl_update_edit_select
+            lda player_input_latch
+            bmi _repl_update_skip_move
+            ldx #GAME_STATE_EDIT
+            stx game_state
+            jmp _repl_update_skip_move
+
+_repl_update_edit_move
+            ; check movement
             ror
             bcs _repl_update_skip_up
             lda #-1
@@ -56,10 +63,9 @@ _repl_update_set_cursor_col
             bpl _repl_update_check_col_limit
             lda #0
 _repl_update_check_col_limit
-
-
             sta repl_edit_col
 _repl_update_skip_leftright
+_repl_update_skip_move
 
             ; convert accumulator to BCD
             ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
@@ -372,27 +378,42 @@ _prompt_repos_swap_end
             adc repl_scroll         ;3   29
             cmp repl_edit_line      ;3   32
             bne _prompt_skip_cursor_bk ;2 34
-            cmp repl_last_line      ;3   37
-            bne _prompt_jmp_cursor_bk ;2 39
-            lda #$86                ;2   41 BUGBUG: ???
-            sta COLUPF              ;3   44
-            jmp _prompt_cursor_bk_0 ;3   47
 _prompt_jmp_cursor_bk
-            ldx #$86                ;2   42 BUGBUG: ???
-            stx COLUPF              ;3   45
-            and #$01                ;2   47
-            tax                     ;2   49
-            lda DISPLAY_REPL_COLORS,x ;4 53
-            jmp _prompt_cursor_bk_1 ;3   56
+            sec                     ;2   36
+            sbc #1                  ;2   38
+            and #$01                ;2   40
+            tax                     ;2   42
+            lda DISPLAY_REPL_COLORS,x ;4 46
+            ldx #$86                ;2   48 BUGBUG: Constant
+            SLEEP 6                 ;6   54
+            jmp _prompt_cursor_bk_1 ;3   57
 _prompt_skip_cursor_bk
-            and #$01                ;2   37
-            tax                     ;2   39
-            lda DISPLAY_REPL_COLORS,x ;4 43
-            sta.w COLUPF            ;4   47
-_prompt_cursor_bk_0
-            SLEEP 9                 ;9   56
+            sec                     ;2   37
+            sbc #1                  ;2   39
+            cmp repl_edit_line      ;3   42
+            beq _prompt_check_vk_bk ;2   44
+            and #$01                ;2   46
+            tax                     ;2   48
+            lda DISPLAY_REPL_COLORS,x ;4 52
+            tax                     ;2   54
+            jmp _prompt_cursor_bk_1 ;3   57
+_prompt_check_vk_bk
+            ldx game_state          ;3   48
+            bne _prompt_vk_bk       ;2   50
+            and #$01                ;2   52
+            tax                     ;2   54
+            lda DISPLAY_REPL_COLORS,x ;4 58
+            tax                     ;2   60   
+            jmp _prompt_cursor_bk_2 ;3   63         
+_prompt_vk_bk
+            lda #0                  ;2   53
+            ldx #86                 ;2   55
+            SLEEP 2                 ;2   57
 _prompt_cursor_bk_1
-            SLEEP 14                ;14  70
+            SLEEP 6                 ;6   63
+_prompt_cursor_bk_2            
+            SLEEP 4                 ;4   67
+            stx COLUPF              ;3   70
             sta HMOVE               ;3   73
             sta COLUBK              ;3   76
             SLEEP 12                ;12  12
