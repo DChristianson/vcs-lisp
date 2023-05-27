@@ -7,13 +7,37 @@ repl_update
             bmi _repl_update_edit_move
             ldx #GAME_STATE_EDIT_SELECT
             stx game_state
+            ldx repl_curr_cell
+            lda HEAP_CAR_ADDR,x
+            and #$3f
+            sta repl_edit_sym
             jmp _repl_update_skip_move
 
 _repl_update_edit_select
             lda player_input_latch
-            bmi _repl_update_skip_move
+            bmi _repl_update_keys_move
             ldx #GAME_STATE_EDIT
             stx game_state
+            jmp _repl_update_skip_move
+_repl_update_keys_move
+            ; check keys movement
+            ror
+            ror
+            ror
+            bcs _repl_update_keys_skip_left
+            lda #-1
+            jmp _repl_update_keys_set
+_repl_update_keys_skip_left
+            ror
+            bcs _repl_update_skip_move
+            lda #1
+_repl_update_keys_set
+            clc
+            adc repl_edit_sym
+            bpl _repl_update_check_keys_limit
+            lda #0
+_repl_update_check_keys_limit
+            sta repl_edit_sym
             jmp _repl_update_skip_move
 
 _repl_update_edit_move
@@ -40,14 +64,14 @@ _repl_update_check_limit
             cmp repl_scroll
             bpl _repl_update_check_scroll_down
             sta repl_scroll
-            jmp _repl_update_skip_leftright
+            jmp _repl_update_skip_move
 _repl_update_check_scroll_down
             sec 
             sbc #(EDITOR_LINES-2)
             cmp repl_scroll
-            bmi _repl_update_skip_leftright
+            bmi _repl_update_skip_move
             sta repl_scroll
-            jmp _repl_update_skip_leftright
+            jmp _repl_update_skip_move
 _repl_update_skip_updown
             ror
             bcs _repl_update_skip_left
@@ -55,7 +79,7 @@ _repl_update_skip_updown
             jmp _repl_update_set_cursor_col
 _repl_update_skip_left
             ror
-            bcs _repl_update_skip_leftright
+            bcs _repl_update_skip_move
             lda #1
 _repl_update_set_cursor_col
             clc
@@ -64,7 +88,6 @@ _repl_update_set_cursor_col
             lda #0
 _repl_update_check_col_limit
             sta repl_edit_col
-_repl_update_skip_leftright
 _repl_update_skip_move
 
             ; convert accumulator to BCD
@@ -219,6 +242,10 @@ _prep_repl_line_set_col
             adc repl_edit_col
             sta repl_edit_col
 _prep_repl_line_adjust_end
+            ldy repl
+            lda HEAP_CAR_ADDR,repl
+            and #$3f
+            sta repl_curr_cell 
             ; show keyboard if we are in that game state
             lda game_state
             beq _prep_repl_end
@@ -232,7 +259,7 @@ _prep_repl_line_adjust_positive
             asl
             asl
             asl
-            ora #5
+            ora #4
             dey
             sta repl_display_indent,y ; BUGBUG: keyboard here
             lda #$ff
@@ -320,6 +347,7 @@ prompt
             ldy #(EDITOR_LINES - 1)
             sty repl_editor_line
 
+            ; position cursor
             sta WSYNC               ; --
             lda repl_edit_col       ;3    3
             asl                     ;2    5
@@ -332,8 +360,8 @@ _prompt_repos_col
             tax                     ;2   17
             lda LOOKUP_STD_HMOVE,x  ;5   22
             sta HMBL                ;3   25
-            sta.w RESBL             ;4   29
-
+            sta RESBL               ;3   28 RESBL shifted -1 cycle compared to cells
+            ; no HMOVE - first cell line will do HMOVE for us, then set HMBL to zero
 
 prompt_next_line
             ; lock missiles to players
@@ -407,7 +435,7 @@ _prompt_check_vk_bk
             jmp _prompt_cursor_bk_2 ;3   63         
 _prompt_vk_bk
             lda #0                  ;2   53
-            ldx #86                 ;2   55
+            ldx #87                 ;2   55 ; KLUDGE?
             SLEEP 2                 ;2   57
 _prompt_cursor_bk_1
             SLEEP 6                 ;6   63
@@ -421,7 +449,7 @@ _prompt_cursor_bk_2
             lda repl_display_indent,y ;4 18
             and #$01                ;2   10
             bne _prompt_swap_hpos   ;2/3 22
-            lda #$f0                ;2   24
+            lda #$00                ;2   24
             sta HMP0                ;3   27
             lda #$10                ;2   29
             sta HMP1                ;3   32
@@ -431,7 +459,7 @@ _prompt_cursor_bk_2
             sta HMM1                ;3   42
             jmp _prompt_final_hpos  ;3   45
 _prompt_swap_hpos
-            lda #$f0                ;2   25
+            lda #$00                ;2   25
             sta HMP1                ;3   28
             lda #$10                ;2   30
             sta HMP0                ;3   33
@@ -444,11 +472,14 @@ _prompt_final_hpos
             lda #0                  ;2   47
             sta RESMP0              ;3   50
             sta RESMP1              ;3   53
-            sta HMBL                ;3   56
-            SLEEP 4                 ;4   60
-            sta HMOVE               ;3   63
+            lda #$80                ;2   55
+            sta HMBL                ;3   58 ; no move
+            SLEEP 4                 ;4   62
+            sta HMOVE               ;3   65
             
 prompt_encode
+            cpx #87 ; still background; BUGBUG kludgy to use +1?
+            beq _prompt_encode_keys
             lda repl_display_list,y
             beq _prompt_encode_blank
             bpl _prompt_encode_blank ; BUGBUG: TODO: number
@@ -482,7 +513,11 @@ _prompt_encode_s3
             MAP_CAR repl_s3_addr
 _prompt_encode_s4
             MAP_CAR repl_s4_addr
-            jmp _prompt_encode_end
+_prompt_encode_end
+            lda #0
+            sta repl_s5_addr
+            jmp prompt_display
+
 _prompt_encode_blank
             ldx #CHAR_HEIGHT + 4
 _prompt_encode_blank_loop
@@ -490,10 +525,23 @@ _prompt_encode_blank_loop
             dex
             bpl _prompt_encode_blank_loop
             jmp prompt_end_line
-_prompt_encode_end
-            lda #0
-            sta repl_s5_addr
 
+_prompt_encode_keys
+            lda repl_edit_sym
+            asl
+            asl
+            asl
+            sta repl_s0_addr
+            adc #8
+            sta repl_s1_addr
+            adc #8
+            sta repl_s2_addr
+            adc #8
+            sta repl_s3_addr
+            adc #8
+            sta repl_s4_addr
+            adc #8
+            sta repl_s5_addr
             jmp prompt_display
 
             align 256
@@ -553,12 +601,12 @@ _prompt_draw_entry_2 ; 54/--/60
             SLEEP 5                      ;5   59/--/65
 _prompt_draw_entry_1 ; 59/62/65
               
-            SLEEP 5                      ;5   64/67/70
-            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   68/71/74
-            sta NUSIZ0                   ;3   71/74/ 1
-            lda DISPLAY_COLS_NUSIZ1_A,x  ;4   75/ 2/ 5
-            sta NUSIZ1                   ;3    2/ 5/ 8
-            lda #2                       ;2    4/ 7/10
+            SLEEP 3                      ;3   62/65/68
+            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   66/69/72
+            sta NUSIZ0                   ;3   69/72/75
+            lda DISPLAY_COLS_NUSIZ1_A,x  ;4   73/ 0/ 3
+            sta NUSIZ1                   ;3    0/ 3/ 6
+            lda DISPLAY_COLS_ENAM0,x     ;4    4/ 7/10
             sta ENAM0                    ;3    7/10/13
             sta ENAM1                    ;3   10/13/16
             sta ENABL                    ;3   13/16/19
@@ -672,6 +720,8 @@ DISPLAY_COLS_NUSIZ0_B
     byte $00,$00,$01,$01,$03
 DISPLAY_COLS_NUSIZ1_B
     byte $00,$01,$01,$03,$03
+DISPLAY_COLS_ENAM0
+    byte $02,$02,$02,$02,$02
 DISPLAY_REPL_COLORS
     byte #$7A,#$7E,#$86 ; BUGBUG: make pal safe
 

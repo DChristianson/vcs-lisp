@@ -110,6 +110,7 @@ game_data          ds 8
 repl_scroll    ds 1 ; lines to scroll
 repl_edit_line ds 1 ; editor line BUGBUG: collapse with col?
 repl_edit_col  ds 1 ; editor column BUGBUG: collapse with line?
+repl_edit_sym  ds 1 ; editor symbol
 repl_prev_cell ds 1
 repl_curr_cell ds 1
 repl_last_line ds 1 ; last line
