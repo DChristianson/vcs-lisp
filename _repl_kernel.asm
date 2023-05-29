@@ -19,8 +19,6 @@ _repl_update_edit_sym
             tax
             lda HEAP_CAR_ADDR,x
 _repl_update_edit_start
-            sec
-            sbc #1 ; adjust
             and #$1f
             sta repl_edit_sym
             jmp _repl_update_skip_move
@@ -28,9 +26,24 @@ _repl_update_edit_start
 _repl_update_edit_select
             lda player_input_latch
             bmi _repl_update_keys_move
+_repl_update_selected
+            lda repl_curr_cell
+            beq _repl_update_selected_done ; BUGBUG: extend list
+            tax
+            lda HEAP_CAR_ADDR,x
+            cmp #$40
+            bmi _repl_update_symbol
+            ; BUGBUG: replace list
+            jmp _repl_update_selected_done
+_repl_update_symbol           
+            lda repl_edit_sym
+            ora #$c0
+            sta HEAP_CAR_ADDR,x
+_repl_update_selected_done
             ldx #GAME_STATE_EDIT
             stx game_state
             jmp _repl_update_skip_move
+
 _repl_update_keys_move
             ; check keys movement
             ror
@@ -567,6 +580,9 @@ _prompt_encode_blank_loop
 
 _prompt_encode_keys
             lda repl_edit_sym
+            sec
+            sbc #1
+            and #$1f
             asl
             asl
             asl
