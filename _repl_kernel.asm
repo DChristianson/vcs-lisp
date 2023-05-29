@@ -4,12 +4,21 @@ repl_update
             beq _repl_update_edit_select
 
             lda player_input_latch
-            bmi _repl_update_edit_move
+            bmi _repl_update_edit_move ; BUGBUG: better name prefix - _repl_keys_...?
             ldx #GAME_STATE_EDIT_SELECT
             stx game_state
-            ldx repl_curr_cell
+            lda repl_curr_cell
+            beq _repl_update_edit_start
+            tax
             lda HEAP_CAR_ADDR,x
-            and #$3f
+            cmp #$40
+            bmi _repl_update_edit_start
+            tax
+            lda HEAP_CAR_ADDR,x
+_repl_update_edit_start
+            sec
+            sbc #1 ; adjust
+            and #$1f
             sta repl_edit_sym
             jmp _repl_update_skip_move
 
@@ -34,9 +43,8 @@ _repl_update_keys_skip_left
 _repl_update_keys_set
             clc
             adc repl_edit_sym
-            bpl _repl_update_check_keys_limit
-            lda #0
 _repl_update_check_keys_limit
+            and #$1f
             sta repl_edit_sym
             jmp _repl_update_skip_move
 
@@ -250,6 +258,26 @@ _prep_repl_line_check_wide
 _prep_repl_line_set_col
             sta repl_edit_col
 _prep_repl_line_adjust_end
+            ; show keyboard if we are in that game state
+            ; keep y as edit line
+            lda game_state
+            beq _prep_repl_key_end
+            lda repl_edit_col
+            sec
+            sbc #2
+            bpl _prep_repl_key_adjust_positive
+_prep_repl_key_adjust_negative
+            lda #0 ; force zero
+_prep_repl_key_adjust_positive
+            asl
+            asl
+            asl
+            ora #4
+            dey
+            sta repl_display_indent,y ; BUGBUG: keyboard here
+            lda #$ff
+            sta repl_display_list,y
+_prep_repl_key_end
 
             ; find curr cell
             lda repl_edit_col     ;
@@ -275,25 +303,6 @@ _prep_repl_line_find_curr_cell
             jmp _prep_repl_line_find_curr_cell
 _prep_repl_line_found_curr_cell
 
-            ; show keyboard if we are in that game state
-            lda game_state
-            beq _prep_repl_end
-            lda repl_edit_col
-            sec
-            sbc #2
-            bpl _prep_repl_line_adjust_positive
-_prep_repl_line_adjust_negative
-            lda #0 ; force zero
-_prep_repl_line_adjust_positive
-            asl
-            asl
-            asl
-            ora #4
-            dey
-            sta repl_display_indent,y ; BUGBUG: keyboard here
-            lda #$ff
-            sta repl_display_list,y
-            ; TODO: show keyboard after y
             ; done
 _prep_repl_end
             ldx #$ff ; clean stack
@@ -561,15 +570,19 @@ _prompt_encode_keys
             asl
             asl
             sta repl_s0_addr
+            clc
             adc #8
             sta repl_s1_addr
+            clc
             adc #8
             sta repl_s2_addr
+            clc
             adc #8
             sta repl_s3_addr
+            clc
             adc #8
             sta repl_s4_addr
-            adc #8
+            lda #0
             sta repl_s5_addr
             jmp prompt_display
 
