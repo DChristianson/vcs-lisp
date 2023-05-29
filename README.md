@@ -29,10 +29,10 @@ DONE
     - display cursor can be at end of a list
     - button press opens keyboard
     - with open keyboard movement selects new value
+    - keyboard opens on curr cell value 
+    - scrolls through appropriate values
 ALPHA
   - virtual keyboard 1
-      - opens on curr cell value 
-      - scrolls through appropriate values
       - with press display cursor locates curr cell and replaces
   - virtual keyboard 2
       - add new cell 
@@ -55,7 +55,6 @@ ALPHA
       - play beep
 BETA
   - game modes 2
-      - matching shapes (boolean logic)
       - silly goose (number sequence)
       - towers of hanoi
       - paddle pong
@@ -87,6 +86,7 @@ SPRINKLES
       - show numbers
 BONUS 
   - bonus game mode
+     - matching shapes (boolean logic)
      - mouse maze
      - tictactoe?
      - mastermind?

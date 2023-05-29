@@ -18,6 +18,7 @@ WHITE = $0f
 BLACK = 0
 RED = $30
 LOGO_COLOR = $C4
+CURSOR_COLOR = $86
 SCANLINES = 262
 #else
 ; PAL Colors
@@ -25,6 +26,7 @@ WHITE = $0E
 BLACK = 0
 RED = $42
 LOGO_COLOR = $53
+CURSOR_COLOR = $86
 SCANLINES = 262
 #endif
 
@@ -43,7 +45,7 @@ HEAP_CELLS          = 32
 HEAP_SIZE           = HEAP_CELLS * CELL_SIZE
 HEAP_CAR_ADDR       = $0000
 HEAP_CDR_ADDR       = $0001
-REPL_CELL           = #repl - 1
+REPL_CELL_ADDR      = #repl - 1 ; virtual cell
 NULL                = $00
 
 FUNCTION_REF_IF  = $ca   
@@ -57,6 +59,7 @@ PROMPT_HEIGHT = EDITOR_LINES * LINE_HEIGHT
 FOOTER_HEIGHT = 26
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
+REPL_DISPLAY_MARGIN = 16
 
 ; ----------------------------------
 ; heap

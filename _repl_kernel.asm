@@ -8,7 +8,10 @@ repl_update
             ldx #GAME_STATE_EDIT_SELECT
             stx game_state
             lda repl_curr_cell
-            beq _repl_update_edit_start
+            bne _repl_update_edit_sym
+            lda #$1e; BUGBUG: rationalize charset order - this is terminator char -
+            jmp _repl_update_edit_start
+_repl_update_edit_sym
             tax
             lda HEAP_CAR_ADDR,x
             cmp #$40
@@ -137,11 +140,11 @@ _prep_repl_loop
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll
             sta repl_tmp_scroll
-            lda #REPL_CELL          ; precursor cell is repl
+            lda #REPL_CELL_ADDR     ; precursor cell is repl
             sta repl_prev_cell
             ldx repl_edit_line      ; 
             stx repl_tmp_cell_count ; will count down to zero
-            lda #0 ; initial indent level
+            lda #REPL_DISPLAY_MARGIN; initial indent level
             sta repl_display_indent,y
             lda repl
             ; start scanning the current list for complex data
@@ -195,6 +198,8 @@ _prep_repl_line_next_skip_dey
             beq _prep_repl_line_clear
             asl
             asl
+            clc
+            adc #REPL_DISPLAY_MARGIN
             sta repl_display_indent,y ; columns to indent (from prev line)
             pla ; get prev cell from stack
             dec repl_tmp_cell_count ; check if we are on the cursor line
@@ -265,16 +270,12 @@ _prep_repl_line_adjust_end
             lda repl_edit_col
             sec
             sbc #2
-            bpl _prep_repl_key_adjust_positive
-_prep_repl_key_adjust_negative
-            lda #0 ; force zero
-_prep_repl_key_adjust_positive
             asl
             asl
             asl
-            ora #4
+            ora #4 ; keyboard is 5 cells wide
             dey
-            sta repl_display_indent,y ; BUGBUG: keyboard here
+            sta repl_display_indent,y
             lda #$ff
             sta repl_display_list,y
 _prep_repl_key_end
@@ -406,7 +407,7 @@ prompt_next_line
             lda #2
             sta RESMP0
             sta RESMP1     
-            ; load hpos
+            ; load indent level
             lda repl_display_indent,y ;4  4
             and #$f8                ;2    6
             sec                     ;2    8
@@ -450,7 +451,7 @@ _prompt_jmp_cursor_bk
             and #$01                ;2   40
             tax                     ;2   42
             lda DISPLAY_REPL_COLORS,x ;4 46
-            ldx #$86                ;2   48 BUGBUG: Constant
+            ldx #CURSOR_COLOR       ;2   48 
             SLEEP 6                 ;6   54
             jmp _prompt_cursor_bk_1 ;3   57
 _prompt_skip_cursor_bk
@@ -473,7 +474,7 @@ _prompt_check_vk_bk
             jmp _prompt_cursor_bk_2 ;3   63         
 _prompt_vk_bk
             lda #0                  ;2   53
-            ldx #87                 ;2   55 ; KLUDGE?
+            ldx #CURSOR_COLOR + 1   ;2   55 ; KLUDGE (+ 1 indicator)
             SLEEP 2                 ;2   57
 _prompt_cursor_bk_1
             SLEEP 6                 ;6   63
@@ -516,7 +517,7 @@ _prompt_final_hpos
             sta HMOVE               ;3   65
             
 prompt_encode
-            cpx #87 ; still background; BUGBUG kludgy to use +1?
+            cpx #CURSOR_COLOR + 1   ; still background; BUGBUG kludgy to use +1?
             beq _prompt_encode_keys
             lda repl_display_list,y
             beq _prompt_encode_blank
