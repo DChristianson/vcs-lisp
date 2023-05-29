@@ -27,10 +27,12 @@ DONE
     - display cursor to point at current cell
     - display cursor stays in bounds of cells
     - display cursor can be at end of a list
+    - button press opens keyboard
+    - with open keyboard movement selects new value
 ALPHA
   - virtual keyboard 1
-      - button press opens keyboard
-      - with open keyboard movement selects new value
+      - opens on curr cell value 
+      - scrolls through appropriate values
       - with press display cursor locates curr cell and replaces
   - virtual keyboard 2
       - add new cell 

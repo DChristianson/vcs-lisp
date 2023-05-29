@@ -43,6 +43,7 @@ HEAP_CELLS          = 32
 HEAP_SIZE           = HEAP_CELLS * CELL_SIZE
 HEAP_CAR_ADDR       = $0000
 HEAP_CDR_ADDR       = $0001
+REPL_CELL           = #repl - 1
 NULL                = $00
 
 FUNCTION_REF_IF  = $ca   
@@ -119,12 +120,14 @@ repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each li
 repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
 
 repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
-repl_tmp_accumulator
-repl_tmp_scroll ds 1 ; temporary cell storage during encoding BUGBUG: need?
+repl_tmp_width      ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
 repl_gx_addr
-repl_tmp_width      ; temporary NUSIZ storage during draw BUGBUG: need?
 repl_s5_addr   ds 2
+repl_tmp_indent     ; ds 1  temporary indent storage during layout BUGBUG: need?
+repl_tmp_cell_count ; ds 1 temporary cell countdown during layout BUGBUG: need?
 repl_s4_addr   ds 2
+repl_tmp_accumulator ; ds 2 temporary accumulator during bcd encoding BUGBUG: need?
+repl_tmp_scroll      ; ds 1temporary cell storage during layout BUGBUG: need?
 repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2

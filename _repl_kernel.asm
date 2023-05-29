@@ -125,43 +125,52 @@ _prep_repl_loop
             dey
             dey
             bpl _prep_repl_loop
-
             ; calculate visible program
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll
             sta repl_tmp_scroll
+            lda #REPL_CELL          ; precursor cell is repl
+            sta repl_prev_cell
+            ldx repl_edit_line      ; 
+            stx repl_tmp_cell_count ; will count down to zero
             lda #0 ; initial indent level
             sta repl_display_indent,y
             lda repl
+            ; start scanning the current list for complex data
+            sta repl_display_list,y ; ^ a is the current, if this line is simple we don't need to do more
 _prep_repl_line_scan
-            sta repl_display_list,y
             ldx #$ff
             stx repl_tmp_width
 _prep_repl_line_scan_loop
             tax
             lda HEAP_CAR_ADDR,x ; read car
-            bpl _prep_repl_line_complex 
-            cmp #$40
-            bpl _prep_repl_line_complex
+            bpl _prep_repl_line_complex_from_scan    ; found a number, need to go complex
+            cmp #$40 ; READABILITY: constant
+            bpl _prep_repl_line_complex_from_scan    ; found a sublist, need to write in complex way
             inc repl_tmp_width
             lda HEAP_CDR_ADDR,x ; read cdr
             bne _prep_repl_line_scan_loop
             jmp _prep_repl_line_next
+_prep_repl_line_complex_from_scan
+            lda repl_display_list,y       ; recover start of line address and recurse
 _prep_repl_line_complex_next
-            sta repl_display_list,y
+            tax ; ^ a is the current
 _prep_repl_line_complex
-            lda #0
+            lda #0                
             sta repl_tmp_width
-            ldx repl_display_list,y
-            lda HEAP_CDR_ADDR,x ; read cdr
-            pha
-            lda HEAP_CAR_ADDR,x ; read head car
-            sta repl_display_list,y
-            bpl _prep_repl_line_next
-            cmp #$40
-            bmi _prep_repl_line_next
-            jmp _prep_repl_line_scan
+            lda HEAP_CDR_ADDR,x           ; read cdr
+            pha                           ; push next addr to stack
+            txa                           ; next
+            pha                           ; push current addr to stack
+            lda HEAP_CAR_ADDR,x           ; read car 
+            sta repl_display_list,y       ; store in dl
+            bpl _prep_repl_line_next      ; isa constant, draw next line
+            cmp #$40                      ; check for symbol or list
+            bmi _prep_repl_line_next      ; if symbol next line
+            ; ^ car is pointing at a list, we need to pop down
+            jmp _prep_repl_line_scan      ; go back to scan
 _prep_repl_line_next
+            ; merge width into indent level
             lda repl_display_indent,y
             clc
             adc repl_tmp_width
@@ -171,15 +180,20 @@ _prep_repl_line_next
             dey
             bmi _prep_repl_line_end
 _prep_repl_line_next_skip_dey
+            ; start next line
             tsx ; read stack to see how indented we need to be
             txa
-            eor #$ff ; invert and shift lef
+            eor #$ff ; invert and shift left x 4
             beq _prep_repl_line_clear
             asl
             asl
-            asl
             sta repl_display_indent,y ; columns to indent (from prev line)
-            pla ; pull from stack
+            pla ; get prev cell from stack
+            dec repl_tmp_cell_count ; check if we are on the cursor line
+            bne _prep_repl_line_next_skip_prev
+            sta repl_prev_cell
+_prep_repl_line_next_skip_prev
+            pla ; pull next cell from stack
             bmi _prep_repl_line_complex_next ; not null
             lda #$DE; SYMBOL_GRAPHICS_S1E_TERM
             sta repl_display_list,y
@@ -195,6 +209,8 @@ _prep_repl_line_clear_loop
             dey
             bpl _prep_repl_line_clear_loop
 _prep_repl_line_end
+
+            ; check cursor location to make sure it's in bounds
             lda repl_tmp_scroll
             eor #$ff
             clc
@@ -216,36 +232,49 @@ _prep_repl_line_adjust
             adc #1
 _prep_repl_line_check_sw
             sta repl_tmp_width           ; save indent level to tmp
-            lda repl_display_indent,y    ; read width
+            lda repl_display_indent,y    ; read indent
             lsr                          ; . divide by 8
             lsr                          ; .
             lsr                          ; .
-            eor #$ff                     ; invert
-            clc                          ; .
-            adc #1                       ; .
-            clc                          ; .
-            adc repl_edit_col
-            bpl _prep_repl_line_check_wide
-            eor #$ff
-            clc
-            adc #1
-            jmp _prep_repl_line_set_col
-_prep_repl_line_check_wide
+            sta repl_tmp_indent
             sec
-            sbc repl_tmp_width
-            bcc _prep_repl_line_adjust_end
-            eor #$ff
+            sbc repl_edit_col
+            bmi _prep_repl_line_check_wide
+            lda repl_tmp_indent
+            jmp _prep_repl_line_set_col
+_prep_repl_line_check_wide                         
             clc
-            adc #1
-_prep_repl_line_set_col
-            clc
+            adc repl_tmp_width
+            bpl _prep_repl_line_adjust_end
             adc repl_edit_col
+_prep_repl_line_set_col
             sta repl_edit_col
 _prep_repl_line_adjust_end
-            ldy repl
-            lda HEAP_CAR_ADDR,repl
-            and #$3f
-            sta repl_curr_cell 
+
+            ; find curr cell
+            lda repl_edit_col     ;
+            sec                   ; subtract indent level from col
+            sbc repl_tmp_indent   ; .
+            tay                   ; .
+            ; deref prev cell
+            ldx repl_prev_cell
+            lda HEAP_CDR_ADDR,x
+            sta repl_curr_cell
+            beq _prep_repl_line_found_curr_cell
+            tax
+            lda HEAP_CAR_ADDR,x
+            cmp #$40
+            bmi _prep_repl_line_found_curr_cell
+_prep_repl_line_find_curr_cell
+            dey
+            bmi _prep_repl_line_found_curr_cell
+            sta repl_prev_cell
+            tax
+            lda HEAP_CDR_ADDR,x
+            sta repl_curr_cell
+            jmp _prep_repl_line_find_curr_cell
+_prep_repl_line_found_curr_cell
+
             ; show keyboard if we are in that game state
             lda game_state
             beq _prep_repl_end
