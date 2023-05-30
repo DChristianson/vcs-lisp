@@ -5,7 +5,7 @@
             ;(f0)
             ;
             ;0
-            lda #%11000001
+            lda #%11000010
             sta #0,x
             inx
             lda #%10000010
@@ -19,7 +19,7 @@
             sta #0,x
             inx
             ;4
-            lda #%11000001
+            lda #%11000010
             sta #0,x
             inx
             lda #%10000110
@@ -33,7 +33,7 @@
             sta #0,x
             inx
             ;8
-            lda #%11000001
+            lda #%11000010
             sta #0,x
             inx
             lda #%10001010
@@ -47,35 +47,35 @@
             sta #0,x
             inx
             ;12
-            lda #%11000001
+            lda #%11000010
             sta #0,x
             inx
             lda #%10001110
             sta #0,x
             inx
             ;14
-            lda #%11010101
+            lda #%11010110
             sta #0,x
             inx
             lda #%10010000
             sta #0,x
             inx
             ;16
-            lda #%11010100
+            lda #%11010101
             sta #0,x
             inx
             lda #%10010010
             sta #0,x
             inx
             ;18
-            lda #%11010101
+            lda #%11010110
             sta #0,x
             inx
             lda #%10010100
             sta #0,x
             inx
             ;20
-            lda #%11010100
+            lda #%11010101
             sta #0,x
             inx
             lda #%00000000
@@ -89,28 +89,28 @@
             sta #0,x
             inx
             ;24
-            lda #%11000001
+            lda #%11000010
             sta #0,x
             inx
             lda #%10011010
             sta #0,x
             inx
             ;26
-            lda #%11010100
+            lda #%11010101
             sta #0,x
             inx
             lda #%10011100
             sta #0,x
             inx
             ;28
-            lda #%11010101
+            lda #%11010110
             sta #0,x
             inx
             lda #%10011110
             sta #0,x
             inx
             ;30
-            lda #%11010100
+            lda #%11010101
             sta #0,x
             inx
             lda #%00000000
@@ -124,21 +124,21 @@
             sta #0,x
             inx
             ;34
-            lda #%11000001
+            lda #%11000010
             sta #0,x
             inx
             lda #%10100100
             sta #0,x
             inx
             ;36
-            lda #%11010101
+            lda #%11010110
             sta #0,x
             inx
             lda #%10100110
             sta #0,x
             inx
             ;38
-            lda #%11010100
+            lda #%11010101
             sta #0,x
             inx
             lda #%00000000
@@ -152,26 +152,27 @@
             sta #0,x
             inx
             ;42
-            lda #%11000001
+            lda #%11000010
             sta #0,x
             inx
             lda #%10101100
             sta #0,x
             inx
             ;44
-            lda #%11010100
+            lda #%11010101
             sta #0,x
             inx
             lda #%00000000
             sta #0,x
             inx
             ;46
-            lda #%11010100
+            lda #%11010101
             sta #0,x
             inx
             lda #%00000000
             sta #0,x
             inx
+
 
 
 

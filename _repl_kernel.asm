@@ -1,3 +1,66 @@
+_repl_update_edit_select
+            lda player_input_latch
+            bmi _repl_update_keys_move
+_repl_update_selected
+            lda repl_curr_cell
+            beq _repl_update_selected_extend 
+            tax
+            lda HEAP_CAR_ADDR,x
+            cmp #$40
+            bmi _repl_update_symbol
+            ; replace an existing list
+            tax
+            lda repl_edit_sym
+            beq _repl_update_selected_del  ; make terminal
+            cmp #$10
+            bcc _repl_update_symbol_store ; replace function
+            ora #$c0 ; BUGBUG: may be able to consolidate
+            ; fall through to select
+_repl_update_selected_del
+            ; free the prev, store a as new sym
+            ; y is the new val
+            tay
+            ldx repl_prev_cell   ; BUGBUG: handle where repl
+            lda HEAP_CDR_ADDR,x
+            sty HEAP_CDR_ADDR,x
+            jsr gc
+            jmp _repl_update_selected_done
+_repl_update_selected_extend
+            ; extend a list
+            lda repl_edit_sym
+            beq _repl_update_selected_done  ; make terminal
+            ldx repl_prev_cell             ; find prev cell
+            lda free                       ; get first free cell
+            beq _repl_update_selected_done ; BUGBUG: OOM
+            sta HEAP_CDR_ADDR,x            ; attach free to prev
+            tax                            ; load up free
+            lda HEAP_CDR_ADDR,x            ; free = cdr free
+            sta free                       ; .
+            lda #0                         ; cdr free = 0
+            sta HEAP_CDR_ADDR,x            ; .
+            ; fallthrough to symbol update
+_repl_update_symbol
+            lda repl_edit_sym
+            beq _repl_update_selected_del  ; make terminal
+            cmp #$10
+            bcs _repl_update_symbol_store
+            lda free
+            sta HEAP_CAR_ADDR,x
+            tax
+            lda HEAP_CDR_ADDR,x
+            sta free
+            lda #0
+            sta HEAP_CDR_ADDR,x
+            lda repl_edit_sym
+            ; fallthrough to symbol store
+_repl_update_symbol_store
+            ora #$c0
+            sta HEAP_CAR_ADDR,x
+_repl_update_selected_done
+            ldx #GAME_STATE_EDIT
+            stx game_state
+            jmp _repl_update_skip_move
+
 repl_update
             ldx game_state
             cpx #GAME_STATE_EDIT_SELECT
@@ -8,9 +71,7 @@ repl_update
             ldx #GAME_STATE_EDIT_SELECT
             stx game_state
             lda repl_curr_cell
-            bne _repl_update_edit_sym
-            lda #$1e; BUGBUG: rationalize charset order - this is terminator char -
-            jmp _repl_update_edit_start
+            beq _repl_update_edit_start ; curr cell is null
 _repl_update_edit_sym
             tax
             lda HEAP_CAR_ADDR,x
@@ -21,27 +82,6 @@ _repl_update_edit_sym
 _repl_update_edit_start
             and #$1f
             sta repl_edit_sym
-            jmp _repl_update_skip_move
-
-_repl_update_edit_select
-            lda player_input_latch
-            bmi _repl_update_keys_move
-_repl_update_selected
-            lda repl_curr_cell
-            beq _repl_update_selected_done ; BUGBUG: extend list
-            tax
-            lda HEAP_CAR_ADDR,x
-            cmp #$40
-            bmi _repl_update_symbol
-            ; BUGBUG: replace list
-            jmp _repl_update_selected_done
-_repl_update_symbol           
-            lda repl_edit_sym
-            ora #$c0
-            sta HEAP_CAR_ADDR,x
-_repl_update_selected_done
-            ldx #GAME_STATE_EDIT
-            stx game_state
             jmp _repl_update_skip_move
 
 _repl_update_keys_move
@@ -144,7 +184,7 @@ _repl_update_bin2bcd16_bit
             ; prep symbol graphics
             ldy #(DISPLAY_COLS - 1) * 2
 _prep_repl_loop
-            lda #>SYMBOL_GRAPHICS_S00_MULT
+            lda #>SYMBOL_GRAPHICS_S00_TERM
             sta repl_gx_addr + 1,y
             dey
             dey
@@ -171,7 +211,12 @@ _prep_repl_line_scan_loop
             bpl _prep_repl_line_complex_from_scan    ; found a number, need to go complex
             cmp #$40 ; READABILITY: constant
             bpl _prep_repl_line_complex_from_scan    ; found a sublist, need to write in complex way
-            inc repl_tmp_width
+            lda repl_tmp_width
+            clc
+            adc #1
+            cmp #5 ; BUGBUG: check for too long
+            bcs _prep_repl_line_complex_from_scan
+            sta repl_tmp_width
             lda HEAP_CDR_ADDR,x ; read cdr
             bne _prep_repl_line_scan_loop
             jmp _prep_repl_line_next
@@ -221,7 +266,7 @@ _prep_repl_line_next_skip_dey
 _prep_repl_line_next_skip_prev
             pla ; pull next cell from stack
             bmi _prep_repl_line_complex_next ; not null
-            lda #$DE; SYMBOL_GRAPHICS_S1E_TERM
+            lda #$c0; SYMBOL_GRAPHICS_S00_TERM
             sta repl_display_list,y
             dey
             bpl _prep_repl_line_next_skip_dey 
@@ -541,6 +586,7 @@ _prompt_encode_symbol
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
             sta repl_s4_addr
+            lda #<SYMBOL_GRAPHICS_S1F_EMPTY
             jmp _prompt_encode_end
 _prompt_encode_list
             tax
@@ -565,8 +611,8 @@ _prompt_encode_s3
             MAP_CAR repl_s3_addr
 _prompt_encode_s4
             MAP_CAR repl_s4_addr
-_prompt_encode_end
             lda #0
+_prompt_encode_end
             sta repl_s5_addr
             jmp prompt_display
 
@@ -581,7 +627,7 @@ _prompt_encode_blank_loop
 _prompt_encode_keys
             lda repl_edit_sym
             sec
-            sbc #1
+            sbc #2
             and #$1f
             asl
             asl
@@ -599,7 +645,7 @@ _prompt_encode_keys
             clc
             adc #8
             sta repl_s4_addr
-            lda #0
+            lda #<SYMBOL_GRAPHICS_S1F_EMPTY
             sta repl_s5_addr
             jmp prompt_display
 
@@ -660,12 +706,12 @@ _prompt_draw_entry_2 ; 54/--/60
             SLEEP 5                      ;5   59/--/65
 _prompt_draw_entry_1 ; 59/62/65
               
-            SLEEP 3                      ;3   62/65/68
-            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   66/69/72
-            sta NUSIZ0                   ;3   69/72/75
-            lda DISPLAY_COLS_NUSIZ1_A,x  ;4   73/ 0/ 3
-            sta NUSIZ1                   ;3    0/ 3/ 6
-            lda DISPLAY_COLS_ENAM0,x     ;4    4/ 7/10
+            SLEEP 5                      ;5   64/67/70
+            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   68/71/74
+            sta NUSIZ0                   ;3   71/74/ 1
+            lda DISPLAY_COLS_NUSIZ1_A,x  ;4   75/ 2/ 5
+            sta NUSIZ1                   ;3    2/ 5/ 8
+            lda #2                       ;2    4/ 7/10
             sta ENAM0                    ;3    7/10/13
             sta ENAM1                    ;3   10/13/16
             sta ENABL                    ;3   13/16/19
@@ -779,8 +825,6 @@ DISPLAY_COLS_NUSIZ0_B
     byte $00,$00,$01,$01,$03
 DISPLAY_COLS_NUSIZ1_B
     byte $00,$01,$01,$03,$03
-DISPLAY_COLS_ENAM0
-    byte $02,$02,$02,$02,$02
 DISPLAY_REPL_COLORS
     byte #$7A,#$7E,#$86 ; BUGBUG: make pal safe
 
@@ -790,7 +834,7 @@ DISPLAY_REPL_COLORS
             lsr                             ;2  7
             lsr                             ;2  9
             clc                             ;2 11
-            adc #<SYMBOL_GRAPHICS_S13_ZERO  ;2 13
+            adc #<SYMBOL_GRAPHICS_S14_ZERO  ;2 13
             sta {2}                         ;3 15
     ENDM
 
@@ -801,7 +845,7 @@ DISPLAY_REPL_COLORS
             asl
             asl
             clc
-            adc #<SYMBOL_GRAPHICS_S13_ZERO
+            adc #<SYMBOL_GRAPHICS_S14_ZERO
             sta {2}
     ENDM
 

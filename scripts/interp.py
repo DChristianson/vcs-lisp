@@ -5,6 +5,7 @@
 import sys
 
 _symbols = [
+    '',
     '*',
     '+',
     '-',

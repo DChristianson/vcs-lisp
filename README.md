@@ -27,31 +27,35 @@ DONE
     - display cursor to point at current cell
     - display cursor stays in bounds of cells
     - display cursor can be at end of a list
+  - virtual keyboard 1
     - button press opens keyboard
     - with open keyboard movement selects new value
     - keyboard opens on curr cell value 
     - scrolls through appropriate values
+    - with press display cursor locates curr cell and replaces
+    - add new cell 
+    - delete cell
+  - game modes 1
+      - scratch
 ALPHA
-  - virtual keyboard 1
-      - with press display cursor locates curr cell and replaces
-  - virtual keyboard 2
-      - add new cell 
-      - delete cell
-      - cancel button undoes changes
+  - demo 1
+      - start with blank program, make + 1 2
+  - menu 1
+      - function menu displayed on screen
   - controls 1
       - moving past last line goes to menu
       - moving above first line goes to menu
       - eval when button push in menu
+  - demo 2
+      - eval demo program + 1 2
   - controls 2
       - function assignment when push in menu
       - game mode switch when push in menu
   - library 1
-      - float math
       - beeps
-  - game modes 1
-      - scratch
-  - demo 1
-      - fib
+      - actual float math
+  - demo 3
+      - fib program
       - play beep
 BETA
   - game modes 2
@@ -61,8 +65,11 @@ BETA
   - library 2
       - modulo function
       - music functions
-  - virtual keyboard 3
+  - virtual keyboard 2
       - number edit
+  - virtual keyboard 3
+      - cancel move undoes changes
+      - other gestures move through list
   - dev support
      - some way to do unit tests?
   - eval graphics kernel

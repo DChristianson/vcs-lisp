@@ -253,9 +253,11 @@ _jx_update_end
             ora player_input   
             sta player_input_latch
             ; 
-            ; do eval and repl updates BUGBUG: only one at a time
-            lda game_state
-            bpl repl_update
+            ; do eval and repl updates
+            lda game_state ; BUGBUG: make a jump tables?
+            bmi _jx_eval_update
+            jmp repl_update
+_jx_eval_update
             jmp eval_update
 update_return
 
@@ -295,6 +297,35 @@ waitOnTimer
 waitOnTimer_loop          
             cpx INTIM
             bmi waitOnTimer_loop
+            rts
+
+;--------------------
+; GC sub
+gc
+            tax
+            lda #0
+            pha
+            txa
+            pha            
+_gc_loop
+            pla
+            beq gcDone
+            tax
+_gc_car
+            lda HEAP_CAR_ADDR,x
+            cmp #$40
+            bmi _gc_cdr
+            pha
+_gc_cdr
+            lda HEAP_CDR_ADDR,x
+            beq _gc_free
+            pha
+_gc_free
+            lda free
+            sta HEAP_CDR_ADDR,x
+            stx free
+            jmp _gc_loop
+gcDone
             rts
 
 ; -------------------
@@ -413,71 +444,70 @@ LOOKUP_SYMBOL_VALUE
 
     ORG $FE00
 
-SYMBOL_GRAPHICS_EMPTY
-    byte $00,$00,$00,$00,$00,$00,$00,$00; 8
-SYMBOL_GRAPHICS_S00_MULT
+SYMBOL_GRAPHICS_S00_TERM
+    byte $0,$0,$0,$0,$20,$0,$0,$0; 8
+SYMBOL_GRAPHICS_S01_MULT
     byte $0,$0,$50,$70,$20,$70,$50,$0; 8
-SYMBOL_GRAPHICS_S01_ADD
+SYMBOL_GRAPHICS_S02_ADD
     byte $0,$20,$20,$20,$f8,$20,$20,$20; 8
-SYMBOL_GRAPHICS_S02_SUB
+SYMBOL_GRAPHICS_S03_SUB
     byte $0,$0,$0,$0,$f8,$0,$0,$0; 8
-SYMBOL_GRAPHICS_S03_DIV
+SYMBOL_GRAPHICS_S04_DIV
     byte $0,$80,$c0,$e0,$70,$38,$18,$8; 8
-SYMBOL_GRAPHICS_S04_EQUALS
+SYMBOL_GRAPHICS_S05_EQUALS
     byte $0,$0,$0,$f0,$0,$f0,$0,$0; 8
-SYMBOL_GRAPHICS_S05_GT
+SYMBOL_GRAPHICS_S06_GT
     byte $0,$c0,$60,$30,$18,$30,$60,$c0; 8
-SYMBOL_GRAPHICS_S06_LT
+SYMBOL_GRAPHICS_S07_LT
     byte $0,$18,$30,$60,$c0,$60,$30,$18; 8
-SYMBOL_GRAPHICS_S07_AND
+SYMBOL_GRAPHICS_S08_AND
     byte $0,$20,$f0,$80,$60,$80,$f0,$20; 8
-SYMBOL_GRAPHICS_S08_OR
+SYMBOL_GRAPHICS_S09_OR
     byte $0,$20,$20,$20,$20,$20,$20,$20; 8
-SYMBOL_GRAPHICS_S09_NOT
+SYMBOL_GRAPHICS_S0A_NOT
     byte $0,$20,$20,$0,$20,$20,$20,$20; 8
-SYMBOL_GRAPHICS_S0A_IF
+SYMBOL_GRAPHICS_S0B_IF
     byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
-SYMBOL_GRAPHICS_S0B_F0
+SYMBOL_GRAPHICS_S0C_F0
     byte $0,$88,$98,$50,$30,$20,$20,$60; 8
-SYMBOL_GRAPHICS_S0C_F1
+SYMBOL_GRAPHICS_S0D_F1
     byte $0,$88,$98,$50,$30,$24,$2c,$6c; 8
-SYMBOL_GRAPHICS_S0D_F2
+SYMBOL_GRAPHICS_S0E_F2
     byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
-SYMBOL_GRAPHICS_S0E_F3
+SYMBOL_GRAPHICS_S0F_F3
     byte $0,$f8,$88,$40,$4c,$2c,$24,$10; 8
-SYMBOL_GRAPHICS_S0F_A0
+SYMBOL_GRAPHICS_S10_A0
     byte $0,$70,$88,$88,$78,$8,$88,$70; 8
-SYMBOL_GRAPHICS_S10_A1
+SYMBOL_GRAPHICS_S11_A1
     byte $0,$f0,$88,$88,$88,$f0,$80,$80; 8
-SYMBOL_GRAPHICS_S11_A2
+SYMBOL_GRAPHICS_S12_A2
     byte $0,$70,$88,$80,$80,$80,$88,$70; 8
-SYMBOL_GRAPHICS_S12_A3
+SYMBOL_GRAPHICS_S13_A3
     byte $0,$78,$88,$88,$88,$78,$8,$8; 8
-SYMBOL_GRAPHICS_S13_ZERO
+SYMBOL_GRAPHICS_S14_ZERO
     byte $0,$70,$88,$88,$88,$88,$88,$70; 8
-SYMBOL_GRAPHICS_S14_ONE
+SYMBOL_GRAPHICS_S15_ONE
     byte $0,$70,$20,$20,$20,$20,$20,$60; 8
-SYMBOL_GRAPHICS_S15_TWO
+SYMBOL_GRAPHICS_S16_TWO
     byte $0,$f8,$80,$80,$f8,$8,$8,$f8; 8
-SYMBOL_GRAPHICS_S16_THREE
+SYMBOL_GRAPHICS_S17_THREE
     byte $0,$f8,$8,$8,$f8,$8,$8,$f8; 8
-SYMBOL_GRAPHICS_S17_FOUR
+SYMBOL_GRAPHICS_S18_FOUR
     byte $0,$8,$8,$8,$f8,$88,$88,$88; 8
-SYMBOL_GRAPHICS_S18_FIVE
+SYMBOL_GRAPHICS_S19_FIVE
     byte $0,$f8,$8,$8,$f8,$80,$80,$f8; 8
-SYMBOL_GRAPHICS_S19_SIX
+SYMBOL_GRAPHICS_S1A_SIX
     byte $0,$f8,$88,$88,$f8,$80,$80,$f8; 8
-SYMBOL_GRAPHICS_S1A_SEVEN
+SYMBOL_GRAPHICS_S1B_SEVEN
     byte $0,$8,$8,$8,$8,$8,$8,$f8; 8
-SYMBOL_GRAPHICS_S1B_EIGHT
+SYMBOL_GRAPHICS_S1C_EIGHT
     byte $0,$f8,$88,$88,$f8,$88,$88,$f8; 8
-SYMBOL_GRAPHICS_S1C_NINE
+SYMBOL_GRAPHICS_S1D_NINE
     byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
-SYMBOL_GRAPHICS_S1D_HASH
+SYMBOL_GRAPHICS_S1E_HASH
     byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
-SYMBOL_GRAPHICS_S1E_TERM
-    byte $0,$88,$50,$0,$20,$0,$50,$88; 8
-SYMBOL_GRAPHICS_S1F_MULT
+SYMBOL_GRAPHICS_S1F_EMPTY
+    byte $00,$00,$00,$00,$00,$00,$00,$00; 8
 
     ORG $FF00
 
@@ -500,38 +530,38 @@ FREE_LOOKUP_TABLE
 
 LOOKUP_SYMBOL_GRAPHICS = $FF00
 SYMBOL_GRAPHICS_LOOKUP_TABLE
-    byte #<SYMBOL_GRAPHICS_S00_MULT
-    byte #<SYMBOL_GRAPHICS_S01_ADD
-    byte #<SYMBOL_GRAPHICS_S02_SUB
-    byte #<SYMBOL_GRAPHICS_S03_DIV
-    byte #<SYMBOL_GRAPHICS_S04_EQUALS
-    byte #<SYMBOL_GRAPHICS_S05_GT
-    byte #<SYMBOL_GRAPHICS_S06_LT
-    byte #<SYMBOL_GRAPHICS_S07_AND
-    byte #<SYMBOL_GRAPHICS_S08_OR 
-    byte #<SYMBOL_GRAPHICS_S09_NOT
-    byte #<SYMBOL_GRAPHICS_S0A_IF
-    byte #<SYMBOL_GRAPHICS_S0B_F0
-    byte #<SYMBOL_GRAPHICS_S0C_F1
-    byte #<SYMBOL_GRAPHICS_S0D_F2
-    byte #<SYMBOL_GRAPHICS_S0E_F3
-    byte #<SYMBOL_GRAPHICS_S0F_A0
-    byte #<SYMBOL_GRAPHICS_S10_A1
-    byte #<SYMBOL_GRAPHICS_S11_A2
-    byte #<SYMBOL_GRAPHICS_S12_A3
-    byte #<SYMBOL_GRAPHICS_S13_ZERO
-    byte #<SYMBOL_GRAPHICS_S14_ONE
-    byte #<SYMBOL_GRAPHICS_S15_TWO
-    byte #<SYMBOL_GRAPHICS_S16_THREE
-    byte #<SYMBOL_GRAPHICS_S17_FOUR
-    byte #<SYMBOL_GRAPHICS_S18_FIVE
-    byte #<SYMBOL_GRAPHICS_S19_SIX
-    byte #<SYMBOL_GRAPHICS_S1A_SEVEN
-    byte #<SYMBOL_GRAPHICS_S1B_EIGHT
-    byte #<SYMBOL_GRAPHICS_S1C_NINE
-    byte #<SYMBOL_GRAPHICS_S1D_HASH
-    byte #<SYMBOL_GRAPHICS_S1E_TERM
-    byte #<SYMBOL_GRAPHICS_S1F_MULT
+    byte #<SYMBOL_GRAPHICS_S00_TERM
+    byte #<SYMBOL_GRAPHICS_S01_MULT
+    byte #<SYMBOL_GRAPHICS_S02_ADD
+    byte #<SYMBOL_GRAPHICS_S03_SUB
+    byte #<SYMBOL_GRAPHICS_S04_DIV
+    byte #<SYMBOL_GRAPHICS_S05_EQUALS
+    byte #<SYMBOL_GRAPHICS_S06_GT
+    byte #<SYMBOL_GRAPHICS_S07_LT
+    byte #<SYMBOL_GRAPHICS_S08_AND
+    byte #<SYMBOL_GRAPHICS_S09_OR 
+    byte #<SYMBOL_GRAPHICS_S0A_NOT
+    byte #<SYMBOL_GRAPHICS_S0B_IF
+    byte #<SYMBOL_GRAPHICS_S0C_F0
+    byte #<SYMBOL_GRAPHICS_S0D_F1
+    byte #<SYMBOL_GRAPHICS_S0E_F2
+    byte #<SYMBOL_GRAPHICS_S0F_F3
+    byte #<SYMBOL_GRAPHICS_S10_A0
+    byte #<SYMBOL_GRAPHICS_S11_A1
+    byte #<SYMBOL_GRAPHICS_S12_A2
+    byte #<SYMBOL_GRAPHICS_S13_A3
+    byte #<SYMBOL_GRAPHICS_S14_ZERO
+    byte #<SYMBOL_GRAPHICS_S15_ONE
+    byte #<SYMBOL_GRAPHICS_S16_TWO
+    byte #<SYMBOL_GRAPHICS_S17_THREE
+    byte #<SYMBOL_GRAPHICS_S18_FOUR
+    byte #<SYMBOL_GRAPHICS_S19_FIVE
+    byte #<SYMBOL_GRAPHICS_S1A_SIX
+    byte #<SYMBOL_GRAPHICS_S1B_SEVEN
+    byte #<SYMBOL_GRAPHICS_S1C_EIGHT
+    byte #<SYMBOL_GRAPHICS_S1D_NINE
+    byte #<SYMBOL_GRAPHICS_S1E_HASH
+    byte #<SYMBOL_GRAPHICS_S1F_EMPTY
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
