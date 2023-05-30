@@ -298,9 +298,11 @@ _prep_repl_line_adjust
             tay                          ; .
             lda repl_display_indent,y    ; read line width level
             and #$07                     ; mask out indent
-            beq _prep_repl_line_check_sw 
-            clc
-            adc #1
+            ldx repl_display_list,y      ; check if we have a list or a symbol
+            cpx #$40                     ;
+            bmi _prep_repl_line_check_sw ;
+            clc                          ; if a symbol, allow 1 more col
+            adc #1                       ;
 _prep_repl_line_check_sw
             sta repl_tmp_width           ; save indent level to tmp
             lda repl_display_indent,y    ; read indent
