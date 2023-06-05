@@ -80,7 +80,7 @@ class Pair:
         return '%' + format(0x80 | self.address, '08b')
 
     def code(self):
-        return f';{self.address}\nlda #{self.car.ref()}\nsta heap,x\ninx\nlda #{self.cdr.ref()}\nsta heap,x\ninx'
+        return f';{self.address}\nlda #{self.car.ref()}\nsta #0,x\ninx\nlda #{self.cdr.ref()}\nsta #0,x\ninx'
 
 #
 class Heap:

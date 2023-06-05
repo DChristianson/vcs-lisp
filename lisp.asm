@@ -303,6 +303,7 @@ waitOnTimer_loop
 ; GC sub
 gc
             tax
+            beq gcDone
             lda #0
             pha
             txa

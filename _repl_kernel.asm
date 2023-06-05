@@ -1,65 +1,91 @@
-_repl_update_edit_select
-            lda player_input_latch
-            bmi _repl_update_keys_move
-_repl_update_selected
-            lda repl_curr_cell
-            beq _repl_update_selected_extend 
-            tax
-            lda HEAP_CAR_ADDR,x
-            cmp #$40
-            bmi _repl_update_symbol
-            ; replace an existing list
-            tax
-            lda repl_edit_sym
-            beq _repl_update_selected_del  ; make terminal
-            cmp #$10
-            bcc _repl_update_symbol_store ; replace function
-            ora #$c0 ; BUGBUG: may be able to consolidate
-            ; fall through to select
-_repl_update_selected_del
-            ; free the prev, store a as new sym
-            ; y is the new val
+
+            ; f f
+            ; f s
+            ; f n
+            ; s f
+            ; s s -> set_car
+            ; s n -> truncate
+            ; n f -> alloc, 
+            ; n s -> alloc, 
+            ; n n -> NOOP
+
+repl_update_replace
+            ; free the current cell and replace with a
             tay
-            ldx repl_prev_cell   ; BUGBUG: handle where repl
             lda HEAP_CDR_ADDR,x
             sty HEAP_CDR_ADDR,x
             jsr gc
-            jmp _repl_update_selected_done
-_repl_update_selected_extend
-            ; extend a list
-            lda repl_edit_sym
-            beq _repl_update_selected_done  ; make terminal
-            ldx repl_prev_cell             ; find prev cell
-            lda free                       ; get first free cell
-            beq _repl_update_selected_done ; BUGBUG: OOM
-            sta HEAP_CDR_ADDR,x            ; attach free to prev
-            tax                            ; load up free
-            lda HEAP_CDR_ADDR,x            ; free = cdr free
-            sta free                       ; .
-            lda #0                         ; cdr free = 0
-            sta HEAP_CDR_ADDR,x            ; .
-            ; fallthrough to symbol update
-_repl_update_symbol
-            lda repl_edit_sym
-            beq _repl_update_selected_del  ; make terminal
-            cmp #$10
-            bcs _repl_update_symbol_store
+            rts
+
+repl_update_alloc
+            ; add cell
             lda free
-            sta HEAP_CAR_ADDR,x
+            sta HEAP_CDR_ADDR,x
             tax
             lda HEAP_CDR_ADDR,x
             sta free
             lda #0
             sta HEAP_CDR_ADDR,x
+            rts
+
+_repl_update_repl
             lda repl_edit_sym
-            ; fallthrough to symbol store
-_repl_update_symbol_store
+            beq _repl_update_repl_clear; edit function or . symbol
+            cmp #$10 
+            bcc _repl_update_set_car
+            jmp _repl_update_edit_done ; can't replace with symbol
+_repl_update_repl_clear
+            jsr repl_update_replace ; 
+            lda #0
+            ldx repl
+            jmp _repl_update_set_car
+_repl_update_edit_select
+            lda player_input_latch
+            bmi _repl_update_keys_move
+            ldx repl_curr_cell
+            beq _repl_update_edit_extend    ; curr cell is null
+            cpx repl
+            beq _repl_update_repl           ; check if we are at head
+            lda HEAP_CAR_ADDR,x
+            cmp #$40
+            bpl _repl_update_edit_funcall  ; curr cell is a funcall
+_repl_update_edit_symbol
+            ; curr cell is a symbol
+            lda repl_edit_sym
+            beq _repl_update_edit_delete   ; delete current cell
+            cmp #$10                         
+            bcs _repl_update_set_car       ; edit symbol
+            dex
+            jsr repl_update_alloc
+            lda repl_edit_sym
+_repl_update_set_car
             ora #$c0
             sta HEAP_CAR_ADDR,x
-_repl_update_selected_done
+_repl_update_edit_done
             ldx #GAME_STATE_EDIT
             stx game_state
             jmp _repl_update_skip_move
+_repl_update_edit_extend
+            ldx repl_prev_cell
+            lda repl_edit_sym
+            beq _repl_update_edit_done     ; extending with null is noop
+            jsr repl_update_alloc       
+            jmp _repl_update_edit_symbol   ; proceed to edit new extension
+_repl_update_edit_delete
+            ldx repl_prev_cell             ; BUGBUG: where repl?
+            jsr repl_update_replace        ;
+            jmp _repl_update_edit_done
+_repl_update_edit_funcall
+            tax
+            lda repl_edit_sym
+            beq _repl_update_edit_delete   ; delete current cell
+            cmp #$10                         
+            bcc _repl_update_set_car       ; edit funcall operator
+            ora #$c0
+            ldx repl_curr_cell
+            dex
+            jsr repl_update_replace
+            jmp _repl_update_edit_done
 
 repl_update
             ldx game_state
@@ -346,23 +372,25 @@ _prep_repl_key_end
             sbc repl_tmp_indent   ; .
             tay                   ; .
             ; deref prev cell
-            ldx repl_prev_cell
+            ldx repl_prev_cell            
             lda HEAP_CDR_ADDR,x
-            sta repl_curr_cell
             beq _prep_repl_line_found_curr_cell
-            tax
-            lda HEAP_CAR_ADDR,x
-            cmp #$40
-            bmi _prep_repl_line_found_curr_cell
-_prep_repl_line_find_curr_cell
             dey
             bmi _prep_repl_line_found_curr_cell
-            sta repl_prev_cell
+            tax ; recurse down
+            lda HEAP_CAR_ADDR,x
+            cmp #$40
+            bpl _prep_repl_line_find_curr_cell
+            txa ; pop back
+_prep_repl_line_find_curr_cell
             tax
             lda HEAP_CDR_ADDR,x
-            sta repl_curr_cell
-            jmp _prep_repl_line_find_curr_cell
+            beq _prep_repl_line_found_curr_cell
+            dey
+            bpl _prep_repl_line_find_curr_cell
 _prep_repl_line_found_curr_cell
+            stx repl_prev_cell
+            sta repl_curr_cell
 
             ; done
 _prep_repl_end
