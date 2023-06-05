@@ -1,32 +1,7 @@
-
-            ; f f
-            ; f s
-            ; f n
-            ; s f
-            ; s s -> set_car
-            ; s n -> truncate
-            ; n f -> alloc, 
-            ; n s -> alloc, 
-            ; n n -> NOOP
-
-repl_update_replace
-            ; free the current cell and replace with a
-            tay
-            lda HEAP_CDR_ADDR,x
-            sty HEAP_CDR_ADDR,x
-            jsr gc
-            rts
-
-repl_update_alloc
-            ; add cell
-            lda free
-            sta HEAP_CDR_ADDR,x
-            tax
-            lda HEAP_CDR_ADDR,x
-            sta free
-            lda #0
-            sta HEAP_CDR_ADDR,x
-            rts
+;;
+;; REPL kernel
+;; code editor
+;;
 
 _repl_update_repl
             lda repl_edit_sym
@@ -35,7 +10,7 @@ _repl_update_repl
             bcc _repl_update_set_car
             jmp _repl_update_edit_done ; can't replace with symbol
 _repl_update_repl_clear
-            jsr repl_update_replace ; 
+            jsr set_cdr ; 
             lda #0
             ldx repl
             jmp _repl_update_set_car
@@ -56,7 +31,7 @@ _repl_update_edit_symbol
             cmp #$10                         
             bcs _repl_update_set_car       ; edit symbol
             dex
-            jsr repl_update_alloc
+            jsr alloc_cdr
             lda repl_edit_sym
 _repl_update_set_car
             ora #$c0
@@ -69,11 +44,11 @@ _repl_update_edit_extend
             ldx repl_prev_cell
             lda repl_edit_sym
             beq _repl_update_edit_done     ; extending with null is noop
-            jsr repl_update_alloc       
+            jsr alloc_cdr       
             jmp _repl_update_edit_symbol   ; proceed to edit new extension
 _repl_update_edit_delete
-            ldx repl_prev_cell             ; BUGBUG: where repl?
-            jsr repl_update_replace        ;
+            ldx repl_prev_cell             ; 
+            jsr set_cdr                    ;
             jmp _repl_update_edit_done
 _repl_update_edit_funcall
             tax
@@ -84,7 +59,7 @@ _repl_update_edit_funcall
             ora #$c0
             ldx repl_curr_cell
             dex
-            jsr repl_update_replace
+            jsr set_cdr
             jmp _repl_update_edit_done
 
 repl_update
@@ -94,11 +69,18 @@ repl_update
 
             lda player_input_latch
             bmi _repl_update_edit_move ; BUGBUG: better name prefix - _repl_keys_...?
+            lda repl_edit_line
+            cmp repl_last_line
+            bmi _repl_update_edit_sym
+            ldx #GAME_STATE_EVAL
+            stx game_state
+            jmp _repl_update_skip_move
+
+_repl_update_edit_sym            
             ldx #GAME_STATE_EDIT_SELECT
             stx game_state
             lda repl_curr_cell
             beq _repl_update_edit_start ; curr cell is null
-_repl_update_edit_sym
             tax
             lda HEAP_CAR_ADDR,x
             cmp #$40
@@ -143,11 +125,14 @@ _repl_update_skip_up
 _repl_update_set_cursor_line
             clc
             adc repl_edit_line
-            bpl _repl_update_check_scroll_up
-            lda #0 ; BUGBUG too far up
+            bmi _repl_update_at_limit
 _repl_update_check_scroll_up
             cmp repl_last_line
             bcc _repl_update_check_limit
+            beq _repl_update_at_limit
+            lda #0
+            jmp _repl_update_check_limit
+_repl_update_at_limit            
             lda repl_last_line ; BUGBUG too far down
 _repl_update_check_limit
             sta repl_edit_line
@@ -180,41 +165,6 @@ _repl_update_check_col_limit
             sta repl_edit_col
 _repl_update_skip_move
 
-            ; convert accumulator to BCD
-            ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
-            sed
-            lda #0
-            sta repl_bcd
-            sta repl_bcd+1
-            sta repl_bcd+2
-            lda accumulator
-            sta repl_tmp_accumulator
-            lda accumulator+1
-            sta repl_tmp_accumulator+1
-            ldx #16
-_repl_update_bin2bcd16_bit
-            asl repl_tmp_accumulator
-            rol repl_tmp_accumulator + 1
-            lda repl_bcd
-            adc repl_bcd
-            sta repl_bcd
-            lda repl_bcd+1
-            adc repl_bcd+1
-            sta repl_bcd+1
-            lda repl_bcd+2
-            adc repl_bcd+2
-            sta repl_bcd+2
-            dex
-            bne _repl_update_bin2bcd16_bit
-            cld
-            ; prep symbol graphics
-            ldy #(DISPLAY_COLS - 1) * 2
-_prep_repl_loop
-            lda #>SYMBOL_GRAPHICS_S00_TERM
-            sta repl_gx_addr + 1,y
-            dey
-            dey
-            bpl _prep_repl_loop
             ; calculate visible program
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll
@@ -311,7 +261,7 @@ _prep_repl_line_end
             lda repl_tmp_scroll
             eor #$ff
             clc
-            adc #EDITOR_LINES - 2
+            adc #1
             adc repl_scroll
             sta repl_last_line ; last cleared line
             ; adjust cursor to stay within line bounds
@@ -398,10 +348,38 @@ _prep_repl_end
             txs      ;
             jmp update_return
 
+            ; convert accumulator to BCD
+            ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
+            sed
+            lda #0
+            sta repl_bcd
+            sta repl_bcd+1
+            sta repl_bcd+2
+            lda accumulator
+            sta repl_tmp_accumulator
+            lda accumulator+1
+            sta repl_tmp_accumulator+1
+            ldx #16
+_prep_update_bin2bcd16_bit
+            asl repl_tmp_accumulator
+            rol repl_tmp_accumulator + 1
+            lda repl_bcd
+            adc repl_bcd
+            sta repl_bcd
+            lda repl_bcd+1
+            adc repl_bcd+1
+            sta repl_bcd+1
+            lda repl_bcd+2
+            adc repl_bcd+2
+            sta repl_bcd+2
+            dex
+            bne _prep_update_bin2bcd16_bit
+            cld
+
 ;----------------------
 ; Repl display
 ;
-            align 256
+
 repl_draw
 
 header
@@ -415,6 +393,7 @@ _header_loop
 
 ; ACCUMULATOR
 accumulator_draw
+            jsr prep_repl_graphics
             sta WSYNC                               ;--  0
             lda #3                                  ;2   2
             sta NUSIZ0                              ;3   5
@@ -457,22 +436,46 @@ _accumulator_draw_loop    ; 40/41 w page jump
 accumulator_draw_end
             sta WSYNC
             lda #0
-            sta NUSIZ0
-            sta NUSIZ1
             sta PF1
             sta PF2
-            sta GRP0
-            sta GRP1
+            sta NUSIZ0
+            sta NUSIZ1
             ldx #$ff ; reset stack pointer
             txs            
                 
+            ; MENU
+            ; 
+menu
+            sta WSYNC
+            lda #RED
+            lda repl_edit_line
+            cmp repl_last_line
+            bmi _menu_set_colubk
+            lda #CURSOR_COLOR
+_menu_set_colubk
+            sta COLUBK
+            WRITE_ADDR SYMBOL_GRAPHICS_S00_EVAL, repl_s0_addr 
+            WRITE_ADDR SYMBOL_GRAPHICS_S01_EVAL, repl_s1_addr 
+            ldy #CHAR_HEIGHT - 1
+_menu_loop
+            sta WSYNC              ; BUGBUG: position
+            lda (repl_s0_addr),y   ; BUGBUG: position   
+            sta GRP0                    
+            lda (repl_s1_addr),y         
+            sta GRP1                     
+            dey
+            bpl _menu_loop
+            sta GRP0 ; clear VDEL register
+
             ; PROMPT
+            ; BUGBUG: change name from prompt
             ; draw repl cell tree
 prompt
             lda #(PROMPT_HEIGHT * 76 / 64) 
             sta TIM64T
             ldy #(EDITOR_LINES - 1)
             sty repl_editor_line
+            jsr prep_repl_graphics
 
             ; position cursor
             sta WSYNC               ; --
@@ -616,7 +619,7 @@ _prompt_encode_symbol
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
             sta repl_s4_addr
-            lda #<SYMBOL_GRAPHICS_S1F_EMPTY
+            lda #<SYMBOL_GRAPHICS_S1F_BLANK
             jmp _prompt_encode_end
 _prompt_encode_list
             tax
@@ -675,7 +678,7 @@ _prompt_encode_keys
             clc
             adc #8
             sta repl_s4_addr
-            lda #<SYMBOL_GRAPHICS_S1F_EMPTY
+            lda #<SYMBOL_GRAPHICS_S1F_BLANK
             sta repl_s5_addr
             jmp prompt_display
 
@@ -827,6 +830,17 @@ _footer_loop
 
             jmp waitOnOverscan
 
+prep_repl_graphics
+            ; prep for symbol graphics
+            lda #>SYMBOL_GRAPHICS_S00_TERM
+            sta repl_s0_addr+1
+            sta repl_s1_addr+1
+            sta repl_s2_addr+1
+            sta repl_s3_addr+1
+            sta repl_s4_addr+1
+            sta repl_s5_addr+1
+            rts
+
 PROMPT_ENCODE_JMP
     word _prompt_encode_s4-1
     word _prompt_encode_s3-1
@@ -886,3 +900,11 @@ DISPLAY_REPL_COLORS
             lda HEAP_CDR_ADDR,x
             tax
     ENDM
+
+    MAC WRITE_ADDR
+            lda #<{1}
+            sta {2}
+            lda #>{1}
+            sta {2}+1
+    ENDM
+

@@ -329,6 +329,29 @@ _gc_free
 gcDone
             rts
 
+;------------------
+; heap modification subs
+
+set_cdr
+            ; free the cdr of x and replace with contents of a
+            ; return state undefined
+            tay
+            lda HEAP_CDR_ADDR,x
+            sty HEAP_CDR_ADDR,x
+            jsr gc
+            rts
+
+alloc_cdr
+            ; add new cell at cdr of x from free
+            lda free
+            sta HEAP_CDR_ADDR,x
+            tax
+            lda HEAP_CDR_ADDR,x
+            sta free
+            lda #0
+            sta HEAP_CDR_ADDR,x
+            rts
+
 ; -------------------
 ; Display kernels
 
@@ -446,9 +469,9 @@ LOOKUP_SYMBOL_VALUE
     ORG $FE00
 
 SYMBOL_GRAPHICS_S00_TERM
-    byte $0,$0,$0,$0,$20,$0,$0,$0; 8
+    byte $0,$0,$0,$50,$0,$20,$0,$0; 8
 SYMBOL_GRAPHICS_S01_MULT
-    byte $0,$0,$50,$70,$20,$70,$50,$0; 8
+    byte $0,$88,$d8,$70,$20,$70,$d8,$88; 8
 SYMBOL_GRAPHICS_S02_ADD
     byte $0,$20,$20,$20,$f8,$20,$20,$20; 8
 SYMBOL_GRAPHICS_S03_SUB
@@ -472,19 +495,19 @@ SYMBOL_GRAPHICS_S0B_IF
 SYMBOL_GRAPHICS_S0C_F0
     byte $0,$88,$98,$50,$30,$20,$20,$60; 8
 SYMBOL_GRAPHICS_S0D_F1
-    byte $0,$88,$98,$50,$30,$24,$2c,$6c; 8
-SYMBOL_GRAPHICS_S0E_F2
     byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
+SYMBOL_GRAPHICS_S0E_F2
+    byte $0,$60,$20,$20,$70,$20,$20,$38; 8
 SYMBOL_GRAPHICS_S0F_F3
-    byte $0,$f8,$88,$40,$4c,$2c,$24,$10; 8
+    byte $0,$c0,$d8,$d8,$58,$48,$48,$78; 8
 SYMBOL_GRAPHICS_S10_A0
-    byte $0,$70,$88,$88,$78,$8,$88,$70; 8
+    byte $0,$70,$88,$88,$78,$8,$f0,$0; 8
 SYMBOL_GRAPHICS_S11_A1
-    byte $0,$f0,$88,$88,$88,$f0,$80,$80; 8
+    byte $0,$f0,$88,$88,$f0,$80,$80,$0; 8
 SYMBOL_GRAPHICS_S12_A2
-    byte $0,$70,$88,$80,$80,$80,$88,$70; 8
+    byte $0,$70,$88,$80,$88,$70,$0,$0; 8
 SYMBOL_GRAPHICS_S13_A3
-    byte $0,$78,$88,$88,$88,$78,$8,$8; 8
+    byte $0,$78,$88,$88,$78,$8,$8,$0; 8
 SYMBOL_GRAPHICS_S14_ZERO
     byte $0,$70,$88,$88,$88,$88,$88,$70; 8
 SYMBOL_GRAPHICS_S15_ONE
@@ -507,7 +530,7 @@ SYMBOL_GRAPHICS_S1D_NINE
     byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
 SYMBOL_GRAPHICS_S1E_HASH
     byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
-SYMBOL_GRAPHICS_S1F_EMPTY
+SYMBOL_GRAPHICS_S1F_BLANK
     byte $00,$00,$00,$00,$00,$00,$00,$00; 8
 
     ORG $FF00
@@ -521,6 +544,40 @@ LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
 FREE_LOOKUP_TABLE
     byte $00, $01, $03, $07, $0f, $1f, $3f, $7f, $ff
 
+    ; menu graphics
+
+SYMBOL_GRAPHICS_S00_EVAL
+    byte $0,$64,$84,$8a,$ca,$8a,$8a,$62; 8
+SYMBOL_GRAPHICS_S01_EVAL
+    byte $0,$ae,$a8,$a8,$e8,$a8,$a8,$48; 8
+SYMBOL_GRAPHICS_S00_DEFN
+    byte $0,$c6,$a8,$a8,$ac,$a8,$a8,$c6; 8
+SYMBOL_GRAPHICS_S01_DEFN
+    byte $0,$80,$80,$80,$c0,$80,$80,$60; 8
+SYMBOL_GRAPHICS_S00_CALC
+    byte $0,$6a,$8a,$8a,$8e,$8a,$8a,$64; 8
+SYMBOL_GRAPHICS_S01_CALC
+    byte $0,$e6,$88,$88,$88,$88,$88,$86; 8
+SYMBOL_GRAPHICS_S00_DISK
+    byte $0,$ce,$a4,$a4,$a4,$a4,$a4,$ce; 8
+SYMBOL_GRAPHICS_S01_DISK
+    byte $0,$ea,$2a,$2a,$ec,$8a,$8a,$ea; 8
+SYMBOL_GRAPHICS_S00_BALL
+    byte $0,$ca,$aa,$aa,$ee,$aa,$aa,$c4; 8
+SYMBOL_GRAPHICS_S01_BALL
+    byte $0,$ee,$88,$88,$88,$88,$88,$88; 8
+SYMBOL_GRAPHICS_S00_MAZE
+    byte $0,$aa,$aa,$aa,$ae,$ea,$ea,$e4; 8
+SYMBOL_GRAPHICS_S01_MAZE
+    byte $0,$ee,$a8,$88,$4e,$28,$28,$ee; 8
+SYMBOL_GRAPHICS_S00_FLAG
+    byte $0,$c0,$c0,$c0,$ff,$ff,$ff,$ff; 8
+SYMBOL_GRAPHICS_S01_NUTS
+    byte $0,$1c,$3c,$3e,$6c,$6c,$46,$6; 8
+SYMBOL_GRAPHICS_S00_LISP
+    byte $0,$ee,$84,$84,$84,$84,$84,$8e; 8
+SYMBOL_GRAPHICS_S01_LISP
+    byte $0,$e8,$28,$28,$ee,$8a,$8a,$ee; 8
 
 ; ----------------------------------
 ; symbol graphics lookup 
@@ -562,7 +619,7 @@ SYMBOL_GRAPHICS_LOOKUP_TABLE
     byte #<SYMBOL_GRAPHICS_S1C_EIGHT
     byte #<SYMBOL_GRAPHICS_S1D_NINE
     byte #<SYMBOL_GRAPHICS_S1E_HASH
-    byte #<SYMBOL_GRAPHICS_S1F_EMPTY
+    byte #<SYMBOL_GRAPHICS_S1F_BLANK
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
