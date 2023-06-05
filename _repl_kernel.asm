@@ -346,7 +346,6 @@ _prep_repl_line_found_curr_cell
 _prep_repl_end
             ldx #$ff ; clean stack
             txs      ;
-            jmp update_return
 
             ; convert accumulator to BCD
             ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
@@ -375,6 +374,8 @@ _prep_update_bin2bcd16_bit
             dex
             bne _prep_update_bin2bcd16_bit
             cld
+
+            jmp update_return
 
 ;----------------------
 ; Repl display
@@ -414,7 +415,7 @@ accumulator_draw
             ldy #CHAR_HEIGHT - 1                    ;2  49
 
 _accumulator_draw_loop    ; 40/41 w page jump
-            SLEEP 16                     ;16  48/51
+            SLEEP 3
             lda (repl_s0_addr),y         ;5   53/56
             sta GRP0                     ;3   56
             lda (repl_s1_addr),y         ;5   61
@@ -430,6 +431,7 @@ _accumulator_draw_loop    ; 40/41 w page jump
             stx GRP0                     ;3   21  15 - 24   0 8!16!** ++ 40
             sta GRP1                     ;3   24  24 - 33   0 8 16!24!** ++
             sty GRP0                     ;3   27  33 - 42   0 8 16 24!32!** 
+            SLEEP 13                     ;16  48/51
             dey                          ;2   29  
             bpl _accumulator_draw_loop   ;2   31  
 

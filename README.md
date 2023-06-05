@@ -35,19 +35,19 @@ DONE
     - with press display cursor locates curr cell and replaces
     - add new cell 
     - delete cell
-  - game modes 1
-      - scratch
-ALPHA
   - demo 1
       - start with blank program, make + 1 2
-  - menu 1
-      - function menu displayed on screen
+  - game modes 1
+      - scratch
   - controls 1
       - moving past last line goes to menu
       - moving above first line goes to menu
       - eval when button push in menu
   - demo 2
       - eval demo program + 1 2
+ALPHA
+  - menu 1
+      - function menu displayed on screen
   - controls 2
       - function assignment when push in menu
       - game mode switch when push in menu
@@ -57,6 +57,11 @@ ALPHA
   - demo 3
       - fib program
       - play beep
+BUGS
+  - complex program takes too long to analyze in vblank
+  - blank program is weird
+  - null display on complex lines no box
+  - too slow to scroll through keys
 BETA
   - game modes 2
       - silly goose (number sequence)
