@@ -34,7 +34,7 @@ SCANLINES = 262
 ; s = state (edit/eval), x = game type, y = mode, i = input mask
 ; REPL 0xxxyyyi
 GAME_STATE_EDIT        = %00000000
-GAME_STATE_EDIT_SELECT = %00000001
+GAME_STATE_EDIT_KEYS   = %00000001
 ; EVAL 1xxxyyyi
 GAME_STATE_EVAL        = %10000000
 GAME_STATE_EVAL_APPLY  = %10000001

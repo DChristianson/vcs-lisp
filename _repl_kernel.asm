@@ -3,24 +3,24 @@
 ;; code editor
 ;;
 
-_repl_update_repl
+_repl_update_edit_head
             lda repl_edit_sym
-            beq _repl_update_repl_clear; edit function or . symbol
+            beq _repl_update_edit_clear; edit function or . symbol
             cmp #$10 
-            bcc _repl_update_set_car
+            bcc _repl_update_edit_set_car
             jmp _repl_update_edit_done ; can't replace with symbol
-_repl_update_repl_clear
+_repl_update_edit_clear
             jsr set_cdr ; 
             lda #0
             ldx repl
-            jmp _repl_update_set_car
-_repl_update_edit_select
-            lda player_input_latch
+            jmp _repl_update_edit_set_car
+_repl_update_edit_keys
+            lda player_input_latch         ; check button push
             bmi _repl_update_keys_move
             ldx repl_curr_cell
-            beq _repl_update_edit_extend    ; curr cell is null
+            beq _repl_update_edit_extend   ; curr cell is null
             cpx repl
-            beq _repl_update_repl           ; check if we are at head
+            beq _repl_update_edit_head        ; check if we are at head
             lda HEAP_CAR_ADDR,x
             cmp #$40
             bpl _repl_update_edit_funcall  ; curr cell is a funcall
@@ -29,11 +29,11 @@ _repl_update_edit_symbol
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
             cmp #$10                         
-            bcs _repl_update_set_car       ; edit symbol
+            bcs _repl_update_edit_set_car  ; edit symbol
             dex
             jsr alloc_cdr
             lda repl_edit_sym
-_repl_update_set_car
+_repl_update_edit_set_car
             ora #$c0
             sta HEAP_CAR_ADDR,x
 _repl_update_edit_done
@@ -55,7 +55,7 @@ _repl_update_edit_funcall
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
             cmp #$10                         
-            bcc _repl_update_set_car       ; edit funcall operator
+            bcc _repl_update_edit_set_car   ; edit funcall operator
             ora #$c0
             ldx repl_curr_cell
             dex
@@ -64,38 +64,37 @@ _repl_update_edit_funcall
 
 repl_update
             ldx game_state
-            cpx #GAME_STATE_EDIT_SELECT
-            beq _repl_update_edit_select
-
-            lda player_input_latch
+            cpx #GAME_STATE_EDIT_KEYS
+            beq _repl_update_edit_keys
+            lda player_input_latch     ; check button push
             bmi _repl_update_edit_move ; BUGBUG: better name prefix - _repl_keys_...?
+            ; button was pushed
             lda repl_edit_line
-            cmp repl_last_line
-            bmi _repl_update_edit_sym
+            bpl _repl_update_edit_keys_start
             ldx #GAME_STATE_EVAL
             stx game_state
             jmp _repl_update_skip_move
 
-_repl_update_edit_sym            
-            ldx #GAME_STATE_EDIT_SELECT
+_repl_update_edit_keys_start
+            ldx #GAME_STATE_EDIT_KEYS
             stx game_state
             lda repl_curr_cell
-            beq _repl_update_edit_start ; curr cell is null
+            beq _repl_update_edit_save_sym ; curr cell is null
             tax
             lda HEAP_CAR_ADDR,x
             cmp #$40
-            bmi _repl_update_edit_start
+            bmi _repl_update_edit_save_sym
             tax
             lda HEAP_CAR_ADDR,x
-_repl_update_edit_start
+_repl_update_edit_save_sym
             and #$1f
             sta repl_edit_sym
             jmp _repl_update_skip_move
 
 _repl_update_keys_move
-            ; check keys movement
-            ror
-            ror
+            ; check keyboard movement
+            ror ; skip down 
+            ror ; skip up
             ror
             bcs _repl_update_keys_skip_left
             lda #-1
@@ -113,7 +112,7 @@ _repl_update_check_keys_limit
             jmp _repl_update_skip_move
 
 _repl_update_edit_move
-            ; check movement
+            ; check cursor movement
             ror
             bcs _repl_update_skip_up
             lda #-1
@@ -125,19 +124,21 @@ _repl_update_skip_up
 _repl_update_set_cursor_line
             clc
             adc repl_edit_line
-            bmi _repl_update_at_limit
+            bmi _repl_update_above_limit
 _repl_update_check_scroll_up
             cmp repl_last_line
             bcc _repl_update_check_limit
-            beq _repl_update_at_limit
-            lda #0
-            jmp _repl_update_check_limit
-_repl_update_at_limit            
-            lda repl_last_line ; BUGBUG too far down
+            lda repl_last_line
 _repl_update_check_limit
             sta repl_edit_line
             cmp repl_scroll
             bpl _repl_update_check_scroll_down
+            sta repl_scroll
+            jmp _repl_update_skip_move
+_repl_update_above_limit            
+            lda #-1 
+            sta repl_edit_line
+            lda #0
             sta repl_scroll
             jmp _repl_update_skip_move
 _repl_update_check_scroll_down
@@ -220,6 +221,7 @@ _prep_repl_line_next
             clc
             adc repl_tmp_width
             sta repl_display_indent,y
+_prep_repl_line_next_dey
             dec repl_tmp_scroll
             bpl _prep_repl_line_next_skip_dey
             dey
@@ -228,9 +230,9 @@ _prep_repl_line_next_skip_dey
             ; start next line
             tsx ; read stack to see how indented we need to be
             txa
-            eor #$ff ; invert and shift left x 4
+            eor #$ff ; invert to get size (at size 0 will be #$ff)
             beq _prep_repl_line_clear
-            asl
+            asl ; shift left x 4
             asl
             clc
             adc #REPL_DISPLAY_MARGIN
@@ -244,9 +246,7 @@ _prep_repl_line_next_skip_prev
             bmi _prep_repl_line_complex_next ; not null
             lda #$c0; SYMBOL_GRAPHICS_S00_TERM
             sta repl_display_list,y
-            dey
-            bpl _prep_repl_line_next_skip_dey 
-            jmp _prep_repl_line_end
+            jmp _prep_repl_line_next_dey
 _prep_repl_line_clear
             lda #0
 _prep_repl_line_clear_loop
@@ -261,7 +261,6 @@ _prep_repl_line_end
             lda repl_tmp_scroll
             eor #$ff
             clc
-            adc #1
             adc repl_scroll
             sta repl_last_line ; last cleared line
             ; adjust cursor to stay within line bounds
@@ -450,9 +449,8 @@ accumulator_draw_end
 menu
             sta WSYNC
             lda #RED
-            lda repl_edit_line
-            cmp repl_last_line
-            bmi _menu_set_colubk
+            ldx repl_edit_line
+            bpl _menu_set_colubk
             lda #CURSOR_COLOR
 _menu_set_colubk
             sta COLUBK
@@ -576,7 +574,7 @@ _prompt_cursor_bk_2
             stx COLUPF              ;3   70
             sta HMOVE               ;3   73
             sta COLUBK              ;3   76
-            SLEEP 12                ;12  12
+            SLEEP 12                ;12  12 ; sleep to protect HMX registers
             lda #0                  ;2   14
             lda repl_display_indent,y ;4 18
             and #$01                ;2   10
