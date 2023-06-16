@@ -404,14 +404,16 @@ accumulator_draw
             sta HMP1                                ;3  18
             sta RESP0                               ;3  21
             sta RESP1                               ;3  24
-            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr ;16 40
-            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr ;16 56
-            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr ;16 72
+            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr ;14 38
+            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr ;16 54
+            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr ;14 68
+            SLEEP 4                                 ;4  72
             sta HMOVE                               ;3  75
             WRITE_DIGIT_LO repl_bcd+1, repl_s3_addr ;16 15
-            WRITE_DIGIT_HI repl_bcd, repl_s4_addr   ;16 31
-            WRITE_DIGIT_LO repl_bcd, repl_s5_addr   ;16 47
-            ldy #CHAR_HEIGHT - 1                    ;2  49
+            WRITE_DIGIT_HI repl_bcd, repl_s4_addr   ;14 29
+            WRITE_DIGIT_LO repl_bcd, repl_s5_addr   ;16 45
+            ldy #CHAR_HEIGHT - 1                    ;2  47
+            SLEEP 2                                 ;2  49
 
 _accumulator_draw_loop    ; 40/41 w page jump
             SLEEP 3
@@ -876,10 +878,9 @@ DISPLAY_REPL_COLORS
             lda {1}                         ;3  3
             and #$f0                        ;2  5
             lsr                             ;2  7
-            lsr                             ;2  9
-            clc                             ;2 11
-            adc #<SYMBOL_GRAPHICS_S14_ZERO  ;2 13
-            sta {2}                         ;3 15
+            clc                             ;2  9
+            adc #<SYMBOL_GRAPHICS_S14_ZERO  ;2 11
+            sta {2}                         ;3 13
     ENDM
 
     MAC WRITE_DIGIT_LO
