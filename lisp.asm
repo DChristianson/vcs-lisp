@@ -110,7 +110,7 @@ game_data          ds 8
 
     ORG $D4
 
-
+repl_menu_tab  ds 1 ; which menu tab is active BUGBUG: collapse with game state?
 repl_scroll    ds 1 ; lines to scroll
 repl_edit_line ds 1 ; editor line BUGBUG: collapse with col?
 repl_edit_col  ds 1 ; editor column BUGBUG: collapse with line?
@@ -621,6 +621,16 @@ SYMBOL_GRAPHICS_LOOKUP_TABLE
     byte #<SYMBOL_GRAPHICS_S1D_NINE
     byte #<SYMBOL_GRAPHICS_S1E_HASH
     byte #<SYMBOL_GRAPHICS_S1F_BLANK
+
+MENU_GRAPHICS
+    word #SYMBOL_GRAPHICS_S01_EVAL
+    word #SYMBOL_GRAPHICS_S00_EVAL
+    word #SYMBOL_GRAPHICS_S0C_F0
+    word #SYMBOL_GRAPHICS_S00_DEFN
+    word #SYMBOL_GRAPHICS_S0D_F1
+    word #SYMBOL_GRAPHICS_S00_DEFN
+    word #SYMBOL_GRAPHICS_S0E_F2
+    word #SYMBOL_GRAPHICS_S00_DEFN
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors

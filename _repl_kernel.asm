@@ -66,15 +66,11 @@ repl_update
             ldx game_state
             cpx #GAME_STATE_EDIT_KEYS
             beq _repl_update_edit_keys
+            lda repl_edit_line
+            bmi _repl_update_menu
             lda player_input_latch     ; check button push
             bmi _repl_update_edit_move ; BUGBUG: better name prefix - _repl_keys_...?
             ; button was pushed
-            lda repl_edit_line
-            bpl _repl_update_edit_keys_start
-            ldx #GAME_STATE_EVAL
-            stx game_state
-            jmp _repl_update_skip_move
-
 _repl_update_edit_keys_start
             ldx #GAME_STATE_EDIT_KEYS
             stx game_state
@@ -90,6 +86,7 @@ _repl_update_edit_save_sym
             and #$1f
             sta repl_edit_sym
             jmp _repl_update_skip_move
+
 
 _repl_update_keys_move
             ; check keyboard movement
@@ -111,6 +108,29 @@ _repl_update_check_keys_limit
             sta repl_edit_sym
             jmp _repl_update_skip_move
 
+_repl_update_menu
+            ; check button push
+            lda player_input_latch         
+            bpl _repl_update_menu_select
+            ; check cursor movement
+            ror ; skip up
+            ror ; down
+            bcc _repl_update_down
+            ror
+            bcs _repl_update_menu_skip_left
+            dec repl_menu_tab
+            jmp _repl_update_skip_move
+_repl_update_menu_skip_left
+            ror
+            bcs _repl_update_skip_move
+            inc repl_menu_tab
+            jmp _repl_update_skip_move
+_repl_update_menu_select
+            ; eval
+            ldx #GAME_STATE_EVAL
+            stx game_state
+            jmp _repl_update_skip_move            
+
 _repl_update_edit_move
             ; check cursor movement
             ror
@@ -120,12 +140,13 @@ _repl_update_edit_move
 _repl_update_skip_up
             ror
             bcs _repl_update_skip_updown
+_repl_update_down
             lda #1
 _repl_update_set_cursor_line
             clc
             adc repl_edit_line
             bmi _repl_update_above_limit
-_repl_update_check_scroll_up
+            ; check if we are past last line
             cmp repl_last_line
             bcc _repl_update_check_limit
             lda repl_last_line
@@ -264,6 +285,8 @@ _prep_repl_line_end
             adc repl_scroll
             sta repl_last_line ; last cleared line
             ; adjust cursor to stay within line bounds
+            lda repl_edit_line           ; check if we are at -1
+            bmi _prep_repl_key_end       ; if so, skip (that's the menu)
 _prep_repl_line_adjust 
             lda repl_scroll              ; get edit line y index
             sec                          ; .
@@ -456,8 +479,19 @@ menu
             lda #CURSOR_COLOR
 _menu_set_colubk
             sta COLUBK
-            WRITE_ADDR SYMBOL_GRAPHICS_S00_EVAL, repl_s0_addr 
-            WRITE_ADDR SYMBOL_GRAPHICS_S01_EVAL, repl_s1_addr 
+            lda repl_menu_tab
+            and #$03 ; not checking bounds
+            asl
+            asl
+            adc #3 ; don't need to clc due to AND #$07 + ASL's
+            tax
+            ldy #3
+_menu_load_loop
+            lda MENU_GRAPHICS,x
+            sta repl_s1_addr,y
+            dex
+            dey
+            bpl _menu_load_loop
             ldy #CHAR_HEIGHT - 1
 _menu_loop
             sta WSYNC              ; BUGBUG: position
