@@ -5,26 +5,22 @@
 
 _repl_update_edit_head
             lda repl_edit_sym
-            beq _repl_update_edit_clear; edit function or . symbol
+            beq _repl_update_edit_delete ; edit function or . symbol
             cmp #$10 
             bcc _repl_update_edit_set_car
             jmp _repl_update_edit_done ; can't replace with symbol
-_repl_update_edit_clear
-            jsr set_cdr ; 
-            lda #0
-            ldx repl
-            jmp _repl_update_edit_set_car
 _repl_update_edit_keys
             lda player_input_latch         ; check button push
-            bmi _repl_update_keys_move
+            bmi _repl_update_keys_move     ; no push
             ldx repl_curr_cell
             beq _repl_update_edit_extend   ; curr cell is null
-            cpx repl
-            beq _repl_update_edit_head        ; check if we are at head
+_repl_update_edit_apply
+            ldy repl_prev_cell              ; check if we are at head
+            cpy #REPL_CELL_ADDR             ; .
+            bpl _repl_update_edit_head      ; .
             lda HEAP_CAR_ADDR,x
             cmp #$40
             bpl _repl_update_edit_funcall  ; curr cell is a funcall
-_repl_update_edit_symbol
             ; curr cell is a symbol
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
@@ -45,7 +41,7 @@ _repl_update_edit_extend
             lda repl_edit_sym
             beq _repl_update_edit_done     ; extending with null is noop
             jsr alloc_cdr       
-            jmp _repl_update_edit_symbol   ; proceed to edit new extension
+            jmp _repl_update_edit_apply   ; proceed to edit new extension
 _repl_update_edit_delete
             ldx repl_prev_cell             ; 
             jsr set_cdr                    ;
@@ -98,7 +94,7 @@ _repl_update_keys_move
             jmp _repl_update_keys_set
 _repl_update_keys_skip_left
             ror
-            bcs _repl_update_skip_move
+            bcs _repl_update_keys_skip_move
             lda #1
 _repl_update_keys_set
             clc
@@ -106,6 +102,7 @@ _repl_update_keys_set
 _repl_update_check_keys_limit
             and #$1f
             sta repl_edit_sym
+_repl_update_keys_skip_move
             jmp _repl_update_skip_move
 
 _repl_update_menu
@@ -118,12 +115,16 @@ _repl_update_menu
             bcc _repl_update_down
             ror
             bcs _repl_update_menu_skip_left
-            dec repl_menu_tab
-            jmp _repl_update_skip_move
+            lda #-1
+            jmp _repl_update_set_menu
 _repl_update_menu_skip_left
             ror
             bcs _repl_update_skip_move
-            inc repl_menu_tab
+            lda #1
+_repl_update_set_menu
+            adc repl_menu_tab ; should be carry clear
+            and #$03
+            sta repl_menu_tab
             jmp _repl_update_skip_move
 _repl_update_menu_select
             ; eval
@@ -191,13 +192,18 @@ _repl_update_skip_move
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll
             sta repl_tmp_scroll
-            lda #REPL_CELL_ADDR     ; precursor cell is repl
-            sta repl_prev_cell
             ldx repl_edit_line      ; 
             stx repl_tmp_cell_count ; will count down to zero
             lda #REPL_DISPLAY_MARGIN; initial indent level
             sta repl_display_indent,y
-            lda repl
+            ; get active editor (eval, def0, def1, def2)
+            lda repl_menu_tab
+            clc
+            adc #REPL_CELL_ADDR     ; precursor cell
+            sta repl_prev_cell
+            tax
+            lda HEAP_CDR_ADDR,x
+            beq _prep_repl_line_next_terminal
             ; start scanning the current list for complex data
             sta repl_display_list,y ; ^ a is the current, if this line is simple we don't need to do more
 _prep_repl_line_scan
@@ -265,6 +271,7 @@ _prep_repl_line_next_skip_dey
 _prep_repl_line_next_skip_prev
             pla ; pull next cell from stack
             bmi _prep_repl_line_complex_next ; not null
+_prep_repl_line_next_terminal
             lda #$c0; SYMBOL_GRAPHICS_S00_TERM
             sta repl_display_list,y
             jmp _prep_repl_line_next_dey
@@ -399,6 +406,8 @@ _prep_update_bin2bcd16_bit
 
             jmp update_return
 
+        align 256
+
 ;----------------------
 ; Repl display
 ;
@@ -480,7 +489,6 @@ menu
 _menu_set_colubk
             sta COLUBK
             lda repl_menu_tab
-            and #$03 ; not checking bounds
             asl
             asl
             adc #3 ; don't need to clc due to AND #$07 + ASL's

@@ -1,433 +1,48 @@
   ; dummy program
-            ldx #heap
-         ;
-            ;
-            ;(f0)
-            ;
-            ;0
-            lda #%11000010
-            sta #0,x
+heap_init
+            ldx #0
+_heap_loop
+            lda HEAP_ROM,x
+            sta #heap,x
             inx
-            lda #%10000010
-            sta #0,x
-            inx
-            ;2
-            lda #%11010101
-            sta #0,x
-            inx
-            lda #%10000100
-            sta #0,x
-            inx
-            ;4
-            lda #%11010110
-            sta #0,x
-            inx
-            lda #%00000000
-            sta #0,x
-            inx
+            cpx #HEAP_ROM_END
+            bmi _heap_loop
 
-
-        ;     ;
-        ;     ;(fib-iter a b count)
-        ;     ;
-        ;     ;0
-        ;     lda #%11001010
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10000010
-        ;     sta #0,x
-        ;     inx
-        ;     ;2
-        ;     lda #%10000100
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10001010
-        ;     sta #0,x
-        ;     inx
-        ;     ;4
-        ;     lda #%11000100
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10000110
-        ;     sta #0,x
-        ;     inx
-        ;     ;6
-        ;     lda #%11010001
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10001000
-        ;     sta #0,x
-        ;     inx
-        ;     ;8
-        ;     lda #%11010011
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%00000000
-        ;     sta #0,x
-        ;     inx
-        ;     ;10
-        ;     lda #%11010000
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10001100
-        ;     sta #0,x
-        ;     inx
-        ;     ;12
-        ;     lda #%10001110
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%00000000
-        ;     sta #0,x
-        ;     inx
-        ;     ;14
-        ;     lda #%11001011
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10010000
-        ;     sta #0,x
-        ;     inx
-        ;     ;16
-        ;     lda #%10010010
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10011000
-        ;     sta #0,x
-        ;     inx
-        ;     ;18
-        ;     lda #%11000001
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10010100
-        ;     sta #0,x
-        ;     inx
-        ;     ;20
-        ;     lda #%11001111
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10010110
-        ;     sta #0,x
-        ;     inx
-        ;     ;22
-        ;     lda #%11010000
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%00000000
-        ;     sta #0,x
-        ;     inx
-        ;     ;24
-        ;     lda #%11001111
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10011010
-        ;     sta #0,x
-        ;     inx
-        ;     ;26
-        ;     lda #%10011100
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%00000000
-        ;     sta #0,x
-        ;     inx
-        ;     ;28
-        ;     lda #%11000010
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10011110
-        ;     sta #0,x
-        ;     inx
-        ;     ;30
-        ;     lda #%11010001
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10100000
-        ;     sta #0,x
-        ;     inx
-        ;     ;32
-        ;     lda #%11010100
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%00000000
-        ;     sta #0,x
-        ;     inx
-
-
-        ;     ;
-        ;     ;(fib-iter 1 0 (+ 2 2))
-        ;     ;
-        ;     ;34
-        ;     lda #%11001011
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10100100
-        ;     sta #0,x
-        ;     inx
-        ;     ;36
-        ;     lda #%11010100
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10100110
-        ;     sta #0,x
-        ;     inx
-        ;     ;38
-        ;     lda #%11010011
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10101000
-        ;     sta #0,x
-        ;     inx
-        ;     ;40
-        ;     lda #%10101010
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%00000000
-        ;     sta #0,x
-        ;     inx
-        ;     ;42
-        ;     lda #%11000001
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10101100
-        ;     sta #0,x
-        ;     inx
-        ;     ;44
-        ;     lda #%11010101
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%10101110
-        ;     sta #0,x
-        ;     inx
-        ;     ;46
-        ;     lda #%11010101
-        ;     sta #0,x
-        ;     inx
-        ;     lda #%00000000
-        ;     sta #0,x
-        ;     inx
-
-            ; ;
-            ; ;(define (square x) (* x x))
-            ; ;
-            ; ;0
-            ; lda #%11000000
-            ; sta #0,x
-            ; inx
-            ; lda #%10000010
-            ; sta #0,x
-            ; inx
-            ; ;2
-            ; lda #%11001111
-            ; sta #0,x
-            ; inx
-            ; lda #%10000100
-            ; sta #0,x
-            ; inx
-            ; ;4
-            ; lda #%11001111
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-
-            ; ;
-            ; ;(square x)
-            ; ;
-            ; ;6
-            ; lda #%11001011
-            ; sta #0,x
-            ; inx
-            ; lda #%10001000
-            ; sta #0,x
-            ; inx
-            ; ;8
-            ; lda #%11010101
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-
-            ; ;
-            ; ;(+ 1 2)
-            ; ;
-            ; ;0
-            ; lda #%11000001
-            ; sta #0,x
-            ; inx
-            ; lda #%10000010
-            ; sta #0,x
-            ; inx
-            ; ;2
-            ; lda #%11010100
-            ; sta #0,x
-            ; inx
-            ; lda #%10000100
-            ; sta #0,x
-            ; inx
-            ; ;4
-            ; lda #%11010101
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-
-            ; ; (+ 1 (+ 1 (+ (+ 2 2) (+ 2 1))))
-            ; ;0
-            ; lda #%11000001
-            ; sta #0,x
-            ; inx
-            ; lda #%10000010
-            ; sta #0,x
-            ; inx
-            ; ;2
-            ; lda #%11010100
-            ; sta #0,x
-            ; inx
-            ; lda #%10000100
-            ; sta #0,x
-            ; inx
-            ; ;4
-            ; lda #%10000110
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-            ; ;6
-            ; lda #%11000001
-            ; sta #0,x
-            ; inx
-            ; lda #%10001000
-            ; sta #0,x
-            ; inx
-            ; ;8
-            ; lda #%11010100
-            ; sta #0,x
-            ; inx
-            ; lda #%10001010
-            ; sta #0,x
-            ; inx
-            ; ;10
-            ; lda #%10001100
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-            ; ;12
-            ; lda #%11000001
-            ; sta #0,x
-            ; inx
-            ; lda #%10001110
-            ; sta #0,x
-            ; inx
-            ; ;14
-            ; lda #%10010000
-            ; sta #0,x
-            ; inx
-            ; lda #%10010110
-            ; sta #0,x
-            ; inx
-            ; ;16
-            ; lda #%11000001
-            ; sta #0,x
-            ; inx
-            ; lda #%10010010
-            ; sta #0,x
-            ; inx
-            ; ;18
-            ; lda #%11010101
-            ; sta #0,x
-            ; inx
-            ; lda #%10010100
-            ; sta #0,x
-            ; inx
-            ; ;20
-            ; lda #%11010101
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-            ; ;22
-            ; lda #%10011000
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-            ; ;24
-            ; lda #%11000001
-            ; sta #0,x
-            ; inx
-            ; lda #%10011010
-            ; sta #0,x
-            ; inx
-            ; ;26
-            ; lda #%11010101
-            ; sta #0,x
-            ; inx
-            ; lda #%10011100
-            ; sta #0,x
-            ; inx
-            ; ;28
-            ; lda #%11010100
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-
-            ; ; (/ (+ 1 2) 2)
-            ; ;0
-            ; lda #%11000011
-            ; sta #0,x
-            ; inx
-            ; lda #%10000010
-            ; sta #0,x
-            ; inx
-            ; ;2
-            ; lda #%10000100
-            ; sta #0,x
-            ; inx
-            ; lda #%10001010
-            ; sta #0,x
-            ; inx
-            ; ;4
-            ; lda #%11000001
-            ; sta #0,x
-            ; inx
-            ; lda #%10000110
-            ; sta #0,x
-            ; inx
-            ; ;6
-            ; lda #%11010100
-            ; sta #0,x
-            ; inx
-            ; lda #%10001000
-            ; sta #0,x
-            ; inx
-            ; ;8
-            ; lda #%11010101
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-            ; ;10
-            ; lda #%11010101
-            ; sta #0,x
-            ; inx
-            ; lda #%00000000
-            ; sta #0,x
-            ; inx
-
-    ; set free cell list
-            stx free
-            lda #%10000000            
-        ;     sta f0
-        ;     lda #%10100010
+            ; set free cell list
+            txa
+            clc
+            adc #heap
+            sta free
+            lda #%10000000
             sta repl
+            lda #%10000100
+            sta f0
+            lda #%10001100
+            sta f1
+            rts
 
-    
+HEAP_ROM
+            byte %11001100,%10000010 ;0
+            byte %11010110,%00000000 ;2
+            byte %11001101,%10000110 ;4
+            byte %11010101,%10001000 ;6
+            byte %11010100,%10001010 ;8
+            byte %11010000,%00000000 ;10
+            byte %11001011,%10001110 ;12
+            byte %10010000,%10010110 ;14
+            byte %11000101,%10010010 ;16
+            byte %11010010,%10010100 ;18
+            byte %11010100,%00000000 ;20
+            byte %11010001,%10011000 ;22
+            byte %10011010,%00000000 ;24
+            byte %11001101,%10011100 ;26
+            byte %10011110,%10100100 ;28
+            byte %11000010,%10100000 ;30
+            byte %11010000,%10100010 ;32
+            byte %11010001,%00000000 ;34
+            byte %11010000,%10100110 ;36
+            byte %10101000,%00000000 ;38
+            byte %11000011,%10101010 ;40
+            byte %11010010,%10101100 ;42
+            byte %11010101,%00000000 ;44
+HEAP_ROM_END = . - HEAP_ROM

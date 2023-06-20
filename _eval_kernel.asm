@@ -14,11 +14,11 @@ eval_apply
             pha
             tax
             lda eval_env
-            and #$7f
+            and #$7f    ; READABILITY: notation
             pha
             stx eval_env
-            lda 0,x
-            and #$3f
+            lda 0,x     ; READABILITY: notation
+            and #$3f    ; READABILITY: notation
             sec
             sbc #FUNCTION_SYMBOL_F0
             tax
@@ -39,7 +39,7 @@ _eval_test
             tax
             lda HEAP_CDR_ADDR,x
             pha
-            lda #2 ; KLUDGE: signals test
+            lda #2 ; KLUDGE: signals test ; READABILITY: notation
             sta eval_next
             jmp _eval_funcall_arg  
 _eval_number
@@ -84,10 +84,10 @@ _eval_funcall_args_env
             clc
             adc eval_env ; find arg 
             tax
-            lda #-1,x
+            lda #-1,x                 ; READABILITY: notation
             sta accumulator + 1
             pha
-            lda #-2,x
+            lda #-2,x                ; READABILITY: notation
             sta accumulator
             pha
             jmp _eval_funcall_args_next
@@ -121,7 +121,11 @@ exec_frame_return
             txs 
             inx
             bne _eval_pop_frame
-            ; done with eval
+            ; done with eval - go back to repl
+            lda #0
+            sta repl_scroll
+            sta repl_edit_line
+            sta repl_edit_col
             lda #GAME_STATE_EDIT
             sta game_state
             jmp update_return
@@ -167,10 +171,10 @@ _eval_continue_args
             jmp _eval_funcall_args_next
 
 
-FUNC_S0B_F0
-FUNC_S0C_F1
-FUNC_S0D_F2
-FUNC_S0E_F3
+FUNC_S0C_F0
+FUNC_S0D_F1
+FUNC_S0E_F2
+FUNC_S0F_F3
             ; check for tail call here
             ldx eval_frame
 _apply_tail_call_loop
@@ -180,18 +184,18 @@ _apply_tail_call_loop
             ; if it's marked for return we are a tail call
             ; if we are a tail call we can shrink the stack
             ; BUGBUG: if we reorder frame ... or always push static ref we can simplify this logic
-            lda #1,x ; check next frame 
+            lda #1,x ; check next frame ; READABILITY: notation
             bmi _apply_tail_call_bare_frame
-            lda #3,x ; get eval_next skipping env and frame
-            cmp #1
+            lda #3,x ; get eval_next skipping env and frame; READABILITY: notation
+            cmp #1; READABILITY: notation
             bne _apply_tail_call_end_search
-            lda #2,x
+            lda #2,x; READABILITY: notation
             jmp _apply_tail_call_found
 _apply_tail_call_bare_frame
-            lda #2,x ; get_eval_next skipping frame
+            lda #2,x ; get_eval_next skipping frame; READABILITY: notation
             cmp #1
             bne _apply_tail_call_end_search
-            lda #1,x ; loop stack
+            lda #1,x ; loop stack; READABILITY: notation
 _apply_tail_call_found
             tax
             jmp _apply_tail_call_loop

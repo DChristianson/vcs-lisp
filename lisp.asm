@@ -39,7 +39,7 @@ GAME_STATE_EDIT_KEYS   = %00000001
 GAME_STATE_EVAL        = %10000000
 GAME_STATE_EVAL_APPLY  = %10000001
 
-FUNCTION_TABLE_SIZE = 4
+FUNCTION_TABLE_SIZE = 3
 CELL_SIZE           = 2
 HEAP_CELLS          = 32
 HEAP_SIZE           = HEAP_CELLS * CELL_SIZE
@@ -48,10 +48,6 @@ HEAP_CDR_ADDR       = $0001
 REPL_CELL_ADDR      = #repl - 1 ; virtual cell
 NULL                = $00
 
-FUNCTION_REF_IF  = $ca   
-FUNCTION_SYMBOL_F0  = 11 ; beginning of function symbols
-ARGUMENT_SYMBOL_A0  = 15 ; beginning of argument symbols
-NUMERIC_SYMBOL_ZERO = 19
 HEADER_HEIGHT = 60
 EDITOR_LINES  = 5
 LINE_HEIGHT = CHAR_HEIGHT + 10
@@ -78,16 +74,15 @@ heap               ds HEAP_SIZE
 
     ORG $C0
 
+; pointer to free cell list
+free               ds 1
+; pointer to repl cell
+repl               ds 1
 ; heap pointers to user defined symbols
 function_table     ds FUNCTION_TABLE_SIZE
 f0 = function_table
 f1 = function_table + 1
 f2 = function_table + 2
-f3 = function_table + 3
-; pointer to free cell list
-free               ds 1
-; pointer to repl cell
-repl               ds 1
 ; return value from functions
 accumulator        ds CELL_SIZE
 ; frame-based "clock"
@@ -117,7 +112,7 @@ repl_edit_col  ds 1 ; editor column BUGBUG: collapse with line?
 repl_edit_sym  ds 1 ; editor symbol
 repl_prev_cell ds 1
 repl_curr_cell ds 1
-repl_last_line ds 1 ; last line
+repl_last_line ds 1 ; last line in BUGBUG: can be tmp?
 
 repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each line
 repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
@@ -135,7 +130,7 @@ repl_s3_addr   ds 2
 repl_s2_addr   ds 2
 repl_s1_addr   ds 2
 repl_s0_addr   ds 2
-repl_editor_line ds 1; temporary line counter storage
+repl_editor_line ds 1; line counter storage during editor display
 
 ; ----------------------------------
 ; eval kernel vars
@@ -184,8 +179,7 @@ _bootstrap_heap_loop
             sty heap,x
             dex
             bpl _bootstrap_heap_loop
-
-    include "_heap_init.asm"
+            jsr heap_init
 
 newFrame
 
@@ -360,10 +354,13 @@ alloc_cdr
     include "_eval_kernel.asm"
 
     include "_logo_kernel.asm"
+
+    include "_heap_init.asm"
+
 ;-----------------------------------
 ; function kernels
 
-FUNC_S00_MULT
+FUNC_S01_MULT
     ; TODO: BOGUS implementation
     ldx eval_frame
     clc
@@ -374,7 +371,7 @@ FUNC_S00_MULT
     rol
     sta accumulator + 1
     jmp exec_frame_return
-FUNC_S01_ADD
+FUNC_S02_ADD
     ldx eval_frame
     lda -2,x
     clc
@@ -384,7 +381,7 @@ FUNC_S01_ADD
     adc -3,x
     sta accumulator+1
     jmp exec_frame_return
-FUNC_S02_SUB
+FUNC_S03_SUB
     ; TODO: BOGUS implementation
     ldx eval_frame
     lda -1,x
@@ -395,7 +392,7 @@ FUNC_S02_SUB
     sbc -4,x
     sta accumulator
     jmp exec_frame_return
-FUNC_S03_DIV
+FUNC_S04_DIV
     ; TODO: BOGUS implementation
     ldx eval_frame
     clc
@@ -406,7 +403,7 @@ FUNC_S03_DIV
     ror
     sta accumulator
     jmp exec_frame_return
-FUNC_S04_EQUALS
+FUNC_S05_EQUALS
     ; TODO: BOGUS implementation
     ldx eval_frame
     lda -1,x
@@ -417,12 +414,12 @@ FUNC_S04_EQUALS
     sbc -4,x
     sta accumulator+1
     jmp exec_frame_return
-FUNC_S05_GT
-FUNC_S06_LT
-FUNC_S07_AND
-FUNC_S08_OR
-FUNC_S09_NOT
-FUNC_S0A_IF
+FUNC_S06_GT
+FUNC_S07_LT
+FUNC_S08_AND
+FUNC_S09_OR
+FUNC_S0A_NOT
+FUNC_S0B_IF
             jmp exec_frame_return
 
 ; ----------------------------------
@@ -433,35 +430,39 @@ FUNC_S0A_IF
 LOOKUP_SYMBOL_FUNCTION
 LOOKUP_SYMBOL_VALUE
     word #$0000;
-    word FUNC_S00_MULT
-    word FUNC_S01_ADD
-    word FUNC_S02_SUB
-    word FUNC_S03_DIV
-    word FUNC_S04_EQUALS
-    word FUNC_S05_GT
-    word FUNC_S06_LT
-    word FUNC_S07_AND
-    word FUNC_S08_OR
-    word FUNC_S09_NOT
-    word FUNC_S0A_IF
-    word FUNC_S0B_F0
-    word FUNC_S0C_F1
-    word FUNC_S0D_F2
-    word FUNC_S0E_F3
+    word FUNC_S01_MULT
+    word FUNC_S02_ADD
+    word FUNC_S03_SUB
+    word FUNC_S04_DIV
+    word FUNC_S05_EQUALS
+    word FUNC_S06_GT
+    word FUNC_S07_LT
+    word FUNC_S08_AND
+    word FUNC_S09_OR
+    word FUNC_S0A_NOT
+FUNCTION_REF_IF = $C0 + (. - LOOKUP_SYMBOL_FUNCTION) / 2
+    word FUNC_S0B_IF
+FUNCTION_SYMBOL_F0 = (. - LOOKUP_SYMBOL_FUNCTION) / 2 ; beginning of functions
+    word FUNC_S0C_F0
+    word FUNC_S0D_F1
+    word FUNC_S0E_F2
+    word FUNC_S0F_F3
+ARGUMENT_SYMBOL_A0 = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of arguments
     word #$0000
     word #$0000
     word #$0000
     word #$0000
-    word #$0000 ; S13_ZERO
-    word #$0001 ; S14_ONE
-    word #$0002 ; S15_TWO   
-    word #$0003 ; S16_THREE  
-    word #$0004 ; S17_FOUR   
-    word #$0005 ; S18_FIVE   
-    word #$0006 ; S19_SIX 
-    word #$0007 ; S1A_SEVEN   
-    word #$0008 ; S1B_EIGHT  
-    word #$0009 ; S1C_NINE  
+NUMERIC_SYMBOL_ZERO = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of numbers
+    word #$0000 ; S14_ZERO
+    word #$0001 ; S15_ONE
+    word #$0002 ; S16_TWO   
+    word #$0003 ; S17_THREE  
+    word #$0004 ; S18_FOUR   
+    word #$0005 ; S19_FIVE   
+    word #$0006 ; S1A_SIX 
+    word #$0007 ; S1B_SEVEN   
+    word #$0008 ; S1C_EIGHT  
+    word #$0009 ; S1D_NINE  
 
 
 ; ----------------------------------

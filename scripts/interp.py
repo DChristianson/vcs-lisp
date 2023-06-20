@@ -80,21 +80,23 @@ class Pair:
         return '%' + format(0x80 | self.address, '08b')
 
     def code(self):
-        return f';{self.address}\nlda #{self.car.ref()}\nsta #0,x\ninx\nlda #{self.cdr.ref()}\nsta #0,x\ninx'
+        return f'byte {self.car.ref()},{self.cdr.ref()} ;{self.address}'
 
 #
 class Heap:
 
     def __init__(self, size):
+        self.size = size
         self.cells = list([Pair(index * 2) for index in range(0, size)])
         for i in range(len(self.cells) - 1):
             self.cells[i].cdr = self.cells[i + 1]
         self.free = self.cells[0]
-
+    
     def alloc(self):
         next = self.free
         self.free = next.cdr
         next.cdr = Null()
+        self.size = self.size = 1
         return next
 
 def tokenize(stream):
@@ -156,24 +158,31 @@ def compile_exp(exp, heap, symtab):
     else:
         return symtab[exp]
 
-def compile_decl(decl):
-    heap = Heap(32)
+def compile_decl(decl, heap):
     symtab = dict({name: Symbol(i, name) for i, name in enumerate(_symbols)})
     args = decl[1]
-    symtab[args[0]] = symtab['f0']
     for i, arg in enumerate(args[1:]):
         symtab[arg] = symtab['a' + str(i)]
     body = decl[2]
-    return compile_exp(body, heap, symtab), heap
+    return args, compile_exp(body, heap, symtab)
         
 ast = parse(tokenize(sys.stdin))
 
+vars = {}
+heap = Heap(32)
 for node in ast:
-    sig = ' '.join(node[1])
-    print(f';\n;({sig})\n;')
-    program, heap = compile_decl(node)
-    for pair in heap.cells:
-        if pair.car == Null():
-            break
-        print(pair.code())    
-    print('')
+    args, program = compile_decl(node, heap)
+    vars[args[0]] = program.ref()
+
+# emit program
+indent = ' ' * 4 * 3
+for var, ref in vars.items():
+    print(f'{indent}lda #{ref}');
+    print(f'{indent}sta {var}');
+
+for pair in heap.cells:
+    if pair.car == Null():
+        break
+    print(f'{indent}{pair.code()}')  
+print('')
+

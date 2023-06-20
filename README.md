@@ -45,26 +45,32 @@ DONE
       - eval when button push in menu
   - demo 2
       - eval demo program + 1 2
-ALPHA
   - menu 1
       - function menu displayed on screen
-  - controls 2
+  - menu 2
       - function assignment when push in menu
+  - demo 3
+      - fib program
+  - bugs
+      - blank program is weird
+ALPHA
+  - controls 2
       - game mode switch when push in menu
   - library 1
       - beeps
       - actual float math
   - demo 3
-      - fib program
       - play beep
 BUGS
+  - better screen layout
+  - better menu display
+  - need a way to show free mem
+  - if try to delete and recreate fib, crashes (probably free memory issue)
   - complex program takes too long to analyze in vblank
-  - blank program is weird
   - null display on complex lines no box
   - too slow to scroll through keys
 BETA
   - game modes 2
-      - silly goose (number sequence)
       - towers of hanoi
       - paddle pong
   - library 2
@@ -72,6 +78,8 @@ BETA
       - music functions
   - virtual keyboard 2
       - number edit
+  - display 4 
+      - show numbers
   - virtual keyboard 3
       - cancel move undoes changes
       - other gestures move through list
@@ -81,9 +89,10 @@ BETA
      - graphics zone
      - stack / heap / free accumulator
      - song that plays during eval
-SPRINKLES
   - interpreter
      - safeties against stack overflow
+     - safety against no free mem left
+SPRINKLES
   - font
      - tune font / symbols
   - title screen
@@ -94,10 +103,10 @@ SPRINKLES
   - virtual keyboard 3
       - empty at first
       - blinky cursor when in repl
-  - display 4 
-      - show numbers
 BONUS 
   - bonus game mode
+     - silly goose (number sequence)
+     - maze
      - matching shapes (boolean logic)
      - mouse maze
      - tictactoe?
