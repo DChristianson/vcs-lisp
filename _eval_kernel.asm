@@ -43,9 +43,9 @@ _eval_test
             sta eval_next
             jmp _eval_funcall_arg  
 _eval_number
-            sta accumulator + 1
+            sta accumulator_car
             lda HEAP_CDR_ADDR,x
-            sta accumulator
+            sta accumulator_cdr
             jmp exec_frame_return
 _eval_funcall
             pha
@@ -67,14 +67,16 @@ _eval_funcall_arg
             bmi _eval_funcall_args_env
             asl
             tax
-            lda LOOKUP_SYMBOL_VALUE+1,x
-            sta accumulator + 1
+            lda LOOKUP_SYMBOL_VALUE_LSB,x
+            sta accumulator_lsb
             pha
-            lda LOOKUP_SYMBOL_VALUE,x
-            sta accumulator
+            lda LOOKUP_SYMBOL_VALUE_MSB,x
+            sta accumulator_msb
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_env
+            ; compute relative argument offset
+            ; push to accumulator
             sec
             sbc #ARGUMENT_SYMBOL_A0
             asl
@@ -84,11 +86,11 @@ _eval_funcall_args_env
             clc
             adc eval_env ; find arg 
             tax
-            lda #-1,x                 ; READABILITY: notation
-            sta accumulator + 1
+            lda #STACK_ARG_OFFSET_LSB,x
+            sta accumulator_lsb
             pha
-            lda #-2,x                ; READABILITY: notation
-            sta accumulator
+            lda #STACK_ARG_OFFSET_MSB,x 
+            sta accumulator_msb
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_expression

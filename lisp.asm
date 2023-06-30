@@ -57,6 +57,9 @@ DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 REPL_DISPLAY_MARGIN = 16
 
+STACK_ARG_OFFSET_LSB = -1
+STACK_ARG_OFFSET_MSB = -2
+
 ; ----------------------------------
 ; heap
 
@@ -85,6 +88,10 @@ f1 = function_table + 1
 f2 = function_table + 2
 ; return value from functions
 accumulator        ds CELL_SIZE
+accumulator_car = accumulator
+accumulator_cdr = accumulator + 1
+accumulator_msb = accumulator
+accumulator_lsb= accumulator + 1 
 ; frame-based "clock"
 clock              ds 1
 ; game state
@@ -118,13 +125,13 @@ repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each li
 repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
 
 repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
+repl_fmt_arg   ds 2 ; numeric conversion BUGBUG: need?
 repl_tmp_width      ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
 repl_gx_addr
 repl_s5_addr   ds 2
 repl_tmp_indent     ; ds 1  temporary indent storage during layout BUGBUG: need?
 repl_tmp_cell_count ; ds 1 temporary cell countdown during layout BUGBUG: need?
 repl_s4_addr   ds 2
-repl_tmp_accumulator ; ds 2 temporary accumulator during bcd encoding BUGBUG: need?
 repl_tmp_scroll      ; ds 1temporary cell storage during layout BUGBUG: need?
 repl_s3_addr   ds 2
 repl_s2_addr   ds 2
@@ -349,6 +356,8 @@ alloc_cdr
 ; -------------------
 ; Display kernels
 
+    include "_math_kernel.asm"
+
     include "_repl_kernel.asm"
 
     include "_eval_kernel.asm"
@@ -357,71 +366,6 @@ alloc_cdr
 
     include "_heap_init.asm"
 
-;-----------------------------------
-; function kernels
-
-FUNC_S01_MULT
-    ; TODO: BOGUS implementation
-    ldx eval_frame
-    clc
-    lda -2,x
-    rol
-    sta accumulator
-    lda -1,x
-    rol
-    sta accumulator + 1
-    jmp exec_frame_return
-FUNC_S02_ADD
-    ldx eval_frame
-    lda -2,x
-    clc
-    adc -4,x
-    sta accumulator
-    lda -1,x
-    adc -3,x
-    sta accumulator+1
-    jmp exec_frame_return
-FUNC_S03_SUB
-    ; TODO: BOGUS implementation
-    ldx eval_frame
-    lda -1,x
-    sec
-    sbc -3,x
-    sta accumulator + 1
-    lda -2,x
-    sbc -4,x
-    sta accumulator
-    jmp exec_frame_return
-FUNC_S04_DIV
-    ; TODO: BOGUS implementation
-    ldx eval_frame
-    clc
-    lda -1,x
-    ror
-    sta accumulator+1
-    lda -2,x
-    ror
-    sta accumulator
-    jmp exec_frame_return
-FUNC_S05_EQUALS
-    ; TODO: BOGUS implementation
-    ldx eval_frame
-    lda -1,x
-    sec
-    sbc -3,x
-    sta accumulator
-    lda -2,x
-    sbc -4,x
-    sta accumulator+1
-    jmp exec_frame_return
-FUNC_S06_GT
-FUNC_S07_LT
-FUNC_S08_AND
-FUNC_S09_OR
-FUNC_S0A_NOT
-FUNC_S0B_IF
-            jmp exec_frame_return
-
 ; ----------------------------------
 ; data
 
@@ -429,6 +373,8 @@ FUNC_S0B_IF
 
 LOOKUP_SYMBOL_FUNCTION
 LOOKUP_SYMBOL_VALUE
+LOOKUP_SYMBOL_VALUE_MSB
+LOOKUP_SYMBOL_VALUE_LSB = LOOKUP_SYMBOL_VALUE_MSB + 1
     word #$0000;
     word FUNC_S01_MULT
     word FUNC_S02_ADD
@@ -448,22 +394,21 @@ FUNCTION_SYMBOL_F0 = (. - LOOKUP_SYMBOL_FUNCTION) / 2 ; beginning of functions
     word FUNC_S0E_F2
     word FUNC_S0F_F3
 ARGUMENT_SYMBOL_A0 = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of arguments
-    word #$0000
-    word #$0000
-    word #$0000
-    word #$0000
+    word $0000
+    word $0000
+    word $0000
+    word $0000
 NUMERIC_SYMBOL_ZERO = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of numbers
-    word #$0000 ; S14_ZERO
-    word #$0001 ; S15_ONE
-    word #$0002 ; S16_TWO   
-    word #$0003 ; S17_THREE  
-    word #$0004 ; S18_FOUR   
-    word #$0005 ; S19_FIVE   
-    word #$0006 ; S1A_SIX 
-    word #$0007 ; S1B_SEVEN   
-    word #$0008 ; S1C_EIGHT  
-    word #$0009 ; S1D_NINE  
-
+    word %0000000000000000 ; S14_ZERO
+    word %0001000000000000 ; S15_ONE
+    word %0001010000000000 ; S16_TWO   
+    word %0001011000000000 ; S17_THREE  
+    word %0001100000000000 ; S18_FOUR   
+    word %0001100100000000 ; S19_FIVE   
+    word %0001101000000000 ; S1A_SIX 
+    word %0001101100000000 ; S1B_SEVEN   
+    word %0001110000000000 ; S1C_EIGHT  
+    word %0001110010000000 ; S1D_NINE  
 
 ; ----------------------------------
 ; symbol graphics 

@@ -212,7 +212,7 @@ _prep_repl_line_scan
 _prep_repl_line_scan_loop
             tax
             lda HEAP_CAR_ADDR,x ; read car
-            bpl _prep_repl_line_complex_from_scan    ; found a number, need to go complex
+            bpl _prep_repl_line_number               ; found a number
             cmp #$40 ; READABILITY: constant
             bpl _prep_repl_line_complex_from_scan    ; found a sublist, need to write in complex way
             lda repl_tmp_width
@@ -242,6 +242,9 @@ _prep_repl_line_complex
             bmi _prep_repl_line_next      ; if symbol next line
             ; ^ car is pointing at a list, we need to pop down
             jmp _prep_repl_line_scan      ; go back to scan
+_prep_repl_line_number
+            lda #3
+            sta repl_tmp_width            
 _prep_repl_line_next
             ; merge width into indent level
             lda repl_display_indent,y
@@ -375,35 +378,6 @@ _prep_repl_line_found_curr_cell
 _prep_repl_end
             ldx #$ff ; clean stack
             txs      ;
-
-            ; convert accumulator to BCD
-            ; http://forum.6502.org/viewtopic.php?f=2&t=4894 
-            sed
-            lda #0
-            sta repl_bcd
-            sta repl_bcd+1
-            sta repl_bcd+2
-            lda accumulator
-            sta repl_tmp_accumulator
-            lda accumulator+1
-            sta repl_tmp_accumulator+1
-            ldx #16
-_prep_update_bin2bcd16_bit
-            asl repl_tmp_accumulator
-            rol repl_tmp_accumulator + 1
-            lda repl_bcd
-            adc repl_bcd
-            sta repl_bcd
-            lda repl_bcd+1
-            adc repl_bcd+1
-            sta repl_bcd+1
-            lda repl_bcd+2
-            adc repl_bcd+2
-            sta repl_bcd+2
-            dex
-            bne _prep_update_bin2bcd16_bit
-            cld
-
             jmp update_return
 
         align 256
@@ -425,7 +399,18 @@ _header_loop
 
 ; ACCUMULATOR
 accumulator_draw
+
+            ; convert accumulator to BCD
+            lda accumulator_msb
+            sta repl_fmt_arg 
+            lda accumulator_lsb
+            sta repl_fmt_arg + 1
+            jsr sub_fmt
+
             jsr prep_repl_graphics
+            lda #1                                  ;2
+            sta VDELP0                              ;3
+            sta VDELP1                              ;3
             sta WSYNC                               ;--  0
             lda #3                                  ;2   2
             sta NUSIZ0                              ;3   5
@@ -436,14 +421,9 @@ accumulator_draw
             sta HMP1                                ;3  18
             sta RESP0                               ;3  21
             sta RESP1                               ;3  24
-            WRITE_DIGIT_HI repl_bcd+2, repl_s0_addr ;14 38
-            WRITE_DIGIT_LO repl_bcd+2, repl_s1_addr ;16 54
-            WRITE_DIGIT_HI repl_bcd+1, repl_s2_addr ;14 68
-            SLEEP 4                                 ;4  72
+            SLEEP 48                                ;48 72
             sta HMOVE                               ;3  75
-            WRITE_DIGIT_LO repl_bcd+1, repl_s3_addr ;16 15
-            WRITE_DIGIT_HI repl_bcd, repl_s4_addr   ;14 29
-            WRITE_DIGIT_LO repl_bcd, repl_s5_addr   ;16 45
+            SLEEP 46                                ;46 45
             ldy #CHAR_HEIGHT - 1                    ;2  47
             SLEEP 2                                 ;2  49
 
@@ -475,6 +455,8 @@ accumulator_draw_end
             sta PF2
             sta NUSIZ0
             sta NUSIZ1
+            sta VDELP0                              ;3
+            sta VDELP1                              ;3
             ldx #$ff ; reset stack pointer
             txs            
                 
@@ -656,17 +638,18 @@ prompt_encode
             beq _prompt_encode_keys
             lda repl_display_list,y
             beq _prompt_encode_blank
-            bpl _prompt_encode_blank ; BUGBUG: TODO: number
             cmp #$40
-            bpl _prompt_encode_list
+            bpl _prompt_encode_ref
 _prompt_encode_symbol
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
             sta repl_s4_addr
             lda #<SYMBOL_GRAPHICS_S1F_BLANK
             jmp _prompt_encode_end
-_prompt_encode_list
+_prompt_encode_ref
             tax
+            lda HEAP_CAR_ADDR,x
+            bpl _prompt_encode_number
             ; load indent level onto stack so we can jmp
             lda repl_display_indent,y 
             and #$07
@@ -691,6 +674,12 @@ _prompt_encode_s4
             lda #0
 _prompt_encode_end
             sta repl_s5_addr
+            jmp prompt_display
+_prompt_encode_number
+            sta repl_fmt_arg + 1
+            lda HEAP_CDR_ADDR,x
+            sta repl_fmt_arg
+            jsr sub_fmt
             jmp prompt_display
 
 _prompt_encode_blank

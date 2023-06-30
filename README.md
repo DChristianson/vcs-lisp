@@ -54,8 +54,19 @@ DONE
   - bugs
       - blank program is weird
 ALPHA
+  - demo 3
+      - eval demo program + 1 99
+      - eval demo program * 21 13
+      - eval demo program * 4 .5
+      - eval demo program * 5 -.5
+  - demo 4
+      - sqrt
   - controls 2
       - game mode switch when push in menu
+  - virtual keyboard 2
+      - number edit
+  - display 4 
+      - show numbers
   - library 1
       - beeps
       - actual float math
@@ -76,10 +87,6 @@ BETA
   - library 2
       - modulo function
       - music functions
-  - virtual keyboard 2
-      - number edit
-  - display 4 
-      - show numbers
   - virtual keyboard 3
       - cancel move undoes changes
       - other gestures move through list
@@ -112,6 +119,46 @@ BONUS
      - tictactoe?
      - mastermind?
      - ant
+
+IBM 704
+40 kips 12 kiloflops
+0.00635 MIPS?
+12000 fp addition / subtraction per second
+4000 integer multiplication / divisions per second
+36 bit word
+737 magnetic core unit
+12 us core memory
+4,096 36-bit words, the equivalent of 18,432 bytes.
+733 magnetic drum reader / recorder
+8192 36-bit words (36,864 8-bit bytes).
+floating point
+19,466 pound
+MTBF - 8 hours
+Sales #
+$2MM
+
+
+Atari 2600
+September 1977
+MOS 6507 @ 1.19 Mhz
+0.430 MIPS at 1.000 MHz
+4kb addressible ROM
+128 bytes RAM
+4.6 lbs
+MTBF
+Sales #30MM
+$199
+
+Mac IIcx
+Macbook Pro
+Nintendo NES
+Symbolics Lisp
+PiZero
+Workstation
+Cloud Compute
+
+
+
 
 
 Shoutouts

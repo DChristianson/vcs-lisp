@@ -51,6 +51,18 @@ class Null:
     
     def ref(self):
         return '%00000000'
+    
+class Digit:
+
+    def __init__(self, value):
+        self.value = value
+
+    def isref(self):
+        False
+    
+    def ref(self):
+        return '%' + format(self.value, '08b')
+    
 
 #
 class Symbol:
@@ -156,7 +168,14 @@ def compile_exp(exp, heap, symtab):
             p.cdr = compile_exp(exp[1:], heap, symtab)
             return p
     else:
-        return symtab[exp]
+        try:
+            return symtab[exp]
+        except:
+            value = float(exp)
+            p = heap.alloc()
+            p.car = Digit((int(value) & 0x0fff) >> 8)
+            p.cdr = Digit(int(value) & 0xff)
+            return p
 
 def compile_decl(decl, heap):
     symtab = dict({name: Symbol(i, name) for i, name in enumerate(_symbols)})
