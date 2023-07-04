@@ -56,6 +56,151 @@ _sub_fmt_done
             rts
 
 
+FUNC_S03_SUB
+            ; negate arg1 and do add
+            ldx eval_frame
+            lda FRAME_ARG_OFFSET_MSB - 2,x
+            eor #$40
+            sta FRAME_ARG_OFFSET_MSB - 2,x
+            jmp _sub_add 
+
+_sub_add_zero_arg0
+            lda FRAME_ARG_OFFSET_MSB - 2,x
+            sta accumulator_msb
+            lda FRAME_ARG_OFFSET_LSB - 2,x
+            sta accumulator_lsb
+            jmp exec_frame_return
+_sub_add_zero_arg1
+            lda FRAME_ARG_OFFSET_MSB,x
+            sta accumulator_msb
+            lda FRAME_ARG_OFFSET_LSB,x
+            sta accumulator_lsb
+            jmp exec_frame_return
+_sub_add_swap
+            ; do swap
+            ; BUGBUG use loop or sub?
+            lda FRAME_ARG_OFFSET_MSB,x
+            ldy FRAME_ARG_OFFSET_MSB - 2,x
+            sta FRAME_ARG_OFFSET_MSB - 2,x
+            sty FRAME_ARG_OFFSET_MSB,x
+            lda FRAME_ARG_OFFSET_LSB,x
+            ldy FRAME_ARG_OFFSET_LSB - 2,x
+            sta FRAME_ARG_OFFSET_LSB - 2,x
+            sty FRAME_ARG_OFFSET_LSB,x
+            lda eval_tmp_exp1
+            ldy eval_tmp_exp0
+            sty eval_tmp_exp1
+            sta eval_tmp_exp0
+            jmp _sub_add_normalize
+FUNC_S02_ADD
+            ; BUGBUG should work in theory
+            ldx eval_frame
+_sub_add
+            ; recover exponent
+            lda FRAME_ARG_OFFSET_MSB,x
+            and #$3c 
+            beq _sub_add_zero_arg0
+            lsr
+            lsr
+            sta eval_tmp_exp0
+            lda FRAME_ARG_OFFSET_MSB - 2,x
+            and #$3c
+            beq _sub_add_zero_arg1
+            lsr
+            lsr
+            sta eval_tmp_exp1
+            ; recover mantissa
+            lda FRAME_ARG_OFFSET_MSB,x
+            and #$43
+            ora #$04
+            sta FRAME_ARG_OFFSET_MSB,x
+            cmp #$40
+            bmi _sub_add_skip_negate_arg0
+            eor #$bf
+            sta FRAME_ARG_OFFSET_MSB,x
+            lda FRAME_ARG_OFFSET_LSB,x
+            eor #$ff
+            clc
+            adc #1
+            sta FRAME_ARG_OFFSET_LSB,x
+            lda FRAME_ARG_OFFSET_MSB,x
+            adc #0
+            sta FRAME_ARG_OFFSET_MSB,x
+_sub_add_skip_negate_arg0
+            lda FRAME_ARG_OFFSET_MSB - 2,x
+            and #$43
+            ora #$04
+            sta FRAME_ARG_OFFSET_MSB - 2,x
+            cmp #$40
+            bmi _sub_add_skip_negate_arg1
+            eor #$bf
+            sta FRAME_ARG_OFFSET_MSB - 2,x
+            lda FRAME_ARG_OFFSET_LSB - 2,x
+            eor #$ff
+            clc
+            adc #1
+            sta FRAME_ARG_OFFSET_LSB - 2,x
+            lda FRAME_ARG_OFFSET_MSB - 2,x
+            adc #0
+            sta FRAME_ARG_OFFSET_MSB - 2,x
+_sub_add_skip_negate_arg1
+            ldy eval_tmp_exp1
+_sub_add_normalize
+            cpy eval_tmp_exp0
+            beq _sub_add_skipswap
+            ; swap / normalize exponents
+            bcs _sub_add_swap
+            ; do normalize
+            lda #$80  
+            adc FRAME_ARG_OFFSET_MSB - 2,x ; set carry bit if negative
+            ror FRAME_ARG_OFFSET_MSB - 2,x
+            ror FRAME_ARG_OFFSET_LSB - 2,x
+            iny
+            jmp _sub_add_normalize
+_sub_add_skipswap
+            ; perform add
+            clc
+            lda FRAME_ARG_OFFSET_LSB,x
+            adc FRAME_ARG_OFFSET_LSB - 2,x
+            sta accumulator_lsb
+            lda FRAME_ARG_OFFSET_MSB,x
+            adc FRAME_ARG_OFFSET_MSB - 2,x
+            sta accumulator_msb
+            ; check for zero
+            bne _sub_add_skip_zero
+            cmp accumulator_lsb
+            beq _sub_add_done
+_sub_add_skip_zero
+            ; check for overflow
+            and #$08
+            beq _sub_add_skip_overflow
+            inc eval_tmp_exp0
+            lsr accumulator_msb
+            ror accumulator_lsb
+_sub_add_skip_overflow
+            ; check for underflow
+            lda #$04
+_sub_add_underflow_loop
+            bit accumulator_msb
+            bne _sub_add_skip_underflow 
+            asl accumulator_lsb
+            rol accumulator_msb
+            dec eval_tmp_exp0
+            jmp _sub_add_underflow_loop
+_sub_add_skip_underflow
+            ; store exponent
+            lda accumulator_msb
+            and #$03
+            sta accumulator_msb
+            lda eval_tmp_exp0
+            asl
+            asl
+            ora accumulator_msb
+            sta accumulator_msb
+            ; done
+_sub_add_done
+            jmp exec_frame_return
+
 ;-----------------------------------
 ; function kernels
 
@@ -69,27 +214,6 @@ FUNC_S01_MULT
     lda -1,x
     rol
     sta accumulator + 1
-    jmp exec_frame_return
-FUNC_S02_ADD
-    ldx eval_frame
-    lda -2,x
-    clc
-    adc -4,x
-    sta accumulator
-    lda -1,x
-    adc -3,x
-    sta accumulator+1
-    jmp exec_frame_return
-FUNC_S03_SUB
-    ; TODO: BOGUS implementation
-    ldx eval_frame
-    lda -1,x
-    sec
-    sbc -3,x
-    sta accumulator + 1
-    lda -2,x
-    sbc -4,x
-    sta accumulator
     jmp exec_frame_return
 FUNC_S04_DIV
     ; TODO: BOGUS implementation
@@ -105,13 +229,17 @@ FUNC_S04_DIV
 FUNC_S05_EQUALS
     ; TODO: BOGUS implementation
     ldx eval_frame
-    lda -1,x
-    sec
-    sbc -3,x
-    sta accumulator
-    lda -2,x
-    sbc -4,x
-    sta accumulator+1
+    ldy #0
+    lda FRAME_ARG_OFFSET_LSB,x
+    cmp FRAME_ARG_OFFSET_LSB - 2,x
+    bne _equals_return
+    lda FRAME_ARG_OFFSET_MSB,x
+    cmp FRAME_ARG_OFFSET_MSB - 2,x
+    bne _equals_return
+    ldy #$7f
+_equals_return
+    sty accumulator_lsb
+    sty accumulator_msb
     jmp exec_frame_return
 FUNC_S06_GT
 FUNC_S07_LT

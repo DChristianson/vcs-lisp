@@ -402,9 +402,9 @@ accumulator_draw
 
             ; convert accumulator to BCD
             lda accumulator_msb
-            sta repl_fmt_arg 
-            lda accumulator_lsb
             sta repl_fmt_arg + 1
+            lda accumulator_lsb
+            sta repl_fmt_arg
             jsr sub_fmt
 
             jsr prep_repl_graphics
@@ -425,11 +425,11 @@ accumulator_draw
             sta HMOVE                               ;3  75
             SLEEP 46                                ;46 45
             ldy #CHAR_HEIGHT - 1                    ;2  47
-            SLEEP 2                                 ;2  49
+            SLEEP 5                                 ;5  52
 
 _accumulator_draw_loop    ; 40/41 w page jump
             SLEEP 3
-            lda (repl_s0_addr),y         ;5   53/56
+            lda (repl_s0_addr),y         ;5   ---
             sta GRP0                     ;3   56
             lda (repl_s1_addr),y         ;5   61
             sta GRP1                     ;3   64

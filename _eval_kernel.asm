@@ -32,9 +32,10 @@ eval_iter
             tax
             lda HEAP_CAR_ADDR,x ; read car            
             bpl _eval_number
-            cmp #FUNCTION_REF_IF
+            cmp #FUNCTION_REF_IF ; special case IF
             bne _eval_funcall
 _eval_test
+            ; specail form for ?
             lda HEAP_CDR_ADDR,x ; read cdr
             tax
             lda HEAP_CDR_ADDR,x
@@ -86,10 +87,10 @@ _eval_funcall_args_env
             clc
             adc eval_env ; find arg 
             tax
-            lda #STACK_ARG_OFFSET_LSB,x
+            lda #FRAME_ARG_OFFSET_LSB,x
             sta accumulator_lsb
             pha
-            lda #STACK_ARG_OFFSET_MSB,x 
+            lda #FRAME_ARG_OFFSET_MSB,x 
             sta accumulator_msb
             pha
             jmp _eval_funcall_args_next
@@ -151,11 +152,11 @@ _eval_old_env
             sta eval_next ; a should be = 1
             ldx eval_frame ; pull 
             txs
-            lda #0,x
+            lda #0,x ; READABILITY: notation
             tax
-            lda accumulator+1
-            ora accumulator
-            beq _eval_test_true
+            lda accumulator_lsb
+            ora accumulator_msb
+            bne _eval_test_true ; assume 0 is false
 _eval_test_false
             lda HEAP_CDR_ADDR,x
             tax
@@ -166,9 +167,9 @@ _eval_return
             jmp exec_frame_return
 _eval_continue_args
             sta eval_next
-            lda accumulator+1
+            lda accumulator_lsb
             pha
-            lda accumulator
+            lda accumulator_msb 
             pha
             jmp _eval_funcall_args_next
 

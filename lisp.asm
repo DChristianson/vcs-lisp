@@ -57,8 +57,8 @@ DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 REPL_DISPLAY_MARGIN = 16
 
-STACK_ARG_OFFSET_LSB = -1
-STACK_ARG_OFFSET_MSB = -2
+FRAME_ARG_OFFSET_LSB = -1
+FRAME_ARG_OFFSET_MSB = -2
 
 ; ----------------------------------
 ; heap
@@ -91,7 +91,7 @@ accumulator        ds CELL_SIZE
 accumulator_car = accumulator
 accumulator_cdr = accumulator + 1
 accumulator_msb = accumulator
-accumulator_lsb= accumulator + 1 
+accumulator_lsb = accumulator + 1 
 ; frame-based "clock"
 clock              ds 1
 ; game state
@@ -146,13 +146,12 @@ repl_editor_line ds 1; line counter storage during editor display
 
     ORG $D4
 
-;eval_x           ds 1
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
 eval_env         ds 1 ; top of stack for calling frame
 eval_func_ptr    ds 2 ; tmp pointer to function we are calling
-temp1            ds 1 ; KLUDGE
-temp2            ds 1 ; KLUDGE
+eval_tmp_exp0    ds 1 ; scratch area for fp
+eval_tmp_exp1    ds 1 ; scratch area for fp
 
 ; ----------------------------------
 ; code
@@ -399,16 +398,16 @@ ARGUMENT_SYMBOL_A0 = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of arguments
     word $0000
     word $0000
 NUMERIC_SYMBOL_ZERO = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of numbers
-    word %0000000000000000 ; S14_ZERO
-    word %0001000000000000 ; S15_ONE
-    word %0001010000000000 ; S16_TWO   
-    word %0001011000000000 ; S17_THREE  
-    word %0001100000000000 ; S18_FOUR   
-    word %0001100100000000 ; S19_FIVE   
-    word %0001101000000000 ; S1A_SIX 
-    word %0001101100000000 ; S1B_SEVEN   
-    word %0001110000000000 ; S1C_EIGHT  
-    word %0001110010000000 ; S1D_NINE  
+    dc.s %0000000000000000 ; S14_ZERO
+    dc.s %0001000000000000 ; S15_ONE
+    dc.s %0001010000000000 ; S16_TWO   
+    dc.s %0001011000000000 ; S17_THREE  
+    dc.s %0001100000000000 ; S18_FOUR   
+    dc.s %0001100100000000 ; S19_FIVE   
+    dc.s %0001101000000000 ; S1A_SIX 
+    dc.s %0001101100000000 ; S1B_SEVEN   
+    dc.s %0001110000000000 ; S1C_EIGHT  
+    dc.s %0001110010000000 ; S1D_NINE  
 
 ; ----------------------------------
 ; symbol graphics 

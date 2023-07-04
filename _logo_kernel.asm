@@ -31,7 +31,7 @@ logo_draw
     sta COLUP1
 LogoLoop
     sta WSYNC                       ; 3     (0)
-    sty temp1                       ; 3     (3)
+    SLEEP 3
     lda logo_0,y                   ; 4     (7)
     sta GRP0                        ; 3     (10) 0 -> [GRP0]
     lda logo_1,y                   ; 4     (14)
@@ -39,15 +39,13 @@ LogoLoop
     lda logo_2,y                   ; 4     (21)
     sta GRP0                        ; 3     (24*) 2 -> [GRP0] ; 1 -> GRP1
     ldx logo_4,y                   ; 4     (28) 4 -> X
-    lda logo_5,y                   ; 4     (32)
-    sta temp2                       ; 3     (35)
+	SLEEP 7
     lda logo_3,y                   ; 4     (39) 3 -> A
-    ldy temp2                       ; 3     (42) 5 -> Y
     sta GRP1                        ; 3     (45) 3 -> [GRP1] ; 2 -> GRP0
+    lda #0                       ; 3     (42) 5 -> Y
     stx GRP0                        ; 3     (48) 4 -> [GRP0] ; 3 -> GRP1
-    sty GRP1                        ; 3     (51) 5 -> [GRP1] ; 4 -> GRP0
+    sta GRP1                        ; 3     (51) 5 -> [GRP1] ; 4 -> GRP0
     sta GRP0                        ; 3     (54) 5 -> GRP1
-    ldy temp1                       ; 3     (57)
     lda logo_colors-1,y               ; 4     (61)
     sta COLUP0                      ; 3     (64)
     sta COLUP1                      ; 3     (67)
@@ -78,87 +76,7 @@ LogoGap
 ; Paste image information here
 
 logo_0
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-logo_height = . - logo_0
-
-   if >. != >[.+(logo_height)]
-      align 256
-   endif
-
+logo_5
 logo_1
 	BYTE %00000000
 	BYTE %00000000
@@ -235,7 +153,7 @@ logo_1
 	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
-
+logo_height = . - logo_0
 
    if >. != >[.+(logo_height)]
       align 256
@@ -425,88 +343,6 @@ logo_4
 	BYTE %00010000
 	BYTE %00010000
 	BYTE %00010000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-
-
-   if >. != >[.+(logo_height)]
-      align 256
-   endif
-
-logo_5
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
-	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
