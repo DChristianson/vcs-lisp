@@ -62,7 +62,9 @@ def int2bits(i):
 def float2bits(f):
     sign = 1 if f > 0 else -1
     mantissa, exponent = math.frexp(f)
-    mantissa = int(mantissa * 2048)
+    print(mantissa, exponent)
+    mantissa = abs(int(mantissa * 1024))
+    exponent -= 10
     return fp_conv(sign, exponent, mantissa)
 
 # 
