@@ -170,6 +170,11 @@ Fundamentals
   Memory divides into cells of 2 bytes
   Cells are either reference pairs or numbers
   References can refer to heap or to symtab
+Credits
+  AtariAge
+  6502.org
+  Atari Background Builder
+  Atari Label Maker https://www.labelmaker2600.com/
 
 References
 https://dwheeler.com/6502/
