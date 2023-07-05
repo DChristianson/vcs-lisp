@@ -27,6 +27,7 @@ _sub_bcd_advance
             dey
             bpl _sub_bcd_advance
             sed ;decimal flag
+            ; BUGBUG: if negative here
 _sub_fmt_loop
             asl repl_fmt_arg
             rol repl_fmt_arg + 1
