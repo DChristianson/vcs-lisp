@@ -1,6 +1,6 @@
 
 (define (repl)
- (* 2 99))
+ (* .5 99))
 
 ;(define (f0 count)
 ;  (f1 1 0 count))

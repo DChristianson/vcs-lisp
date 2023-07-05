@@ -51,28 +51,31 @@ DONE
       - function assignment when push in menu
   - demo 3
       - fib program
+      - eval demo program + 1 99
   - bugs
       - blank program is weird
+  - display 4 
+      - show numbers
 ALPHA
+  - library 1
+      - actual float math
+      - beep
   - demo 3
-      - eval demo program + 1 99
+      - eval demo program * .5 99
+  - demo 4
+      - eval demo program - 1 100
       - eval demo program * 21 13
       - eval demo program * 4 .5
       - eval demo program * 5 -.5
-  - demo 4
       - sqrt
-  - controls 2
-      - game mode switch when push in menu
   - virtual keyboard 2
       - number edit
-  - display 4 
-      - show numbers
-  - library 1
-      - beeps
-      - actual float math
-  - demo 3
+  - demo 5
       - play beep
+  - controls 2
+      - game mode switch when push in menu
 BUGS
+  - binary to decimal conversion is slow, blows out display
   - better screen layout
   - better menu display
   - need a way to show free mem

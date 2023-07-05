@@ -55,7 +55,6 @@ _sub_fmt_done
             WRITE_DIGIT_LO repl_bcd, repl_s5_addr   ;16 45
             rts
 
-
 FUNC_S03_SUB
             ; negate arg1 and do add
             ldx eval_frame
@@ -227,24 +226,29 @@ FUNC_S04_DIV
     sta accumulator
     jmp exec_frame_return
 FUNC_S05_EQUALS
-    ; TODO: BOGUS implementation
+    ; Normalize 
     ldx eval_frame
     ldy #0
+    sty accumulator_lsb
     lda FRAME_ARG_OFFSET_LSB,x
     cmp FRAME_ARG_OFFSET_LSB - 2,x
     bne _equals_return
     lda FRAME_ARG_OFFSET_MSB,x
     cmp FRAME_ARG_OFFSET_MSB - 2,x
     bne _equals_return
-    ldy #$7f
+    ldy #$10
 _equals_return
-    sty accumulator_lsb
     sty accumulator_msb
     jmp exec_frame_return
 FUNC_S06_GT
+    ; BUGBUG: NOOP implementation
 FUNC_S07_LT
+    ; BUGBUG: BOGUS implementation
 FUNC_S08_AND
+    ; BUGBUG: BOGUS implementation
 FUNC_S09_OR
+    ; BUGBUG: BOGUS implementation
 FUNC_S0A_NOT
+    ; BUGBUG: BOGUS implementation
 FUNC_S0B_IF
             jmp exec_frame_return

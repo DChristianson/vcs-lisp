@@ -3,6 +3,7 @@
 #
 
 import sys
+import math
 
 _symbols = [
     '',
@@ -34,6 +35,35 @@ _quote = '"\''
 _whitespace = ' \t\r\n'
 _openclose = '()'
 _comment = ';'
+
+def fp_conv(sign, exponent, mantissa, ep=4, mp=11, bias=14):
+    if 0 == mantissa:
+        return '0' * 16
+    mbits = format(mantissa, 'b')
+    diff = mp - len(mbits)
+    if diff > 0:
+        exponent -= diff
+        mbits = mbits + ('0' * diff) 
+    if diff < 0:
+        exponent += diff
+        mbits = mbits[0:mp]
+    exponent += bias
+    mbits = mbits[1:]
+    sbits = '0' if sign > 0 else '1'
+    ebits = format(exponent, f'0{ep}b')
+    return '0' + sbits + ebits + mbits
+
+def int2bits(i):
+    sign = 1 if i > 0 else -1
+    exponent = 0
+    mantissa = i
+    return fp_conv(sign, exponent, mantissa)
+
+def float2bits(f):
+    sign = 1 if f > 0 else -1
+    mantissa, exponent = math.frexp(f)
+    mantissa = int(mantissa * 2048)
+    return fp_conv(sign, exponent, mantissa)
 
 # 
 class Null:
@@ -173,8 +203,9 @@ def compile_exp(exp, heap, symtab):
         except:
             value = float(exp)
             p = heap.alloc()
-            p.car = Digit((int(value) & 0x0fff) >> 8)
-            p.cdr = Digit(int(value) & 0xff)
+            bits = float2bits(value)
+            p.car = Digit(int(bits[0:8], 2))
+            p.cdr = Digit(int(bits[8:16], 2))
             return p
 
 def compile_decl(decl, heap):
