@@ -124,7 +124,6 @@ repl_last_line ds 1 ; last line in BUGBUG: can be tmp?
 repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each line
 repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
 
-repl_bcd       ds 3 ; numeric conversion BUGBUG: need?
 repl_fmt_arg   ds 2 ; numeric conversion BUGBUG: need?
 repl_tmp_width      ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
 repl_gx_addr
@@ -314,9 +313,10 @@ _gc_loop
             tax
 _gc_car
             lda HEAP_CAR_ADDR,x
+            bpl _gc_free ; free a number
             cmp #$40
             bmi _gc_cdr
-            pha
+            pha ; recurse down car
 _gc_cdr
             lda HEAP_CDR_ADDR,x
             beq _gc_free
@@ -399,15 +399,15 @@ ARGUMENT_SYMBOL_A0 = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of arguments
     word $0000
 NUMERIC_SYMBOL_ZERO = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of numbers
     dc.s %0000000000000000 ; S14_ZERO
-    dc.s %0001000000000000 ; S15_ONE
-    dc.s %0001010000000000 ; S16_TWO   
-    dc.s %0001011000000000 ; S17_THREE  
-    dc.s %0001100000000000 ; S18_FOUR   
-    dc.s %0001100100000000 ; S19_FIVE   
-    dc.s %0001101000000000 ; S1A_SIX 
-    dc.s %0001101100000000 ; S1B_SEVEN   
-    dc.s %0001110000000000 ; S1C_EIGHT  
-    dc.s %0001110010000000 ; S1D_NINE  
+    dc.s %0000000000000001 ; S15_ONE
+    dc.s %0000000000000010 ; S16_TWO   
+    dc.s %0000000000000011 ; S17_THREE  
+    dc.s %0000000000000100 ; S18_FOUR   
+    dc.s %0000000000000101 ; S19_FIVE   
+    dc.s %0000000000000110 ; S1A_SIX 
+    dc.s %0000000000000111 ; S1B_SEVEN   
+    dc.s %0000000000001000 ; S1C_EIGHT  
+    dc.s %0000000000001001 ; S1D_NINE  
 
 ; ----------------------------------
 ; symbol graphics 

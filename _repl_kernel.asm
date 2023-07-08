@@ -3,15 +3,33 @@
 ;; code editor
 ;;
 
+_repl_update_edit_digit
+            ldy #3
+_repl_update_edit_digit_loop
+            asl HEAP_CDR_ADDR,x
+            rol HEAP_CAR_ADDR,x
+            dey
+            bpl _repl_update_edit_digit_loop
+            lda repl_edit_sym
+            sec
+            sbc #$14
+            ora HEAP_CDR_ADDR,x
+            sta HEAP_CDR_ADDR,x
+            lda #$0f
+            and HEAP_CAR_ADDR,x
+            sta HEAP_CAR_ADDR,x
+            jmp _repl_update_edit_done
 _repl_update_edit_head
             lda repl_edit_sym
             beq _repl_update_edit_delete ; edit function or . symbol
-            cmp #$10 
+            cmp #$10 ; BUGBUG: magic number (var versus function)
             bcc _repl_update_edit_set_car
             jmp _repl_update_edit_done ; can't replace with symbol
+_repl_update_keys_move_jmp
+            jmp _repl_update_keys_move            
 _repl_update_edit_keys
             lda player_input_latch         ; check button push
-            bmi _repl_update_keys_move     ; no push
+            bmi _repl_update_keys_move_jmp  ; no push
             ldx repl_curr_cell
             beq _repl_update_edit_extend   ; curr cell is null
 _repl_update_edit_apply
@@ -19,12 +37,19 @@ _repl_update_edit_apply
             cpy #REPL_CELL_ADDR             ; .
             bpl _repl_update_edit_head      ; .
             lda HEAP_CAR_ADDR,x
+            bpl _repl_update_edit_digit     ; we are editing a number
             cmp #$40
             bpl _repl_update_edit_funcall  ; curr cell is a funcall
             ; curr cell is a symbol
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
-            cmp #$10                         
+            cmp #$1e ; BUGBUG: hash
+            bne _repl_update_edit_symbol ; BUGBUG could be simpler?
+            dex
+            jsr alloc_cdr
+            jmp _repl_update_edit_set_number
+_repl_update_edit_symbol
+            cmp #$10 ; BUGBUG: magic number (var versus function)                
             bcs _repl_update_edit_set_car  ; edit symbol
             dex
             jsr alloc_cdr
@@ -50,15 +75,29 @@ _repl_update_edit_funcall
             tax
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
-            cmp #$10                         
+            cmp #$10 ; BUGBUG: magic number (var versus function)                        
             bcc _repl_update_edit_set_car   ; edit funcall operator
+            cmp #$1e ; BUGBUG: hash
+            beq _repl_update_edit_number
             ora #$c0
             ldx repl_curr_cell
             dex
             jsr set_cdr
             jmp _repl_update_edit_done
+_repl_update_edit_number
+            ; we've changed to a number using # symbol
+            lda HEAP_CAR_ADDR,x
+            bpl _repl_update_edit_number_skip ; already a number
+_repl_update_edit_set_number
+            ; clear car and free cdr
+            lda #0
+            sta HEAP_CAR_ADDR,x
+            jsr set_cdr
+_repl_update_edit_number_skip
+            jmp _repl_update_edit_done
 
 repl_update
+            ; disambiguate editor state
             ldx game_state
             cpx #GAME_STATE_EDIT_KEYS
             beq _repl_update_edit_keys
@@ -66,18 +105,26 @@ repl_update
             bmi _repl_update_menu
             lda player_input_latch     ; check button push
             bmi _repl_update_edit_move ; BUGBUG: better name prefix - _repl_keys_...?
-            ; button was pushed
 _repl_update_edit_keys_start
+            ; button was pushed, so we need to display keyboard
             ldx #GAME_STATE_EDIT_KEYS
             stx game_state
             lda repl_curr_cell
             beq _repl_update_edit_save_sym ; curr cell is null
             tax
             lda HEAP_CAR_ADDR,x
+            bpl _repl_update_edit_number_start
             cmp #$40
             bmi _repl_update_edit_save_sym
             tax
             lda HEAP_CAR_ADDR,x
+            bmi _repl_update_edit_save_sym
+            ; we are at the head of a number
+            lda #$1e ; BUGBUG: HASH
+            jmp _repl_update_edit_save_sym
+_repl_update_edit_number_start
+            ; current cell is a number
+            lda #$14 ; BUGBUG: ZERO
 _repl_update_edit_save_sym
             and #$1f
             sta repl_edit_sym
@@ -87,7 +134,7 @@ _repl_update_edit_save_sym
 _repl_update_keys_move
             ; check keyboard movement
             ror ; skip down 
-            ror ; skip up
+            ror ; skip up BUGBUG: let up be cancel?
             ror
             bcs _repl_update_keys_skip_left
             lda #-1
@@ -348,31 +395,34 @@ _prep_repl_line_adjust_end
             sta repl_display_list,y
 _prep_repl_key_end
 
-            ; find curr cell
+            ; find curr cell based on editor position
             lda repl_edit_col     ;
             sec                   ; subtract indent level from col
             sbc repl_tmp_indent   ; .
             tay                   ; .
-            ; deref prev cell
-            ldx repl_prev_cell            
+            ldx repl_prev_cell  ; deref prev cell       
             lda HEAP_CDR_ADDR,x
+            tax
             beq _prep_repl_line_found_curr_cell
             dey
             bmi _prep_repl_line_found_curr_cell
-            tax ; recurse down
+            ; check head
             lda HEAP_CAR_ADDR,x
             cmp #$40
-            bpl _prep_repl_line_find_curr_cell
-            txa ; pop back
+            bmi _prep_repl_line_find_curr_cell
+            stx repl_prev_cell
+            tax ; pop down
 _prep_repl_line_find_curr_cell
-            tax
+            lda HEAP_CAR_ADDR,x
+            bpl _prep_repl_line_found_curr_cell ; check for number
             lda HEAP_CDR_ADDR,x
+            stx repl_prev_cell
+            tax ; pop down
             beq _prep_repl_line_found_curr_cell
             dey
             bpl _prep_repl_line_find_curr_cell
 _prep_repl_line_found_curr_cell
-            stx repl_prev_cell
-            sta repl_curr_cell
+            stx repl_curr_cell
 
             ; done
 _prep_repl_end
@@ -380,11 +430,11 @@ _prep_repl_end
             txs      ;
             jmp update_return
 
-        align 256
-
 ;----------------------
 ; Repl display
 ;
+
+        align 256
 
 repl_draw
 
@@ -408,45 +458,36 @@ accumulator_draw
             jsr sub_fmt
 
             jsr prep_repl_graphics
-            lda #1                                  ;2
-            sta VDELP0                              ;3
-            sta VDELP1                              ;3
-            sta WSYNC                               ;--  0
-            lda #3                                  ;2   2
-            sta NUSIZ0                              ;3   5
-            sta NUSIZ1                              ;3   8
-            lda #$0                                 ;2  10
-            sta HMP0                                ;3  13
-            lda #$e0                                ;2  15
-            sta HMP1                                ;3  18
-            sta RESP0                               ;3  21
-            sta RESP1                               ;3  24
-            SLEEP 48                                ;48 72
-            sta HMOVE                               ;3  75
-            SLEEP 46                                ;46 45
-            ldy #CHAR_HEIGHT - 1                    ;2  47
-            SLEEP 5                                 ;5  52
-
+            lda #1                       ;2
+            sta VDELP0                   ;3
+            sta VDELP1                   ;3
+            sta WSYNC                    ;--  0
+            lda #1                       ;2   2
+            sta NUSIZ0                   ;3   5
+            sta NUSIZ1                   ;3   8
+            lda #$e0                     ;2  10
+            sta HMP0                     ;3  13
+            lda #$f0                     ;2  15
+            sta HMP1                     ;3  18
+            SLEEP 6                      ;6  24
+            sta RESP0                    ;3  27
+            sta RESP1                    ;3  30
+            SLEEP 37                     ;37 67
+            sta HMOVE                    ;3  70
+            ldy #CHAR_HEIGHT - 1         ;2  72
 _accumulator_draw_loop    ; 40/41 w page jump
-            SLEEP 3
-            lda (repl_s0_addr),y         ;5   ---
-            sta GRP0                     ;3   56
-            lda (repl_s1_addr),y         ;5   61
-            sta GRP1                     ;3   64
-            lda (repl_s2_addr),y         ;5   69
-            sta GRP0                     ;3   72
-            lax (repl_s4_addr),y         ;5    1
-            txs                          ;2    3
-            lax (repl_s3_addr),y         ;5    8
-            lda (repl_s5_addr),y         ;5   13
-            stx GRP1                     ;3   16   0 -  9  !0!8 ** ++ 32 40
-            tsx                          ;2   18   9 - 15   0!8!16 24 ++ 40
-            stx GRP0                     ;3   21  15 - 24   0 8!16!** ++ 40
-            sta GRP1                     ;3   24  24 - 33   0 8 16!24!** ++
-            sty GRP0                     ;3   27  33 - 42   0 8 16 24!32!** 
-            SLEEP 13                     ;16  48/51
-            dey                          ;2   29  
-            bpl _accumulator_draw_loop   ;2   31  
+            sta WSYNC                    ;-   --
+            lda (repl_s2_addr),y         ;5    5
+            sta GRP0                     ;3    8
+            lda (repl_s3_addr),y         ;5   13
+            sta GRP1                     ;3   16
+            lda (repl_s4_addr),y         ;5   21
+            sta GRP0                     ;3   24
+            lda (repl_s5_addr),y         ;5   31
+            sta GRP1                     ;3   34
+            sta GRP0                     ;3   37 
+            dey                          ;2   39  
+            bpl _accumulator_draw_loop   ;2   41  
 
 accumulator_draw_end
             sta WSYNC
