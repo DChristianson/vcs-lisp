@@ -54,31 +54,32 @@ DONE
       - eval demo program + 1 99
   - bugs
       - blank program is weird
+      - binary to decimal conversion is slow, blows out display
   - display 4 
       - show numbers
-ALPHA
-  - library 1
-      - actual float math
-      - beep
-  - demo 3
-      - eval demo program * .5 99
-  - demo 4
-      - eval demo program - 1 100
-      - eval demo program * 21 13
-      - eval demo program * 4 .5
-      - eval demo program * 5 -.5
-      - sqrt
   - virtual keyboard 2
       - number edit
+ALPHA
+  - library 1
+      - multiply (as continuation)
+      - beep (as continuation)
+      - all functions working
+  - virtual keyboard 3
+      - up to go back
+      - can only see symbols you can use
+      - number edit doesn't return right away
+      - number cursor is over all digits
+      - cancel move undoes changes
+      - other gestures move through list
   - demo 5
       - play beep
   - controls 2
       - game mode switch when push in menu
 BUGS
-  - binary to decimal conversion is slow, blows out display
   - better screen layout
   - better menu display
   - need a way to show free mem
+  - adding removing numbers at end messes up program (probably free memory issues)
   - if try to delete and recreate fib, crashes (probably free memory issue)
   - complex program takes too long to analyze in vblank
   - null display on complex lines no box
@@ -87,12 +88,12 @@ BETA
   - game modes 2
       - towers of hanoi
       - paddle pong
+  - advanced heap 
+      - bigger symbol table
+      - compact numbers
   - library 2
       - modulo function
-      - music functions
-  - virtual keyboard 3
-      - cancel move undoes changes
-      - other gestures move through list
+      - music functions (map... or progn?)
   - dev support
      - some way to do unit tests?
   - eval graphics kernel
@@ -110,9 +111,11 @@ SPRINKLES
      - shoutouts
   - help / attract mode 1 
       - occasional blinkyness of controls
-  - virtual keyboard 3
+  - virtual keyboard 4
       - empty at first
       - blinky cursor when in repl
+      - no cell boxes on numbers 
+
 BONUS 
   - bonus game mode
      - silly goose (number sequence)
@@ -122,6 +125,7 @@ BONUS
      - tictactoe?
      - mastermind?
      - ant
+     - sqry using .. rational math?
 
 IBM 704
 40 kips 12 kiloflops
