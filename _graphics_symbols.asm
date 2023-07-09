@@ -1,0 +1,64 @@
+SYMBOL_GRAPHICS_S00_TERM
+    byte $0,$0,$0,$50,$0,$20,$0,$0; 8
+SYMBOL_GRAPHICS_S01_MULT
+    byte $0,$88,$d8,$70,$20,$70,$d8,$88; 8
+SYMBOL_GRAPHICS_S02_ADD
+    byte $0,$20,$20,$20,$f8,$20,$20,$20; 8
+SYMBOL_GRAPHICS_S03_SUB
+    byte $0,$0,$0,$0,$f8,$0,$0,$0; 8
+SYMBOL_GRAPHICS_S04_DIV
+    byte $0,$80,$c0,$e0,$70,$38,$18,$8; 8
+SYMBOL_GRAPHICS_S05_EQUALS
+    byte $0,$0,$0,$f0,$0,$f0,$0,$0; 8
+SYMBOL_GRAPHICS_S06_GT
+    byte $0,$c0,$60,$30,$18,$30,$60,$c0; 8
+SYMBOL_GRAPHICS_S07_LT
+    byte $0,$18,$30,$60,$c0,$60,$30,$18; 8
+SYMBOL_GRAPHICS_S08_AND
+    byte $0,$20,$f0,$80,$60,$80,$f0,$20; 8
+SYMBOL_GRAPHICS_S09_OR
+    byte $0,$20,$20,$20,$20,$20,$20,$20; 8
+SYMBOL_GRAPHICS_S0A_NOT
+    byte $0,$20,$20,$0,$20,$20,$20,$20; 8
+SYMBOL_GRAPHICS_S0B_IF
+    byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
+SYMBOL_GRAPHICS_S0C_F0
+    byte $0,$88,$98,$50,$30,$20,$20,$60; 8
+SYMBOL_GRAPHICS_S0D_F1
+    byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
+SYMBOL_GRAPHICS_S0E_F2
+    byte $0,$60,$20,$20,$70,$20,$20,$38; 8
+SYMBOL_GRAPHICS_S0F_F3
+    byte $0,$c0,$d8,$d8,$58,$48,$48,$78; 8
+SYMBOL_GRAPHICS_S10_A0
+    byte $0,$70,$88,$88,$78,$8,$f0,$0; 8
+SYMBOL_GRAPHICS_S11_A1
+    byte $0,$f0,$88,$88,$f0,$80,$80,$0; 8
+SYMBOL_GRAPHICS_S12_A2
+    byte $0,$70,$88,$80,$88,$70,$0,$0; 8
+SYMBOL_GRAPHICS_S13_A3
+    byte $0,$78,$88,$88,$78,$8,$8,$0; 8
+SYMBOL_GRAPHICS_S14_ZERO
+    byte $0,$70,$88,$88,$88,$88,$88,$70; 8
+SYMBOL_GRAPHICS_S15_ONE
+    byte $0,$70,$20,$20,$20,$20,$20,$60; 8
+SYMBOL_GRAPHICS_S16_TWO
+    byte $0,$f8,$80,$80,$f8,$8,$8,$f8; 8
+SYMBOL_GRAPHICS_S17_THREE
+    byte $0,$f8,$8,$8,$f8,$8,$8,$f8; 8
+SYMBOL_GRAPHICS_S18_FOUR
+    byte $0,$8,$8,$8,$f8,$88,$88,$88; 8
+SYMBOL_GRAPHICS_S19_FIVE
+    byte $0,$f8,$8,$8,$f8,$80,$80,$f8; 8
+SYMBOL_GRAPHICS_S1A_SIX
+    byte $0,$f8,$88,$88,$f8,$80,$80,$f8; 8
+SYMBOL_GRAPHICS_S1B_SEVEN
+    byte $0,$8,$8,$8,$8,$8,$8,$f8; 8
+SYMBOL_GRAPHICS_S1C_EIGHT
+    byte $0,$f8,$88,$88,$f8,$88,$88,$f8; 8
+SYMBOL_GRAPHICS_S1D_NINE
+    byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
+SYMBOL_GRAPHICS_S1E_HASH
+    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
+SYMBOL_GRAPHICS_S1F_BLANK
+    byte $00,$00,$00,$00,$00,$00,$00,$00; 8

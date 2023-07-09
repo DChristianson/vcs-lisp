@@ -55,42 +55,42 @@ DONE
   - bugs
       - blank program is weird
       - binary to decimal conversion is slow, blows out display
+      - adding removing numbers at end messes up program (probably free memory issues)
   - display 4 
       - show numbers
   - virtual keyboard 2
       - number edit
+      - up to go back
+      - number edit shouldn't return right away
+      - number cursor is at digit being edited
 ALPHA
   - library 1
       - multiply (as continuation)
       - beep (as continuation)
       - all functions working
   - virtual keyboard 3
-      - up to go back
       - can only see symbols you can use
-      - number edit doesn't return right away
-      - number cursor is over all digits
-      - cancel move undoes changes
-      - other gestures move through list
   - demo 5
       - play beep
+  - display 4 
+      - screen layout is sloppy
+      - menus are messed up
+      - null display on complex lines no box
+BUGS
+  - code
+    - if try to delete and recreate fib, crashes (probably free memory issue)
+    - complex program takes too long to analyze in vblank
+BETA
   - controls 2
       - game mode switch when push in menu
-BUGS
-  - better screen layout
-  - better menu display
-  - need a way to show free mem
-  - adding removing numbers at end messes up program (probably free memory issues)
-  - if try to delete and recreate fib, crashes (probably free memory issue)
-  - complex program takes too long to analyze in vblank
-  - null display on complex lines no box
-  - too slow to scroll through keys
-BETA
   - game modes 2
       - towers of hanoi
       - paddle pong
-  - advanced heap 
-      - bigger symbol table
-      - compact numbers
+  - code 2
+      - reduce need for extra lookups
+      - no / limited numbers constants
+      - bigger symbol table? 
+      - compact numbers?
   - library 2
       - modulo function
       - music functions (map... or progn?)
@@ -101,6 +101,7 @@ BETA
      - stack / heap / free accumulator
      - song that plays during eval
   - interpreter
+     - show free mem
      - safeties against stack overflow
      - safety against no free mem left
 SPRINKLES
@@ -115,6 +116,8 @@ SPRINKLES
       - empty at first
       - blinky cursor when in repl
       - no cell boxes on numbers 
+      - cancel move undoes changes
+      - too slow to scroll through keys
 
 BONUS 
   - bonus game mode

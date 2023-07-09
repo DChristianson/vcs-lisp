@@ -18,7 +18,7 @@ _repl_update_edit_digit_loop
             lda #$0f
             and HEAP_CAR_ADDR,x
             sta HEAP_CAR_ADDR,x
-            jmp _repl_update_edit_done
+            jmp _repl_update_skip_move ; don't exit editor
 _repl_update_edit_head
             lda repl_edit_sym
             beq _repl_update_edit_delete ; edit function or . symbol
@@ -52,7 +52,7 @@ _repl_update_edit_symbol
             cmp #$10 ; BUGBUG: magic number (var versus function)                
             bcs _repl_update_edit_set_car  ; edit symbol
             dex
-            jsr alloc_cdr
+            jsr alloc_cdr       
             lda repl_edit_sym
 _repl_update_edit_set_car
             ora #$c0
@@ -66,7 +66,9 @@ _repl_update_edit_extend
             lda repl_edit_sym
             beq _repl_update_edit_done     ; extending with null is noop
             jsr alloc_cdr       
-            jmp _repl_update_edit_apply   ; proceed to edit new extension
+            lda #$c0                       ; put in dummy term symbol 
+            sta HEAP_CAR_ADDR,x            ; otherwise we will misinterpret
+            jmp _repl_update_edit_apply    ; proceed to edit new extension
 _repl_update_edit_delete
             ldx repl_prev_cell             ; 
             jsr set_cdr                    ;
@@ -130,16 +132,21 @@ _repl_update_edit_save_sym
             sta repl_edit_sym
             jmp _repl_update_skip_move
 
-
 _repl_update_keys_move
             ; check keyboard movement
+            ;up
+            ror 
+            bcs _repl_update_keys_skip_up
+            jmp _repl_update_edit_done
+_repl_update_keys_skip_up
             ror ; skip down 
-            ror ; skip up BUGBUG: let up be cancel?
+            ;left
             ror
             bcs _repl_update_keys_skip_left
             lda #-1
             jmp _repl_update_keys_set
 _repl_update_keys_skip_left
+            ;right
             ror
             bcs _repl_update_keys_skip_move
             lda #1
@@ -290,6 +297,7 @@ _prep_repl_line_complex
             ; ^ car is pointing at a list, we need to pop down
             jmp _prep_repl_line_scan      ; go back to scan
 _prep_repl_line_number
+            ; numbers are three wide
             lda #3
             sta repl_tmp_width            
 _prep_repl_line_next
@@ -336,6 +344,8 @@ _prep_repl_line_clear_loop
 _prep_repl_line_end
 
             ; check cursor location to make sure it's in bounds
+            lda #0 
+            sta repl_display_cursor      ; use to increment col pos
             lda repl_tmp_scroll
             eor #$ff
             clc
@@ -351,23 +361,38 @@ _prep_repl_line_adjust
             clc                          ; .
             adc #(EDITOR_LINES - 1)      ; .
             tay                          ; .
-            lda repl_display_indent,y    ; read line width level
-            and #$07                     ; mask out indent
-            ldx repl_display_list,y      ; check if we have a list or a symbol
-            cpx #$40                     ;
-            bmi _prep_repl_line_check_sw ;
-            clc                          ; if a symbol, allow 1 more col
-            adc #1                       ;
-_prep_repl_line_check_sw
-            sta repl_tmp_width           ; save indent level to tmp
             lda repl_display_indent,y    ; read indent
             lsr                          ; . divide by 8
             lsr                          ; .
             lsr                          ; .
             sta repl_tmp_indent
+            lda repl_display_indent,y    ; read line width level
+            and #$07                     ; mask out indent
+            tax
+            lda repl_display_list,y      ; check if we have a list or a symbol
+            cmp #$40                     ;
+            bmi _prep_repl_line_check_sw
+            txs
+            tax
+            lda HEAP_CAR_ADDR,x
+            bpl _prep_repl_line_number_adjust
+            tsx
+            inx ; allow 1 extra
+            jmp _prep_repl_line_check_sw
+_prep_repl_line_number_adjust
+            lda repl_tmp_indent
+            cmp repl_edit_col
+            bpl _prep_repl_line_set_col
+            lda #2
+            sta repl_display_cursor
+            ldx #1
+_prep_repl_line_check_sw
+            stx repl_tmp_width           ; save indent level to tmp
+            lda repl_tmp_indent
             sec
             sbc repl_edit_col
             bmi _prep_repl_line_check_wide
+_prep_repl_line_check_left
             lda repl_tmp_indent
             jmp _prep_repl_line_set_col
 _prep_repl_line_check_wide                         
@@ -378,11 +403,15 @@ _prep_repl_line_check_wide
 _prep_repl_line_set_col
             sta repl_edit_col
 _prep_repl_line_adjust_end
+            lda repl_edit_col
+            clc
+            adc repl_display_cursor
+            sta repl_display_cursor
             ; show keyboard if we are in that game state
             ; keep y as edit line
             lda game_state
             beq _prep_repl_key_end
-            lda repl_edit_col
+            lda repl_display_cursor
             sec
             sbc #2
             asl
@@ -546,7 +575,7 @@ prompt
 
             ; position cursor
             sta WSYNC               ; --
-            lda repl_edit_col       ;3    3
+            lda repl_display_cursor ;3    3
             asl                     ;2    5
             asl                     ;2    7
             asl                     ;2    9

@@ -2,13 +2,6 @@
 
 
 sub_fmt
-            lda #>SYMBOL_GRAPHICS_S14_ZERO
-            sta repl_s0_addr + 1
-            sta repl_s1_addr + 1
-            sta repl_s2_addr + 1
-            sta repl_s3_addr + 1
-            sta repl_s4_addr + 1
-            sta repl_s5_addr + 1
             lda #<SYMBOL_GRAPHICS_S1E_HASH
             sta repl_s1_addr
             lda #<SYMBOL_GRAPHICS_S1F_BLANK

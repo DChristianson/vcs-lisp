@@ -112,31 +112,32 @@ game_data          ds 8
 
     ORG $D4
 
-repl_menu_tab  ds 1 ; which menu tab is active BUGBUG: collapse with game state?
-repl_scroll    ds 1 ; lines to scroll
-repl_edit_line ds 1 ; editor line BUGBUG: collapse with col?
-repl_edit_col  ds 1 ; editor column BUGBUG: collapse with line?
-repl_edit_sym  ds 1 ; editor symbol
-repl_prev_cell ds 1
-repl_curr_cell ds 1
-repl_last_line ds 1 ; last line in BUGBUG: can be tmp?
+repl_menu_tab       ds 1 ; which menu tab is active BUGBUG: collapse with game state?
+repl_scroll         ds 1 ; lines to scroll
+repl_edit_line      ds 1 ; editor line BUGBUG: collapse with col?
+repl_edit_col       ds 1 ; editor column BUGBUG: collapse with line?
+repl_edit_sym       ds 1 ; editor symbol
+repl_prev_cell      ds 1
+repl_curr_cell      ds 1
+repl_last_line      ds 1 ; last line in BUGBUG: can be tmp?
 
+repl_display_cursor ds 1 ; cursor position for display
 repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each line
 repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
 
-repl_fmt_arg   ds 2 ; numeric conversion BUGBUG: need?
-repl_tmp_width      ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
+repl_fmt_arg     ds 2 ; numeric conversion BUGBUG: need?
+repl_tmp_width        ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
 repl_gx_addr
-repl_s5_addr   ds 2
-repl_tmp_indent     ; ds 1  temporary indent storage during layout BUGBUG: need?
-repl_tmp_cell_count ; ds 1 temporary cell countdown during layout BUGBUG: need?
-repl_s4_addr   ds 2
-repl_tmp_scroll      ; ds 1temporary cell storage during layout BUGBUG: need?
-repl_s3_addr   ds 2
-repl_s2_addr   ds 2
-repl_s1_addr   ds 2
-repl_s0_addr   ds 2
-repl_editor_line ds 1; line counter storage during editor display
+repl_s5_addr     ds 2
+repl_tmp_indent       ; ds 1  temporary indent storage during layout BUGBUG: need?
+repl_tmp_cell_count   ; ds 1 temporary cell countdown during layout BUGBUG: need?
+repl_s4_addr     ds 2
+repl_tmp_scroll        ; ds 1temporary cell storage during layout BUGBUG: need?
+repl_s3_addr     ds 2
+repl_s2_addr     ds 2
+repl_s1_addr     ds 2
+repl_s0_addr     ds 2
+repl_editor_line ds 1  ; line counter storage during editor display
 
 ; ----------------------------------
 ; eval kernel vars
@@ -414,70 +415,7 @@ NUMERIC_SYMBOL_ZERO = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of numbers
 
     ORG $FE00
 
-SYMBOL_GRAPHICS_S00_TERM
-    byte $0,$0,$0,$50,$0,$20,$0,$0; 8
-SYMBOL_GRAPHICS_S01_MULT
-    byte $0,$88,$d8,$70,$20,$70,$d8,$88; 8
-SYMBOL_GRAPHICS_S02_ADD
-    byte $0,$20,$20,$20,$f8,$20,$20,$20; 8
-SYMBOL_GRAPHICS_S03_SUB
-    byte $0,$0,$0,$0,$f8,$0,$0,$0; 8
-SYMBOL_GRAPHICS_S04_DIV
-    byte $0,$80,$c0,$e0,$70,$38,$18,$8; 8
-SYMBOL_GRAPHICS_S05_EQUALS
-    byte $0,$0,$0,$f0,$0,$f0,$0,$0; 8
-SYMBOL_GRAPHICS_S06_GT
-    byte $0,$c0,$60,$30,$18,$30,$60,$c0; 8
-SYMBOL_GRAPHICS_S07_LT
-    byte $0,$18,$30,$60,$c0,$60,$30,$18; 8
-SYMBOL_GRAPHICS_S08_AND
-    byte $0,$20,$f0,$80,$60,$80,$f0,$20; 8
-SYMBOL_GRAPHICS_S09_OR
-    byte $0,$20,$20,$20,$20,$20,$20,$20; 8
-SYMBOL_GRAPHICS_S0A_NOT
-    byte $0,$20,$20,$0,$20,$20,$20,$20; 8
-SYMBOL_GRAPHICS_S0B_IF
-    byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
-SYMBOL_GRAPHICS_S0C_F0
-    byte $0,$88,$98,$50,$30,$20,$20,$60; 8
-SYMBOL_GRAPHICS_S0D_F1
-    byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
-SYMBOL_GRAPHICS_S0E_F2
-    byte $0,$60,$20,$20,$70,$20,$20,$38; 8
-SYMBOL_GRAPHICS_S0F_F3
-    byte $0,$c0,$d8,$d8,$58,$48,$48,$78; 8
-SYMBOL_GRAPHICS_S10_A0
-    byte $0,$70,$88,$88,$78,$8,$f0,$0; 8
-SYMBOL_GRAPHICS_S11_A1
-    byte $0,$f0,$88,$88,$f0,$80,$80,$0; 8
-SYMBOL_GRAPHICS_S12_A2
-    byte $0,$70,$88,$80,$88,$70,$0,$0; 8
-SYMBOL_GRAPHICS_S13_A3
-    byte $0,$78,$88,$88,$78,$8,$8,$0; 8
-SYMBOL_GRAPHICS_S14_ZERO
-    byte $0,$70,$88,$88,$88,$88,$88,$70; 8
-SYMBOL_GRAPHICS_S15_ONE
-    byte $0,$70,$20,$20,$20,$20,$20,$60; 8
-SYMBOL_GRAPHICS_S16_TWO
-    byte $0,$f8,$80,$80,$f8,$8,$8,$f8; 8
-SYMBOL_GRAPHICS_S17_THREE
-    byte $0,$f8,$8,$8,$f8,$8,$8,$f8; 8
-SYMBOL_GRAPHICS_S18_FOUR
-    byte $0,$8,$8,$8,$f8,$88,$88,$88; 8
-SYMBOL_GRAPHICS_S19_FIVE
-    byte $0,$f8,$8,$8,$f8,$80,$80,$f8; 8
-SYMBOL_GRAPHICS_S1A_SIX
-    byte $0,$f8,$88,$88,$f8,$80,$80,$f8; 8
-SYMBOL_GRAPHICS_S1B_SEVEN
-    byte $0,$8,$8,$8,$8,$8,$8,$f8; 8
-SYMBOL_GRAPHICS_S1C_EIGHT
-    byte $0,$f8,$88,$88,$f8,$88,$88,$f8; 8
-SYMBOL_GRAPHICS_S1D_NINE
-    byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
-SYMBOL_GRAPHICS_S1E_HASH
-    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
-SYMBOL_GRAPHICS_S1F_BLANK
-    byte $00,$00,$00,$00,$00,$00,$00,$00; 8
+    include "_graphics_symbols.asm"
 
     ORG $FF00
 
