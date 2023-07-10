@@ -15,11 +15,55 @@ sub_fmt
 ; function kernels
 
 FUNC_S01_MULT
+            ; naive multiplication 
+            ;  - on invocation we clear the accumulator
+            ;  - we subtract 1 from arg0 and save in place
+            ;  - if arg0 < 0 we return normally
+            ;  - otherwise add arg1 to the accumulator
+            ;  - we then push an empty frame to the stack
+            ;  - next vblank we will re-execute and continue
+            tsx                ; get the SP into the accumulator
+            txa                ; .
+            sec                ; subtract from frame pointer
+            sbc eval_frame     ; .
+            cmp #-5            ; -5 indicates 2 args on stack
+            bne _mult_continue 
             lda #0
-            sta accumulator_lsb
+            pha
+            pha
+_mult_continue
+            pla
             sta accumulator_msb
+            pla
+            sta accumulator_lsb
+            ; continuing execution
             ldx eval_frame
-            ; BUGBUG: code as a continuation
+            sed
+            sec
+            lda FRAME_ARG_OFFSET_LSB,x
+            sbc #1
+            sta FRAME_ARG_OFFSET_LSB,x
+            lda FRAME_ARG_OFFSET_MSB,x
+            sbc #0
+            sta FRAME_ARG_OFFSET_MSB,x
+            bcc _mult_return
+            clc
+            lda FRAME_ARG_OFFSET_LSB - 2,x
+            adc accumulator_lsb
+            sta accumulator_lsb
+            lda FRAME_ARG_OFFSET_MSB - 2,x
+            adc accumulator_msb
+            and #$0f
+            sta accumulator_msb
+            ; force continuation
+            lda #0
+            pha
+            txa
+            pha
+            tsx
+            stx eval_frame
+_mult_return
+            cld
             jmp exec_frame_return
 
 FUNC_S02_ADD
@@ -152,5 +196,54 @@ _not_return
             sty accumulator_msb
             jmp exec_frame_return
 
-FUNC_S0B_IF ; BUGBUG this is a special form
+FUNC_S0F_BEEP
+            ; beep
+            ;  - we subtract 1 from arg1 and save in place
+            ;  - if arg1 < 0 we return normally
+            ;  - otherwise load note into audio registers
+            tsx                ; get the SP into the accumulator
+            txa                ; .
+            sec                ; subtract from frame pointer
+            sbc eval_frame     ; .
+            cmp #-5            ; -5 indicates 2 args on stack
+            bne _beep_continue 
+            pha ; pad stack
+            pha
+_beep_continue
+            pla ; drain stack
+            pla
+            ldx eval_frame
+            sed
+            sec
+            lda FRAME_ARG_OFFSET_LSB - 2,x
+            sbc #1
+            sta FRAME_ARG_OFFSET_LSB - 2,x
+            lda FRAME_ARG_OFFSET_MSB - 2,x
+            sbc #0
+            sta FRAME_ARG_OFFSET_MSB - 2,x
+            cld
+            bcc _beep_end
+            ; play sound
+            lda #4
+            sta AUDC0
+            lda #8
+            sta AUDV0
+            lda FRAME_ARG_OFFSET_LSB,x
+            sta AUDF0
+            ; force continuation
+            lda #0
+            pha
+            txa
+            pha
+            tsx
+            stx eval_frame
+            jmp _beep_return
+_beep_end
+            lda #0
+            sta AUDV0
+_beep_return
             jmp exec_frame_return
+
+
+FUNC_S0B_IF ; BUGBUG this is a special form
+            jmp exec_frame_return ; SPACE: don't need to copy this around

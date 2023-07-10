@@ -63,21 +63,25 @@ DONE
       - up to go back
       - number edit shouldn't return right away
       - number cursor is at digit being edited
-ALPHA
   - library 1
-      - multiply (as continuation)
       - beep (as continuation)
+      - multiply (as continuation)
+ALPHA
+  - demo 5
+      - play beep
+  - library 1
       - all functions working
   - virtual keyboard 3
       - can only see symbols you can use
-  - demo 5
-      - play beep
   - display 4 
       - screen layout is sloppy
       - menus are messed up
       - null display on complex lines no box
 BUGS
   - code
+    - beep goes too fast (need to take a beat after we eval)
+    - suspect if the repl begins with an if, we don't evaluate the test properly
+    - in general a const in an if hasn't been tested
     - if try to delete and recreate fib, crashes (probably free memory issue)
     - complex program takes too long to analyze in vblank
 BETA
@@ -200,41 +204,122 @@ Implementation
     |        | 
   Pair     Number
 ```
-Borrowing from PicoLisp 
-The fundamental data structure is the cell. A cell can represent
-either a number or a pair. Pairs have a head and a tail, with the
-head containing either a symbol, a reference to a number, or a 
-reference to another pair. The tail can either be a reference to 
-another pair or the null reference.
 
-a number can be a 15 bit precision float or a 3 digit binary coded decimal
+The fundamental data structure in vcs-lisp is the cell. This concept borrows directly from PicoLisp although with a few differences.
 
-cell pair representation:
-  1rxxxxxs 1rxxxxxs
-  10xxxxx0 - heap reference (5 bits - 32 cells in total)
-  11xxxxxx - symbol (6 bits - 64 symbols in total)
+ - A cell is 2 bytes wide and represents either a number or a pair. 
+ - Pairs have a head (car) and tail (cdr). 
+  - The head can contain either a symbol or a reference to another cell
+  - The tail must be a reference to another pair or the null reference
+ - Numbers are 3 digit binary coded decimals. 
+
+Using 2 bytes for the cell is a natural choice. There are only 128 bytes of RAM available onboard the Atari 2600.At 2 bytes per cell we have a theoretical maximum of 64 addressible cells. 
+ 
+Using BCD for numbers saves a lot of code when it comes to editing and displaying numbers. 
+- Displaying character graphics on the Atari 2600 requires specialized code, so having to deal with only three digits allows us to simplify the display kernel dramatically. 
+- Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space
+
+== Cell and Symbol References
+
+```
+  10xxxxx0 - cell reference (5 significant bits - 32 cells in total)
+  110xxxxx - symbol reference (5 significant bits - 32 symbols in total)
   00000000 - null pointer
+```
 
-number representation: 
-  0smmmmxx xxxxxxxx  - 15 bit binary floating point  
-  0smmdddd dddd dddd - float decimal
+Cell references start at hex value $80. Coincidentally, we locate the cell heap at address $80 - so that the zeropage address of a cell on the heap *is* its cell reference. 
+
+Symbol references start at hex value $C0. Similar to how cell references line up with heap addresses, we try to manipulate the start address of data tables for symbol lookups to start at $C0.
+
+There are some unused bits in these schemes (very wasteful...)
+- We reserve the 6th bit of a cell reference to perform operations on off-heap zeropage data as if it were on heap.
+- We manipulate the 0th bit of a cell reference to perform operations that reference the car of a cell as if it were the cdr (and vice versa).
+- The 6th bit of symbol references is completely unused at this time.
 
 
-= Memory organization
+== Numbers
 
-== The heap
+```
+  0000dddd dddd dddd - binary coded decimal
+```
 
-64 byte heap
 
-== Program registers
+== Off-Heap Registers
 
-f0...f3 - there are four user assignable references
-        - each one points to a location in the heap containing a
-        - pair expression or possibly a number reference
-repl    - this points to the head of the expression that the user is actively editing in repl mode
-        - in eval mode this points to the expression that is being executed
-current_cell - this points to the cell that the user is actively editing in repl mode
-prev_cell - prev_cell points to first "upstream" pair from the one the user is actively editing in repl mode
+The following memory locations hold the contents of the Lisp program
+
+```
+heap             ds 64 ; the heap contains all program memory, organized into 32 2-byte cells
+free             ds 1  ; this points to the linked list of free cells on the heap
+repl             ds 1  ; this points to an expression that we want the evaluator to execute
+                       ; repl mode allows the user to edit this expression
+f0...f2          ds 1  ; there are three user assignable expressions
+                       ; each one points to a cell in the heap
+                       ; repl mode allows the user to edit these expressions
+accumulator      ds 2  ; a cell holding the result of the last expression
+```
+
+
+= Expression evaluation
+
+
+There are a considerations here:
+- Because 
+Cells can either be a byte pair consisting of a head (car) and tail (There are two kinds of cells
+
+== Evaluator  
+
+Evaluation 
+
+```
+accumulator      ds 2 ; the result accumulator
+eval_next        ds 1 ; the next action to take
+                      ; if negative, it is a reference to the next expression to evaluate
+                      ; if 1, then return from the current frame
+                      ; if 2, then execute as a conditional test
+eval_env         ds 1 ; pointer to beginning of stack for calling frame
+eval_frame       ds 1 ; pointer to beginning of stack for current frame
+```
+
+accumulator a: the accumulator,
+eval_next   x: the next expression,
+eval_env    e: the current environment
+eval_frame  s: the current stack
+
+
+```
+eval_next  = ...(arg2 arg3)
+eval_env   = +2/+3 previous eval_next
+             +1/+2 previous eval_frame
+             +1    previous eval_env (optional)
+eval_frame = +0    function symbol
+             -1    arg0 lsb / cdr
+             -2    arg0 msb / car
+             -3    arg1 lsb / cdr
+             -4    arg1 msb / car
+SP         = ...
+```
+
+```
+eval_next  = #1
+eval_env   = +2  previous eval_next
+             +1  previous eval_frame
+eval_frame = +0  function symbol
+             -1  arg0 lsb / cdr
+             -2  arg0 msb / car
+SP         = ...
+```
+
+```
+eval_next  = #2 
+eval_env   = +2  previous eval_next
+             +1  previous eval_frame
+eval_frame = +0  ...(arg1 arg2)
+             -1  arg0 lsb / cdr
+             -2  arg0 msb / car
+SP         = ...
+```
+
 
 == The symbol table
 

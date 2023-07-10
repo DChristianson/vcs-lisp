@@ -22,62 +22,68 @@ eval_apply
             sec
             sbc #FUNCTION_SYMBOL_F0
             tax
-            lda function_table,x
+            lda function_table,x ; deref function
             jmp eval_iter
 eval_start
+            ; initial entry
             lda repl
 eval_iter
-            tsx
-            stx eval_frame
-            tax
-            lda HEAP_CAR_ADDR,x ; read car            
-            bpl _eval_number
-            cmp #FUNCTION_REF_IF ; special case IF
-            bne _eval_funcall
+            ; push a new frame onto the stack
+            tsx                   ; save current stack pointer to eval_frame
+            stx eval_frame        ;
+            tax                   ; read head of cell reference in accumulator 
+            lda HEAP_CAR_ADDR,x   ; .
+            bpl _eval_number      ; branch if it's a number
+            cmp #FUNCTION_REF_IF  ; special case if we are applying test
+            bne _eval_funcall     ; otherwise eval as funcall
 _eval_test
-            ; specail form for ?
-            lda HEAP_CDR_ADDR,x ; read cdr
-            tax
-            lda HEAP_CDR_ADDR,x
-            pha
-            lda #2 ; KLUDGE: signals test ; READABILITY: notation
-            sta eval_next
-            jmp _eval_funcall_arg  
+            ; x references a test expression
+            lda HEAP_CDR_ADDR,x   ; follow cdr of test
+            tax                   ; .
+            lda HEAP_CDR_ADDR,x   ; push cddr of test to be rest of args
+            pha                   ; . 
+            lda #2                ; store 2 to eval_next (KLUDGE: signals test ; READABILITY: notation
+            sta eval_next         ;
+            jmp _eval_funcall_arg ;  
 _eval_number
-            sta accumulator_car
-            lda HEAP_CDR_ADDR,x
-            sta accumulator_cdr
-            jmp exec_frame_return
+            ; x references a number cell, a is the car
+            sta accumulator_car   ; push number cell into accumulator and return
+            lda HEAP_CDR_ADDR,x   ; .
+            sta accumulator_cdr   ; .
+            jmp exec_frame_return ; .
 _eval_funcall
-            pha
+            ; x references a function call, a is the head
+            pha                   ; push head to stack
 _eval_funcall_push_args
-            ; iterate through all the args
-            ; args should either be a cell ref or symbol
-            lda HEAP_CDR_ADDR,x ; read cdr
-            beq _eval_funcall_exec
+            ; push all args to stack
+            lda HEAP_CDR_ADDR,x   ; start following tail
+            beq _eval_funcall_exec; if null we have a unary expression
 _eval_funcall_args_loop
-            tax
-            lda HEAP_CDR_ADDR,x
-            sta eval_next
+            tax                   ; .
+            lda HEAP_CDR_ADDR,x   ; remember reference to next arg
+            sta eval_next         ; . 
 _eval_funcall_arg
-            lda HEAP_CAR_ADDR,x
-            cmp #$40
-            bpl _eval_funcall_args_expression
-            and #$03f
-            cmp #NUMERIC_SYMBOL_ZERO
-            bmi _eval_funcall_args_env
+            lda HEAP_CAR_ADDR,x   ; check head of arg cell
+            cmp #$40              ; .
+            bpl _eval_funcall_args_expression ; if a funcall we recurse
+            ; arg is a symbol (constant or variable) reference
+            and #$03f                  ; strip significant bits
+            cmp #NUMERIC_SYMBOL_ZERO   ; check if it's a local variable
+            bmi _eval_funcall_args_env ; read
+            ; arg is a constant, push to accumulator and return
             asl
             tax
+            ; this is a short circuit from doing a frame eval
             lda LOOKUP_SYMBOL_VALUE_LSB,x
-            sta accumulator_lsb
+            sta accumulator_lsb ; BUGBUG: may not be needed?
             pha
             lda LOOKUP_SYMBOL_VALUE_MSB,x
             sta accumulator_msb
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_env
-            ; compute relative argument offset
-            ; push to accumulator
+            ; evaluate a local variable (a, b, c, d...)
+            ; compute relative argument offset, then load accumulator and push to stack
             sec
             sbc #ARGUMENT_SYMBOL_A0
             asl
@@ -85,27 +91,30 @@ _eval_funcall_args_env
             clc
             adc #1
             clc
-            adc eval_env ; find arg 
+            adc eval_env                ; eval_env is the parent frame in stack 
             tax
+            ; this is a short circuit from doing a frame eval
             lda #FRAME_ARG_OFFSET_LSB,x
-            sta accumulator_lsb
+            sta accumulator_lsb        ; BUGBUG: may not be needed?
             pha
             lda #FRAME_ARG_OFFSET_MSB,x 
             sta accumulator_msb
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_expression
+            ; a is a reference to a function call, x is the parent frame
             tay
-            lda eval_next
+            lda eval_next  ; push next arg to stack
             pha
-            lda eval_frame
+            lda eval_frame ; push current frame to stack
             pha
             tya
             jmp eval_iter ; recurse
 _eval_funcall_args_next
+            ; proceed to next arg
             lda eval_next
-            bmi _eval_funcall_args_loop
-            bne exec_frame_return
+            bmi _eval_funcall_args_loop ; if next is a cell ref, continue
+            bne exec_frame_return       ; otherwise special form, go to return sub
 _eval_funcall_exec
             ; exec frame
             ldx eval_frame
@@ -118,8 +127,10 @@ _eval_funcall_exec
             lda LOOKUP_SYMBOL_FUNCTION+1,x
             sta eval_func_ptr+1
             jmp (eval_func_ptr)
+
 exec_frame_return
-            ; clear frame
+            ; called when we've made a funcall or evaluated an expression
+            ; clear stack back to current frame
             ldx eval_frame
             txs 
             inx
@@ -134,14 +145,14 @@ exec_frame_return
             jmp update_return
 _eval_pop_frame
             ; pop up from recursion
-            pla 
+            pla ; will get previous env or frame
             bmi _eval_old_env
             ora #$80 ; kludge: if val is positive, it's a saved env
             sta eval_env
-            pla
+            pla ; will get previous frame
 _eval_old_env
             sta eval_frame
-            pla ; pull args from frame
+            pla ; pull next action from frame
             bmi _eval_continue_args ; if negative, eval next arg cell
             beq _eval_continue_args ; if zero, eval next arg cell (will be nil)
             ; args is 1 = return or 2 = test
@@ -149,7 +160,7 @@ _eval_old_env
             beq _eval_return
             ; evaluate test expression
             ; BUGBUG: potentially we can optimize the stack here
-            sta eval_next ; a should be = 1
+            sta eval_next ; a should be = 1 after the lsr
             ldx eval_frame ; pull 
             txs
             lda #0,x ; READABILITY: notation
@@ -177,8 +188,9 @@ _eval_continue_args
 FUNC_S0C_F0
 FUNC_S0D_F1
 FUNC_S0E_F2
-FUNC_S0F_F3
-            ; check for tail call here
+            ; check for tail call when we call an user defined function
+            ; we will immediately collapse the stack
+            ; the function expression will be evaluated on the next vblank
             ldx eval_frame
 _apply_tail_call_loop
             cpx #$ff

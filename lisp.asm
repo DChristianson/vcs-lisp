@@ -149,9 +149,7 @@ repl_editor_line ds 1  ; line counter storage during editor display
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
 eval_env         ds 1 ; top of stack for calling frame
-eval_func_ptr    ds 2 ; tmp pointer to function we are calling
-eval_tmp_exp0    ds 1 ; scratch area for fp
-eval_tmp_exp1    ds 1 ; scratch area for fp
+eval_func_ptr    ds 2 ; jump pointer to kernel function
 
 ; ----------------------------------
 ; code
@@ -392,7 +390,7 @@ FUNCTION_SYMBOL_F0 = (. - LOOKUP_SYMBOL_FUNCTION) / 2 ; beginning of functions
     word FUNC_S0C_F0
     word FUNC_S0D_F1
     word FUNC_S0E_F2
-    word FUNC_S0F_F3
+    word FUNC_S0F_BEEP
 ARGUMENT_SYMBOL_A0 = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of arguments
     word $0000
     word $0000
