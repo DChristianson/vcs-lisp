@@ -22,21 +22,10 @@ FUNC_S01_MULT
             ;  - otherwise add arg1 to the accumulator
             ;  - we then push an empty frame to the stack
             ;  - next vblank we will re-execute and continue
-            tsx                ; get the SP into the accumulator
-            txa                ; .
-            sec                ; subtract from frame pointer
-            sbc eval_frame     ; .
-            cmp #-5            ; -5 indicates 2 args on stack
-            bne _mult_continue 
             lda #0
-            pha
-            pha
-_mult_continue
-            pla
             sta accumulator_msb
-            pla
             sta accumulator_lsb
-            ; continuing execution
+_mult_continue
             ldx eval_frame
             sed
             sec
@@ -55,13 +44,9 @@ _mult_continue
             adc accumulator_msb
             and #$0f
             sta accumulator_msb
-            ; force continuation
-            lda #0
-            pha
-            txa
-            pha
-            tsx
-            stx eval_frame
+            cld
+            jsr eval_wait
+            jmp _mult_continue
 _mult_return
             cld
             jmp exec_frame_return
@@ -201,17 +186,7 @@ FUNC_S0F_BEEP
             ;  - we subtract 1 from arg1 and save in place
             ;  - if arg1 < 0 we return normally
             ;  - otherwise load note into audio registers
-            tsx                ; get the SP into the accumulator
-            txa                ; .
-            sec                ; subtract from frame pointer
-            sbc eval_frame     ; .
-            cmp #-5            ; -5 indicates 2 args on stack
-            bne _beep_continue 
-            pha ; pad stack
-            pha
 _beep_continue
-            pla ; drain stack
-            pla
             ldx eval_frame
             sed
             sec
@@ -230,18 +205,11 @@ _beep_continue
             sta AUDV0
             lda FRAME_ARG_OFFSET_LSB,x
             sta AUDF0
-            ; force continuation
-            lda #0
-            pha
-            txa
-            pha
-            tsx
-            stx eval_frame
-            jmp _beep_return
+            jsr eval_wait
+            jmp _beep_continue
 _beep_end
             lda #0
             sta AUDV0
-_beep_return
             jmp exec_frame_return
 
 

@@ -56,6 +56,10 @@ DONE
       - blank program is weird
       - binary to decimal conversion is slow, blows out display
       - adding removing numbers at end messes up program (probably free memory issues)
+      - beep goes too fast (need to take a beat after we eval)
+      - suspect if the repl begins with an if, we don't evaluate the test properly
+      - in general a const in an if hasn't been tested
+      - if try to delete and recreate fib, crashes (probably free memory issue)
   - display 4 
       - show numbers
   - virtual keyboard 2
@@ -66,9 +70,9 @@ DONE
   - library 1
       - beep (as continuation)
       - multiply (as continuation)
-ALPHA
   - demo 5
       - play beep
+ALPHA
   - library 1
       - all functions working
   - virtual keyboard 3
@@ -76,13 +80,8 @@ ALPHA
   - display 4 
       - screen layout is sloppy
       - menus are messed up
-      - null display on complex lines no box
 BUGS
   - code
-    - beep goes too fast (need to take a beat after we eval)
-    - suspect if the repl begins with an if, we don't evaluate the test properly
-    - in general a const in an if hasn't been tested
-    - if try to delete and recreate fib, crashes (probably free memory issue)
     - complex program takes too long to analyze in vblank
 BETA
   - controls 2
@@ -111,6 +110,7 @@ BETA
 SPRINKLES
   - font
      - tune font / symbols
+     - null display on complex lines no box
   - title screen
      - logo 
      - shoutouts

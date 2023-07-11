@@ -27,6 +27,14 @@ _repl_update_edit_head
             jmp _repl_update_edit_done ; can't replace with symbol
 _repl_update_keys_move_jmp
             jmp _repl_update_keys_move            
+_repl_update_edit_set_funcar
+            ; we are editing the head of a funcall
+            ldy HEAP_CAR_ADDR,x
+            bmi _repl_update_edit_set_car ; just change symbol
+            ; otherwise it's a number
+            ldy #0
+            sty HEAP_CDR_ADDR,x
+            jmp _repl_update_edit_set_car
 _repl_update_edit_keys
             lda player_input_latch         ; check button push
             bmi _repl_update_keys_move_jmp  ; no push
@@ -78,7 +86,7 @@ _repl_update_edit_funcall
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
             cmp #$10 ; BUGBUG: magic number (var versus function)                        
-            bcc _repl_update_edit_set_car   ; edit funcall operator
+            bcc _repl_update_edit_set_funcar   ; edit funcall operator
             cmp #$1e ; BUGBUG: hash
             beq _repl_update_edit_number
             ora #$c0

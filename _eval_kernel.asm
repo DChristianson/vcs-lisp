@@ -2,11 +2,19 @@
 ; Eval kernel
 ;
 
+eval_wait
+            lda #GAME_STATE_EVAL_CONTINUE
+            sta game_state
+            jmp update_return
 
 eval_update
             lda game_state
             and #$0f
             beq eval_start
+            lsr
+            bcs eval_apply
+            ; continue
+            rts
 eval_apply
             lda #1 ; 1 = return
             pha
