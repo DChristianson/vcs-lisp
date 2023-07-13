@@ -99,7 +99,7 @@ FUNC_S05_EQUALS
             lda FRAME_ARG_OFFSET_MSB,x
             cmp FRAME_ARG_OFFSET_MSB - 2,x
             bne _equals_return
-            ldy #$10
+            ldy #$01 ; BUGBUG: TRUE
 _equals_return
             sty accumulator_msb
             jmp exec_frame_return
@@ -114,7 +114,7 @@ FUNC_S06_GT
             lda FRAME_ARG_OFFSET_MSB,x
             sbc FRAME_ARG_OFFSET_MSB - 2,x
             bcc _gt_return
-            ldy #$10
+            ldy #$01 ; BUGBUG: TRUE
 _gt_return
             sty accumulator_msb
             jmp exec_frame_return
@@ -129,13 +129,12 @@ FUNC_S07_LT
             lda FRAME_ARG_OFFSET_MSB - 2,x
             sbc FRAME_ARG_OFFSET_MSB,x
             bcc _lt_return
-            ldy #$10
+            ldy #$01 ; BUGBUG: TRUE
 _lt_return
             sty accumulator_msb
             jmp exec_frame_return
 
 FUNC_S08_AND
-            ; Normalize 
             ldx eval_frame
             ldy #0
             sty accumulator_lsb
@@ -144,18 +143,17 @@ FUNC_S08_AND
             beq _and_return
             lda FRAME_ARG_OFFSET_LSB - 2,x
             ora FRAME_ARG_OFFSET_MSB - 2,x
-            bne _and_return
-            ldy #$10
+            beq _and_return
+            ldy #$01 ; BUGBUG: TRUE
 _and_return
             sty accumulator_msb
             jmp exec_frame_return
 
 FUNC_S09_OR
-            ; Normalize 
             ldx eval_frame
             ldy #0
             sty accumulator_lsb
-            ldy #$10
+            ldy #$01 ; BUGBUG: TRUE
             lda FRAME_ARG_OFFSET_LSB,x
             ora FRAME_ARG_OFFSET_LSB - 2,x
             bne _or_return
@@ -176,7 +174,7 @@ FUNC_S0A_NOT
             bne _not_return
             lda FRAME_ARG_OFFSET_MSB,x
             bne _not_return
-            ldy #$10
+            ldy #$01 ; BUGBUG: TRUE
 _not_return
             sty accumulator_msb
             jmp exec_frame_return
