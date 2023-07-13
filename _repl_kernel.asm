@@ -476,13 +476,10 @@ _prep_repl_end
 repl_draw
 
 header
-            ldx #HEADER_HEIGHT
-_header_loop
             lda #0
             sta COLUBK
-            sta WSYNC
-            dex
-            bpl _header_loop
+            ldx #HEADER_HEIGHT / 2
+            jsr wsync_loop
 
 ; ACCUMULATOR
 accumulator_draw
@@ -506,10 +503,10 @@ accumulator_draw
             sta HMP0                     ;3  13
             lda #$f0                     ;2  15
             sta HMP1                     ;3  18
-            SLEEP 6                      ;6  24
+            SLEEP 23                      ;6  24
             sta RESP0                    ;3  27
             sta RESP1                    ;3  30
-            SLEEP 37                     ;37 67
+            SLEEP 20                     ;37 67
             sta HMOVE                    ;3  70
             ldy #CHAR_HEIGHT - 1         ;2  72
 _accumulator_draw_loop    ; 40/41 w page jump
@@ -520,6 +517,7 @@ _accumulator_draw_loop    ; 40/41 w page jump
             sta GRP1                     ;3   16
             lda (repl_s4_addr),y         ;5   21
             sta GRP0                     ;3   24
+            SLEEP 17                     ;----
             lda (repl_s5_addr),y         ;5   31
             sta GRP1                     ;3   34
             sta GRP0                     ;3   37 
@@ -529,8 +527,6 @@ _accumulator_draw_loop    ; 40/41 w page jump
 accumulator_draw_end
             sta WSYNC
             lda #0
-            sta PF1
-            sta PF2
             sta NUSIZ0
             sta NUSIZ1
             sta VDELP0                              ;3
@@ -538,9 +534,25 @@ accumulator_draw_end
             ldx #$ff ; reset stack pointer
             txs            
                 
+pre_menu
+            ldx #HEADER_HEIGHT / 2
+            jsr wsync_loop
+
+
             ; MENU
             ; 
 menu
+            sta WSYNC                    ;--  0
+            lda #$c0                     ;2   2
+            sta HMP0                     ;3   5
+            lda #$d0                     ;2   7
+            sta HMP1                     ;3  10
+            SLEEP 9                      ;9  19
+            sta RESP0                    ;3  22
+            sta RESP1                    ;3  25
+            SLEEP 42                     ;42 67
+            sta HMOVE                    ;3  70
+
             sta WSYNC
             lda #RED
             ldx repl_edit_line
@@ -615,9 +627,9 @@ _prompt_repos_loop
             lda LOOKUP_STD_HMOVE,x  ;5   11
             sta HMP0                ;3   14
             sta HMP1                ;3   17
-            lda repl_display_indent,y ;4 21
-            and #$01                ;2   23
-            bne _prompt_repos_swap  ;2/3 25
+            lda repl_display_indent,y ;4 21 ; check display list for who goes first
+            lsr                     ;2   23 : SPACE: use lsr to check order bit
+            bcs _prompt_repos_swap  ;2/3 25 ; .
             sta.w RESP0             ;3   29 shim to 29
             sta RESP1               ;3   32
             jmp _prompt_repos_swap_end
@@ -841,9 +853,9 @@ _prompt_delay_loop                       ; A=80 at first position
             SLEEP 3                      ;3   47
             sbcs _prompt_delay_loop      ;2/3 49
             adc #16                      ;2   51
-            bmi _prompt_draw_entry_0     ;2/3 53 ; -24, transition at +0  
+            sbmi _prompt_draw_entry_0     ;2/3 53 ; -24, transition at +0  
             SLEEP 4                      ;4   57
-            bne _prompt_draw_entry_2     ;2   59 ; -16, transition at +5
+            sbne _prompt_draw_entry_2     ;2   59 ; -16, transition at +5
             jmp _prompt_draw_entry_1     ;3   62 ;  -8, transition at +3
 _prompt_draw_entry_0 ; 54          
 _prompt_draw_entry_2 ; 54/--/60
@@ -866,7 +878,7 @@ _prompt_draw_entry_1 ; 59/62/65
             ldx #14                      ;2   29/31/35
 _prompt_draw_start_loop ; skip a line
             dex                          ;2   ..27
-            bpl _prompt_draw_start_loop  ;2/3 ..30
+            sbpl _prompt_draw_start_loop  ;2/3 ..30
             ldy #CHAR_HEIGHT - 1         ;2   32
 
 _prompt_draw_loop    ; 40/41 w page jump
@@ -888,7 +900,7 @@ _prompt_draw_entry
             sta GRP1                     ;3   24  24 - 33   0 8 16!24!** ++
             sty GRP0                     ;3   27  33 - 42   0 8 16 24!32!** 
             dey                          ;2   29  
-            bpl _prompt_draw_loop        ;2   31  
+            sbpl _prompt_draw_loop        ;2   31  
 
             ldx #$ff ; reset the stack   ;2   33
             txs                          ;2   35
@@ -952,6 +964,13 @@ prep_repl_graphics
             sta repl_s5_addr+1
             rts
 
+wsync_loop
+_header_loop
+            sta WSYNC
+            dex
+            bpl _header_loop
+            rts
+
 PROMPT_ENCODE_JMP
     word _prompt_encode_s4-1
     word _prompt_encode_s3-1
@@ -969,6 +988,8 @@ PROMPT_ENCODE_JMP
     ; 3 - 2 2 - 31 31       31 31 31 01 01
     ; 4 - 3 2 - 31 33    33 31 33 31 03 01 
     ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03  
+
+    align 256 
 
 DISPLAY_COLS_INDENT
     byte 80,88,96,104,112
