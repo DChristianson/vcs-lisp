@@ -10,14 +10,14 @@ logo_draw
 	sta VDELP1                  ; 3     (21)
 	lda #$A6                    ; 2     (23)
     sta COLUPF                  ; 3     (26)
-    sleep 10                    ; 10    (36)
+    sleep 11                    
 	sta RESP0                   ; 3     (39)
 	sta RESP1                   ; 3     (42)
 	lda #$20                    ; 2     (44)
 	sta HMP1                    ; 2     (47)
     lda #$10                    ; 2     (49)
     sta HMP0                    ; 3     (52)
-	lda #$33                    ; 2     (54)
+	lda #$1                     ; 2     (54)
 	sta NUSIZ0                  ; 3     (57)
 	STA NUSIZ1                  ; 3     (60)
 	sta WSYNC
@@ -38,14 +38,10 @@ LogoLoop
     sta GRP1                        ; 3     (17) 1 -> [GRP1] ; 0 -> GRP0
     lda logo_2,y                   ; 4     (21)
     sta GRP0                        ; 3     (24*) 2 -> [GRP0] ; 1 -> GRP1
-    ldx logo_4,y                   ; 4     (28) 4 -> X
-	SLEEP 7
-    lda logo_3,y                   ; 4     (39) 3 -> A
+    lda logo_3,y                   ; 4     (28) 4 -> X
+	SLEEP 13
     sta GRP1                        ; 3     (45) 3 -> [GRP1] ; 2 -> GRP0
-    lda #0                       ; 3     (42) 5 -> Y
-    stx GRP0                        ; 3     (48) 4 -> [GRP0] ; 3 -> GRP1
-    sta GRP1                        ; 3     (51) 5 -> [GRP1] ; 4 -> GRP0
-    sta GRP0                        ; 3     (54) 5 -> GRP1
+    sta GRP0
     lda logo_colors-1,y               ; 4     (61)
     sta COLUP0                      ; 3     (64)
     sta COLUP1                      ; 3     (67)
@@ -76,8 +72,6 @@ LogoGap
 ; Paste image information here
 
 logo_0
-logo_5
-logo_1
 	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
@@ -159,7 +153,7 @@ logo_height = . - logo_0
       align 256
    endif
 
-logo_2
+logo_1
 	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
@@ -241,7 +235,7 @@ logo_2
       align 256
    endif
 
-logo_3
+logo_2
 	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
@@ -323,7 +317,7 @@ logo_3
       align 256
    endif
 
-logo_4
+logo_3
 	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
