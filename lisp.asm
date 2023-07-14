@@ -60,6 +60,7 @@ REPL_DISPLAY_MARGIN = 16
 
 FRAME_ARG_OFFSET_LSB = -1
 FRAME_ARG_OFFSET_MSB = -2
+STACK_DANGER_ZONE = eval_func_ptr + 3 ; rough guess as to what is safe
 
 ; ----------------------------------
 ; heap
@@ -344,6 +345,7 @@ set_cdr
 alloc_cdr
             ; add new cell at cdr of x from free
             lda free
+            beq oom
             sta HEAP_CDR_ADDR,x
             tax
             lda HEAP_CDR_ADDR,x
@@ -351,6 +353,16 @@ alloc_cdr
             lda #0
             sta HEAP_CDR_ADDR,x
             rts
+
+oom
+            ; we are out of memory
+            ; BUGBUG: need some kind of error display
+            ; for now will pull address we were at from stack and drop in accumulator
+            pla
+            sta accumulator_car
+            pla
+            sta accumulator_cdr
+            jmp _repl_update_edit_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
 
 ; -------------------
 ; Display kernels

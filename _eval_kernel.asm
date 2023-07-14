@@ -16,6 +16,8 @@ eval_update
             ; continue
             rts
 eval_apply
+            ; BUGBUG: PROTECT: we need at least 3 bytes of stack
+            jsr alloc_stack
             lda #1 ; 1 = return
             pha
             lda eval_frame
@@ -45,6 +47,7 @@ eval_iter
             cmp #FUNCTION_REF_IF  ; special case if we are applying test
             bne _eval_funcall     ; otherwise eval as funcall
 _eval_test
+            ; BUGBUG: need 1 stack
             ; x references a test expression
             lda HEAP_CDR_ADDR,x   ; follow cdr of test
             tax                   ; .
@@ -54,12 +57,14 @@ _eval_test
             sta eval_next         ;
             jmp _eval_funcall_arg ;  
 _eval_number
+            ; BUGBUG: need 0 stack
             ; x references a number cell, a is the car
             sta accumulator_car   ; push number cell into accumulator and return
             lda HEAP_CDR_ADDR,x   ; .
             sta accumulator_cdr   ; .
             jmp exec_frame_return ; .
 _eval_funcall
+            ; BUGBUG: need 1 stack
             ; x references a function call, a is the head
             pha                   ; push head to stack
 _eval_funcall_push_args
@@ -81,6 +86,7 @@ _eval_funcall_arg
             ; arg is a constant, push to accumulator and return
             asl
             tax
+            ; BUGBUG: need 2 stack
             ; this is a short circuit from doing a frame eval
             lda LOOKUP_SYMBOL_VALUE_LSB,x
             sta accumulator_lsb ; BUGBUG: may not be needed?
@@ -101,6 +107,7 @@ _eval_funcall_args_env
             clc
             adc eval_env                ; eval_env is the parent frame in stack 
             tax
+            ; BUGBUG: need 2 stack
             ; this is a short circuit from doing a frame eval
             lda #FRAME_ARG_OFFSET_LSB,x
             sta accumulator_lsb        ; BUGBUG: may not be needed?
@@ -110,6 +117,7 @@ _eval_funcall_args_env
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_expression
+            ; BUGBUG: need 2 stack
             ; a is a reference to a function call, x is the parent frame
             tay
             lda eval_next  ; push next arg to stack
@@ -186,12 +194,31 @@ _eval_return
             jmp exec_frame_return
 _eval_continue_args
             sta eval_next
+            ; BUGBUG: need 2 stack
             lda accumulator_lsb
             pha
             lda accumulator_msb 
             pha
             jmp _eval_funcall_args_next
 
+alloc_stack
+            ; BUGBUG: very crude protection against stack overflow
+            tsx
+            cpx #STACK_DANGER_ZONE
+            bmi stack_overflow
+            rts
+
+stack_overflow
+            ; BUGBUG: need some kind of error display
+            ; for now will pull address we were at from stack and drop in accumulator
+            pla
+            sta accumulator_car
+            pla
+            sta accumulator_cdr
+            ldx #$ff ; reset stack
+            txs
+            stx eval_frame
+            jmp exec_frame_return
 
 FUNC_S0C_F0
 FUNC_S0D_F1

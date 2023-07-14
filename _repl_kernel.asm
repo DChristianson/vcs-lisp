@@ -499,16 +499,16 @@ accumulator_draw
             lda #1                       ;2   2
             sta NUSIZ0                   ;3   5
             sta NUSIZ1                   ;3   8
-            lda #$e0                     ;2  10
+            lda #$b0                     ;2  10
             sta HMP0                     ;3  13
-            lda #$f0                     ;2  15
+            lda #$c0                     ;2  15
             sta HMP1                     ;3  18
             SLEEP 23                      ;6  24
             sta RESP0                    ;3  27
             sta RESP1                    ;3  30
-            SLEEP 20                     ;37 67
-            sta HMOVE                    ;3  70
-            ldy #CHAR_HEIGHT - 1         ;2  72
+            SLEEP 21                     ;37 68
+            ldy #CHAR_HEIGHT - 1         ;2  70
+            sta HMOVE                    ;3  73
 _accumulator_draw_loop    ; 40/41 w page jump
             sta WSYNC                    ;-   --
             lda (repl_s2_addr),y         ;5    5
@@ -690,38 +690,37 @@ _prompt_cursor_bk_2
             stx COLUPF              ;3   70
             sta HMOVE               ;3   73
             sta COLUBK              ;3   76
-            SLEEP 12                ;12  12 ; sleep to protect HMX registers
-            lda #0                  ;2   14
+            SLEEP 14                ;14  14 ; sleep to protect HMX registers
             lda repl_display_indent,y ;4 18
             and #$01                ;2   10
             bne _prompt_swap_hpos   ;2/3 22
-            lda #$00                ;2   24
+            lda #$a0                ;2   24
             sta HMP0                ;3   27
-            lda #$10                ;2   29
+            lda #$b0                ;2   29
             sta HMP1                ;3   32
-            lda #$60                ;2   34
+            lda #$00                ;2   34
             sta HMM0                ;3   37 
-            lda #$70                ;2   39
+            lda #$10                ;2   39
             sta HMM1                ;3   42
             jmp _prompt_final_hpos  ;3   45
 _prompt_swap_hpos
-            lda #$00                ;2   25
+            lda #$a0                ;2   25
             sta HMP1                ;3   28
-            lda #$10                ;2   30
+            lda #$b0                ;2   30
             sta HMP0                ;3   33
-            lda #$60                ;2   35
+            lda #$00                ;2   35
             sta HMM1                ;3   38 
-            lda #$70                ;2   40
+            lda #$10                ;2   40
             sta HMM0                ;3   43
-            SLEEP 2                 ;2   45
+            SLEEP 2                 ;2   45 ; -2  -3  -4  -5  -6  -7  -8  -9
 _prompt_final_hpos
             lda #0                  ;2   47
             sta RESMP0              ;3   50
             sta RESMP1              ;3   53
             lda #$80                ;2   55
             sta HMBL                ;3   58 ; no move
-            SLEEP 4                 ;4   62
-            sta HMOVE               ;3   65
+            SLEEP 12                ;12  70
+            sta HMOVE               ;3   73
             
 prompt_encode
             cpx #CURSOR_COLOR + 1   ; still background; BUGBUG kludgy to use +1?
@@ -862,20 +861,20 @@ _prompt_draw_entry_2 ; 54/--/60
             SLEEP 5                      ;5   59/--/65
 _prompt_draw_entry_1 ; 59/62/65
               
-            SLEEP 5                      ;5   64/67/70
-            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   68/71/74
-            sta NUSIZ0                   ;3   71/74/ 1
-            lda DISPLAY_COLS_NUSIZ1_A,x  ;4   75/ 2/ 5
-            sta NUSIZ1                   ;3    2/ 5/ 8
-            lda #2                       ;2    4/ 7/10
-            sta ENAM0                    ;3    7/10/13
-            sta ENAM1                    ;3   10/13/16
-            sta ENABL                    ;3   13/16/19
-            ldy DISPLAY_COLS_NUSIZ1_B,x  ;4   17/20/23
-            lda DISPLAY_COLS_NUSIZ0_B,x  ;4   21/24/27
-            sty NUSIZ1                   ;3   24/27/30
-            sta NUSIZ0                   ;3   27/30/33
-            ldx #14                      ;2   29/31/35
+            SLEEP 5                      ;4   63/66/69
+            lda DISPLAY_COLS_NUSIZ0_A,x  ;4   67/70/73
+            sta NUSIZ0                   ;3   70/73/76
+            lda DISPLAY_COLS_NUSIZ1_A,x  ;4   
+            sta NUSIZ1                   ;3   
+            lda #2                       ;2    
+            sta ENAM0                    ;3   
+            sta ENAM1                    ;3   
+            sta ENABL                    ;3   
+            ldy DISPLAY_COLS_NUSIZ1_B,x  ;4  
+            lda DISPLAY_COLS_NUSIZ0_B,x  ;4   
+            sty NUSIZ1                   ;3   
+            sta NUSIZ0                   ;3  
+            ldx #14                      ;2  
 _prompt_draw_start_loop ; skip a line
             dex                          ;2   ..27
             sbpl _prompt_draw_start_loop  ;2/3 ..30
