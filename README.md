@@ -1,6 +1,6 @@
 # LISP Programming 
 
-This is an Atari 2600 game from an alternate reality.
+This is an Atari 2600 game from an alternate reality...
 
 - where a [computer language](https://en.wikipedia.org/wiki/Lisp_(programming_language)) from 1960 
 - has been hastily crammed onto a VCS ROM cartridge in 1977
@@ -52,10 +52,9 @@ The fundamental data structure in vcs-lisp is the cell. This concept borrows dir
   - The tail must be a reference to another pair or the null reference
  - Numbers are 3 digit binary coded decimals. 
 
-Using 2 bytes for the cell is a natural choice. 
-- There are only 128 bytes of RAM available onboard the Atari 2600... we have to keep the heap small.
+Using 2 bytes for the cell is a natural choice. There are only 128 bytes of RAM available onboard the Atari 2600... we have to keep the heap small.
 
-Using BCD for numbers, and then limiting them to 3 digits sames a lot of time and space. 
+Using BCD for numbers, and then limiting them to 3 digits sames a lot of time and space as well:
 - Displaying character graphics on the Atari 2600 requires specialized code, so having to deal with only three digits allows us to simplify the display kernel dramatically. 
 - Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space.
 
