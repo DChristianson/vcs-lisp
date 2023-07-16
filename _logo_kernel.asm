@@ -1,5 +1,7 @@
 ;
-; ABB logo code
+; ABB logo draw
+; Cribbed from Atari Background Builder
+; SPACE: we can recover a lot of space here
 ;
 
 logo_draw
