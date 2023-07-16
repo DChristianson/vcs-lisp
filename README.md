@@ -8,6 +8,7 @@ Goals
  Be able to ~play the pong game from AB
  See https://huguesjohnson.com/programming/atari-2600-basic/ 
  See sample programs in Atari Basic manual
+ See uLisp sample programs
 
 DONE
   - basic eval
@@ -62,6 +63,7 @@ DONE
       - if try to delete and recreate fib, crashes (probably free memory issue)
   - display 4 
       - show numbers
+      - screen layout is ... better
   - virtual keyboard 2
       - number edit
       - up to go back
@@ -72,23 +74,23 @@ DONE
       - multiply (as continuation)
   - demo 5
       - play beep
-ALPHA
+BUGS
+  - code
+    - complex program takes too long to analyze in vblank
+BETA
   - library 1
       - all functions working
   - virtual keyboard 3
       - can only see symbols you can use
   - display 4 
-      - screen layout is sloppy
       - menus are messed up
-BUGS
-  - code
-    - complex program takes too long to analyze in vblank
-BETA
   - controls 2
       - game mode switch when push in menu
   - game modes 2
       - towers of hanoi
       - paddle pong
+      - tweetmaze
+      - cows and bulls
   - code 2
       - reduce need for extra lookups
       - no / limited numbers constants
@@ -126,13 +128,12 @@ SPRINKLES
 BONUS 
   - bonus game mode
      - silly goose (number sequence)
-     - maze
      - matching shapes (boolean logic)
      - mouse maze
      - tictactoe?
      - mastermind?
      - ant
-     - sqry using .. rational math?
+     - sqrt using .. rational math?
 
 IBM 704
 40 kips 12 kiloflops
@@ -550,45 +551,4 @@ eval `(square 2)
             (fact-iter (* counter product)
                        (+ counter 1)
                         max-count)))
-square
-*    1
-  x  2 
-  x  3
-          
-11000001 10000010
-11000010 10000100
-11000010 00000000
-
-average
-/      1  
-  +    2
-    x  3
-    y  4
-  2    5
-
-11000001 10000010
-10000110 10000100
-11000010 00000000
-11001000 10001000
-11000010 10001010
-11000011 00000000
-
-
-improve
-average  1
-   x     2
-   /     3
-     y   4
-     x   5
-
-[?]              0
-   [>]           1
-      [b][c]     23
-   [a]           4
-   [iter]        5
-       [*]       6
-          [b c]  78
-       [+]       9
-          [b 1]  10 11
-       a         12
           
