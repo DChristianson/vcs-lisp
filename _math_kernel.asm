@@ -1,17 +1,4 @@
 ;-----------------------------------
-; various math kernels
-
-sub_fmt
-            lda #<SYMBOL_GRAPHICS_S1E_HASH
-            sta repl_s1_addr
-            lda #<SYMBOL_GRAPHICS_S1F_BLANK
-            sta repl_s5_addr
-            WRITE_DIGIT_LO repl_fmt_arg+1, repl_s2_addr ;16 15
-            WRITE_DIGIT_HI repl_fmt_arg, repl_s3_addr   ;14 29
-            WRITE_DIGIT_LO repl_fmt_arg, repl_s4_addr   ;16 45
-            rts
-
-;-----------------------------------
 ; math functions
 
 FUNC_S01_MULT
@@ -209,7 +196,3 @@ _beep_end
             lda #0
             sta AUDV0
             jmp exec_frame_return
-
-
-FUNC_S0B_IF ; BUGBUG this is a special form
-            jmp exec_frame_return ; SPACE: don't need to copy this around

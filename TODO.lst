@@ -1,0 +1,137 @@
+INITIAL GOALS
+ Joystick compatible
+ Repl Fib(n) from SICP
+ Repl Sqrt(x) from SICP
+ Play Music 
+ Change bkfg colors
+ Change sprite
+ Be able to ~play the pong game from Basic Programming
+ See https://huguesjohnson.com/programming/atari-2600-basic/ 
+ See sample programs in Atari Basic manual
+ See uLisp sample programs
+
+
+DONE
+  - basic eval
+  - stubbed out math functions
+  - bcd conversion function
+  - tail recursion optimization
+  - display tester 1 (all positions indent with separators)
+  - display tester 2 (symmetric indent)
+    - create display plan in vblank to allow closer spacing of cells
+    - encode indent level + display type
+  - tester 3 (cursor movement dynamics)
+    - bracket current line
+    - scrolling
+    - joystick to move cursor around
+    - line highlight
+  - tester 4 (editor)
+    - display cursor to point at current cell
+    - display cursor stays in bounds of cells
+    - display cursor can be at end of a list
+  - virtual keyboard 1
+    - button press opens keyboard
+    - with open keyboard movement selects new value
+    - keyboard opens on curr cell value 
+    - scrolls through appropriate values
+    - with press display cursor locates curr cell and replaces
+    - add new cell 
+    - delete cell
+  - demo 1
+      - start with blank program, make + 1 2
+  - game modes 1
+      - scratch
+  - controls 1
+      - moving past last line goes to menu
+      - moving above first line goes to menu
+      - eval when button push in menu
+  - demo 2
+      - eval demo program + 1 2
+  - menu 1
+      - function menu displayed on screen
+  - menu 2
+      - function assignment when push in menu
+  - demo 3
+      - fib program
+      - eval demo program + 1 99
+  - bugs
+      - blank program is weird
+      - binary to decimal conversion is slow, blows out display
+      - adding removing numbers at end messes up program (probably free memory issues)
+      - beep goes too fast (need to take a beat after we eval)
+      - suspect if the repl begins with an if, we don't evaluate the test properly
+      - in general a const in an if hasn't been tested
+      - if try to delete and recreate fib, crashes (probably free memory issue)
+  - display 4 
+      - show numbers
+      - screen layout is ... better
+  - virtual keyboard 2
+      - number edit
+      - up to go back
+      - number edit shouldn't return right away
+      - number cursor is at digit being edited
+  - library 1
+      - beep (as continuation)
+      - multiply (as continuation)
+  - demo 5
+      - play beep
+BUGS
+  - code
+    - complex program takes too long to analyze in vblank
+BETA
+  - library 1
+      - all functions working
+  - virtual keyboard 3
+      - can only see symbols you can use
+  - display 4 
+      - menus are messed up
+  - controls 2
+      - game mode switch when push in menu
+  - game modes 2
+      - towers of hanoi
+      - paddle pong
+      - tweetmaze
+      - cows and bulls
+  - code 2
+      - reduce need for extra lookups
+      - no / limited numbers constants
+      - bigger symbol table? 
+      - compact numbers?
+  - library 2
+      - modulo function
+      - music functions (map... or progn?)
+  - dev support
+     - some way to do unit tests?
+  - eval graphics kernel
+     - graphics zone
+     - stack / heap / free accumulator
+     - song that plays during eval
+  - interpreter
+     - show free mem
+     - safeties against stack overflow
+     - safety against no free mem left
+SPRINKLES
+  - font
+     - tune font / symbols
+     - null display on complex lines no box
+  - title screen
+     - logo 
+     - shoutouts
+  - help / attract mode 1 
+      - occasional blinkyness of controls
+  - virtual keyboard 4
+      - empty at first
+      - blinky cursor when in repl
+      - no cell boxes on numbers 
+      - cancel move undoes changes
+      - too slow to scroll through keys
+
+BONUS 
+  - bonus game mode
+     - silly goose (number sequence)
+     - matching shapes (boolean logic)
+     - mouse maze
+     - tictactoe?
+     - mastermind?
+     - ant
+     - sqrt using .. rational math?

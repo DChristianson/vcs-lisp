@@ -67,10 +67,6 @@ LogoGap
 
 	jmp logo_draw_return
 
-   if >. != >[.+(logo_height)]
-      align 256
-   endif
-
 ; Paste image information here
 
 logo_0
@@ -151,9 +147,6 @@ logo_0
 	BYTE %00000000
 logo_height = . - logo_0
 
-   if >. != >[.+(logo_height)]
-      align 256
-   endif
 
 logo_1
 	BYTE %00000000
@@ -232,11 +225,6 @@ logo_1
 	BYTE %00000000
 	BYTE %00000000
 
-
-   if >. != >[.+(logo_height)]
-      align 256
-   endif
-
 logo_2
 	BYTE %00000000
 	BYTE %00000000
@@ -314,11 +302,6 @@ logo_2
 	BYTE %00000000
 	BYTE %00000000
 
-
-   if >. != >[.+(logo_height)]
-      align 256
-   endif
-
 logo_3
 	BYTE %00000000
 	BYTE %00000000
@@ -395,11 +378,6 @@ logo_3
 	BYTE %00000000
 	BYTE %00000000
 	BYTE %00000000
-
-
-   if >. != >[.+(logo_height)]
-      align 256
-   endif
 
 logo_colors
    .byte $0E

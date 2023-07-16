@@ -804,8 +804,6 @@ _prompt_encode_keys
             sta repl_s5_addr
             jmp prompt_display
 
-            align 256
-
 prompt_display
             ; ------------------------------------
             ; cell display kernel mechanics
@@ -968,6 +966,16 @@ _header_loop
             sta WSYNC
             dex
             bpl _header_loop
+            rts
+
+sub_fmt
+            lda #<SYMBOL_GRAPHICS_S1E_HASH
+            sta repl_s1_addr
+            lda #<SYMBOL_GRAPHICS_S1F_BLANK
+            sta repl_s5_addr
+            WRITE_DIGIT_LO repl_fmt_arg+1, repl_s2_addr ;16 15
+            WRITE_DIGIT_HI repl_fmt_arg, repl_s3_addr   ;14 29
+            WRITE_DIGIT_LO repl_fmt_arg, repl_s4_addr   ;16 45
             rts
 
 PROMPT_ENCODE_JMP

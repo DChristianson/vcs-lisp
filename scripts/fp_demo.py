@@ -1,4 +1,4 @@
-
+# test converting to/from 15 bit floating point
 import math
 
 def fp_conv(sign, exponent, mantissa, ep=4, mp=11, bias=14):
