@@ -52,18 +52,21 @@ The fundamental data structure in vcs-lisp is the cell. This concept borrows dir
   - The tail must be a reference to another pair or the null reference
  - Numbers are 3 digit binary coded decimals. 
 
-Using 2 bytes for the cell is a natural choice. There are only 128 bytes of RAM available onboard the Atari 2600.At 2 bytes per cell we have a theoretical maximum of 64 addressible cells. 
- 
-Using BCD for numbers saves a lot of code when it comes to editing and displaying numbers. 
+Using 2 bytes for the cell is a natural choice. 
+- There are only 128 bytes of RAM available onboard the Atari 2600... we have to keep the heap small.
+
+Using BCD for numbers, and then limiting them to 3 digits sames a lot of time and space. 
 - Displaying character graphics on the Atari 2600 requires specialized code, so having to deal with only three digits allows us to simplify the display kernel dramatically. 
-- Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space
+- Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space.
 
 ### Cell and Symbol References
+
+Each byte of a pair can contain a references to another cell, a reference to a symbol, or the null reference.
 
 ```
   10xxxxx0 - cell reference (5 significant bits - 32 cells in total)
   110xxxxx - symbol reference (5 significant bits - 32 symbols in total)
-  00000000 - null pointer
+  00000000 - null pointer (when seen in the cell cdr, if seen in the car implies the cell is a number)
 ```
 
 Cell references start at hex value $80. Coincidentally, we locate the cell heap at address $80 - so that the zeropage address of a cell on the heap *is* its cell reference. 
@@ -73,7 +76,7 @@ Symbol references start at hex value $C0. Similar to how cell references line up
 There are some unused bits in these schemes (very wasteful...)
 - We reserve the 6th bit of a cell reference to perform operations on off-heap zeropage data as if it were on heap.
 - We manipulate the 0th bit of a cell reference to perform operations that reference the car of a cell as if it were the cdr (and vice versa).
-- The 6th bit of symbol references is completely unused at this time.
+- The 6th bit of a symbol reference is completely unused at this time.
 
 ### Off-Heap Registers
 
