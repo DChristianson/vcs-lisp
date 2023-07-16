@@ -6,6 +6,8 @@ This is an Atari 2600 game from an alternate reality...
 - has been hastily crammed onto a VCS ROM cartridge in 1977
 - so you can learn to write programs of the type you find in the first chapter of a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984.
 
+  ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png) 
+
 It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game".
 
 ## Instructions
