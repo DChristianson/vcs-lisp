@@ -113,32 +113,36 @@ eval_frame       ds 1 ; pointer to beginning of stack for current frame```
 Example: evaluating function call arguments
 --------------------------------------------------
 eval_next  = pointer to args that haven't been evaluated ...(arg2 arg3)
-eval_env   = SP+2/+3 previous eval_next
-             SP+1/+2 previous eval_frame
-             SP+1    previous eval_env (optional)
-eval_frame = SP+0    function symbol
-             SP-1    arg0 lsb / cdr
-             SP-2    arg0 msb / car
-             SP-3    arg1 lsb / cdr
-             SP-4    arg1 msb / car
+eval_env   = FP+2/+3 previous eval_next
+             FP+1/+2 previous eval_frame
+             FP+1    previous eval_env (optional)
+eval_frame = FP+0    function symbol
+             FP-1    arg0 lsb / cdr
+             FP-2    arg0 msb / car
+             FP-3    arg1 lsb / cdr
+             FP-4    arg1 msb / car
+        SP = FP-5    ... top of stack
 
 Example: evaluating a function call
 --------------------------------------------------
 eval_next  = #1 (return - when done, return value to calling frame)
-eval_env   = SP+2  previous eval_next
-             SP+1  previous eval_frame
-eval_frame = SP+0  function symbol
-             SP-1  arg0 lsb / cdr
-             SP-2  arg0 msb / car
+eval_env   = FP+2  previous eval_next
+             FP+1  previous eval_frame
+eval_frame = FP+0  function symbol
+             FP-1  arg0 lsb / cdr
+             FP-2  arg0 msb / car
+        SP = FP-3    ... top of stack
 
 Example: evaluating a test (if) statement 
 --------------------------------------------------
 eval_next  = #2 (test - use value of first arg to choose the next arg to evaluate)
-eval_env   = SP+2  previous eval_next
-             SP+1  previous eval_frame
-eval_frame = SP+0  ...(arg1 arg2)
-             SP-1  arg0 lsb / cdr
-             SP-2  arg0 msb / car
+eval_env   = FP+2  previous eval_next
+             FP+1  previous eval_frame
+eval_frame = FP+0  ...(arg1 arg2)
+             FP-1  arg0 lsb / cdr
+             FP-2  arg0 msb / car
+        SP = FP-3    ... top of stack
+
 ```
 
 ## References, Credits and Inspirations
