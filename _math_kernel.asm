@@ -1,5 +1,5 @@
-
-
+;-----------------------------------
+; various math kernels
 
 sub_fmt
             lda #<SYMBOL_GRAPHICS_S1E_HASH
@@ -12,7 +12,7 @@ sub_fmt
             rts
 
 ;-----------------------------------
-; function kernels
+; math functions
 
 FUNC_S01_MULT
             ; naive multiplication 
