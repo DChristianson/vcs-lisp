@@ -6,6 +6,8 @@ This is an Atari 2600 game from an alternate reality...
 - has been hastily crammed onto a VCS ROM cartridge in 1977
 - so you can learn to write programs of the type you find in the first chapter of a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984.
 
+It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game".
+
 ## Instructions
 
 The basics:
@@ -139,13 +141,11 @@ eval_frame = SP+0  ...(arg1 arg2)
 
 ## References, Credits and Inspirations
 
-- [PicoLisp](https://picolisp.com/)
+- [PicoLisp](https://picolisp.com/) 
+- R. Kent Dybvig's [Three Implementation Models for Scheme](https://www.cs.unm.edu/~williams/cs491/three-imp.pdf) 
 - [uLisp](http://www.ulisp.com/)
-- https://dwheeler.com/6502/
-- https://huguesjohnson.com/programming/atari-2600-basic/ 
-- http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/
-- https://www.cs.unm.edu/~williams/cs491/three-imp.pdf
-- [AtariAge Forums](https://www.atariage.com/forums)
-- [6502.org](https6502.org)
-- [Atari Background Builder](https://alienbill.com/2600/atari-background-builder/)
-- [Atari Label Maker](https://www.labelmaker2600.com/)
+- David A. Wheeler's [6502 Language Implementation Approaches](https://dwheeler.com/6502/)
+- [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
+- [Skimp](http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/)
+
+I owe a great deal of credit to the community at the [AtariAge forums](https://www.atariage.com/forums), and to resources like [6502.org](https6502.org), the [Atari Background Builder](https://alienbill.com/2600/atari-background-builder/) and the [Atari Label Maker](https://www.labelmaker2600.com/)
