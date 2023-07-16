@@ -6,6 +6,8 @@ This is an Atari 2600 game from an alternate reality...
 - has been hastily crammed onto a VCS ROM cartridge in 1977
 - so you can learn to write programs of the type you find in the first chapter of a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984.
 
+  ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png) 
+
 It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game".
 
 ## Instructions
@@ -111,32 +113,36 @@ eval_frame       ds 1 ; pointer to beginning of stack for current frame```
 Example: evaluating function call arguments
 --------------------------------------------------
 eval_next  = pointer to args that haven't been evaluated ...(arg2 arg3)
-eval_env   = SP+2/+3 previous eval_next
-             SP+1/+2 previous eval_frame
-             SP+1    previous eval_env (optional)
-eval_frame = SP+0    function symbol
-             SP-1    arg0 lsb / cdr
-             SP-2    arg0 msb / car
-             SP-3    arg1 lsb / cdr
-             SP-4    arg1 msb / car
+eval_env   = FP+2/+3 previous eval_next
+             FP+1/+2 previous eval_frame
+             FP+1    previous eval_env (optional)
+eval_frame = FP+0    function symbol
+             FP-1    arg0 lsb / cdr
+             FP-2    arg0 msb / car
+             FP-3    arg1 lsb / cdr
+             FP-4    arg1 msb / car
+        SP = FP-5    ... top of stack
 
 Example: evaluating a function call
 --------------------------------------------------
 eval_next  = #1 (return - when done, return value to calling frame)
-eval_env   = SP+2  previous eval_next
-             SP+1  previous eval_frame
-eval_frame = SP+0  function symbol
-             SP-1  arg0 lsb / cdr
-             SP-2  arg0 msb / car
+eval_env   = FP+2  previous eval_next
+             FP+1  previous eval_frame
+eval_frame = FP+0  function symbol
+             FP-1  arg0 lsb / cdr
+             FP-2  arg0 msb / car
+        SP = FP-3    ... top of stack
 
 Example: evaluating a test (if) statement 
 --------------------------------------------------
 eval_next  = #2 (test - use value of first arg to choose the next arg to evaluate)
-eval_env   = SP+2  previous eval_next
-             SP+1  previous eval_frame
-eval_frame = SP+0  ...(arg1 arg2)
-             SP-1  arg0 lsb / cdr
-             SP-2  arg0 msb / car
+eval_env   = FP+2  previous eval_next
+             FP+1  previous eval_frame
+eval_frame = FP+0  ...(arg1 arg2)
+             FP-1  arg0 lsb / cdr
+             FP-2  arg0 msb / car
+        SP = FP-3    ... top of stack
+
 ```
 
 ## References, Credits and Inspirations
