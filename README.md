@@ -1,5 +1,5 @@
 # LISP Programming 
-Play the game on [Javatari.org](https://javatari.org/?ROM=https://github.com/DChristianson/vcs-lisp/releases/download/alpha/lisp_NTSC_202230714.bin)!
+Play the game on [Javatari.org](https://javatari.org/?ROM=https://github.com/DChristianson/vcs-lisp/releases/download/alpha/lisp_NTSC_20230714.bin)!
 
 This is an Atari 2600 game from an alternate reality...
 
