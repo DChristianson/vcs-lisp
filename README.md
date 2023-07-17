@@ -1,4 +1,5 @@
 # LISP Programming 
+Play the game on [Javatari.org](https://javatari.org/?ROM=https://github.com/DChristianson/vcs-lisp/releases/download/alpha/lisp_NTSC_202230714.bin)!
 
 This is an Atari 2600 game from an alternate reality...
 
@@ -12,11 +13,13 @@ It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BA
 
 ## AI rendering of "Lisp Programming for the Atari VCS"
 
-Thank you craiyon.com, and the Atari Label Maker...
+Thank you [DALL-E mini](https://www.craiyon.com/), and the [Atari Label Maker](https://www.labelmaker2600.com/) for producing this concept box art...
 
-![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_programming1.png)
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" width=320></img>
 
 ## Instructions
+
+Probably some explanations are in order...
 
 The basics:
 
@@ -153,12 +156,16 @@ eval_frame = FP+0  ...(arg1 arg2)
 
 ## References, Credits and Inspirations
 
+Special thanks to the authors of [Basic Programming] and [SICP] for providing the inspiration.
+
+The following resources have been *very* helpful in developing this codebase.
+
 - [PicoLisp](https://picolisp.com/) 
 - R. Kent Dybvig's [Three Implementation Models for Scheme](https://www.cs.unm.edu/~williams/cs491/three-imp.pdf) 
 - [uLisp](http://www.ulisp.com/)
 - David A. Wheeler's [6502 Language Implementation Approaches](https://dwheeler.com/6502/)
 - [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
 - [Skimp](http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/)
+- [6502.org](https6502.org)
 
-I owe a great deal of credit to the community at the [AtariAge forums](https://www.atariage.com/forums), and to resources like [6502.org](https6502.org), and all the tools - [Javatari](), [Stella](), the [Atari Background Builder](https://alienbill.com/2600/atari-background-builder/)...
-
+I also owe a great debt to the community at the [AtariAge forums](https://www.atariage.com/forums) and all the tools and emulators that have been made available.
