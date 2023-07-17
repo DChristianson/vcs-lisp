@@ -8,7 +8,13 @@ This is an Atari 2600 game from an alternate reality...
 
   ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png) 
 
-It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game".
+It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game"...
+
+## AI rendering of "Lisp Programming for the Atari VCS"
+
+Thank you craiyon.com, and the Atari Label Maker...
+
+![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_programming1.png)
 
 ## Instructions
 
@@ -154,4 +160,5 @@ eval_frame = FP+0  ...(arg1 arg2)
 - [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
 - [Skimp](http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/)
 
-I owe a great deal of credit to the community at the [AtariAge forums](https://www.atariage.com/forums), and to resources like [6502.org](https6502.org), the [Atari Background Builder](https://alienbill.com/2600/atari-background-builder/) and the [Atari Label Maker](https://www.labelmaker2600.com/)
+I owe a great deal of credit to the community at the [AtariAge forums](https://www.atariage.com/forums), and to resources like [6502.org](https6502.org), and all the tools - [Javatari](), [Stella](), the [Atari Background Builder](https://alienbill.com/2600/atari-background-builder/)...
+
