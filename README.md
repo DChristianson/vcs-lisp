@@ -7,15 +7,11 @@ This is an Atari 2600 game from an alternate reality...
 - has been hastily crammed onto a VCS ROM cartridge in 1977
 - so you can learn to write programs of the type you find in the first chapter of a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984.
 
-  ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png) 
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png" height=180></img><img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png" height=180></img><img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png" height=180></img>
 
 It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game"...
 
-## AI rendering of "Lisp Programming for the Atari VCS"
-
-Thank you [DALL-E mini](https://www.craiyon.com/), and the [Atari Label Maker](https://www.labelmaker2600.com/) for producing this concept box art...
-
-<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" width=320></img>
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" width=180></img>
 
 ## Instructions
 
@@ -156,7 +152,9 @@ eval_frame = FP+0  ...(arg1 arg2)
 
 ## References, Credits and Inspirations
 
-Special thanks to the authors of [Basic Programming] and [SICP] for providing the inspiration.
+Special thanks to the authors of [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) and [SICP](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) for providing the inspiration.
+
+Thank you [DALL-E mini](https://www.craiyon.com/), and the [Atari Label Maker](https://www.labelmaker2600.com/) for producing the concept box art.
 
 The following resources have been *very* helpful in developing this codebase.
 
