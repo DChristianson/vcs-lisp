@@ -63,13 +63,13 @@ The fundamental data structure in vcs-lisp is the cell. This concept borrows dir
 
 Using 2 bytes for the cell is a natural choice. There are only 128 bytes of RAM available onboard the Atari 2600... we have to keep the heap small.
 
-Using BCD for numbers, and then limiting them to 3 digits sames a lot of time and space as well:
+Using BCD for numbers, and then limiting them to 3 digits saves a lot of time and space as well:
 - Displaying character graphics on the Atari 2600 requires specialized code, so having to deal with only three digits allows us to simplify the display kernel dramatically. 
 - Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space.
 
 ### Cell and Symbol References
 
-Each byte of a pair can contain a references to another cell, a reference to a symbol, or the null reference.
+Each byte of a pair can contain a reference to another cell, a reference to a symbol, or the null reference.
 
 ```
   10xxxxx0 - cell reference (5 significant bits - 32 cells in total)
@@ -101,9 +101,9 @@ f0...f2          ds 1  ; there are three user assignable expressions
 accumulator      ds 2  ; a cell holding the result of the last expression
 ```
 
-### Expression evaluation
+### Stack Execution 
+Expression evaluation relies entirely on the stack, using the following memory locations:
 
-The following memory locations track expression evaluation:
 ```
 
 accumulator      ds 2 ; the result accumulator
