@@ -170,7 +170,7 @@ FUNC_S0F_BEEP
             ; beep
             ;  - we subtract 1 from arg1 and save in place
             ;  - if arg1 < 0 we return normally
-            ;  - otherwise load note into audio registers
+            ;  - otherwise load note into audio registers and accumulator
 _beep_continue
             ldx eval_frame
             sed
@@ -188,7 +188,11 @@ _beep_continue
             sta AUDC0
             lda #8
             sta AUDV0
+            lda FRAME_ARG_OFFSET_MSB,x
+            sta accumulator_msb
             lda FRAME_ARG_OFFSET_LSB,x
+            sta accumulator_lsb
+            and #$1f ; modulo frequency            
             sta AUDF0
             jsr eval_wait
             jmp _beep_continue

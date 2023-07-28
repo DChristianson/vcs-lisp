@@ -30,8 +30,8 @@ CURSOR_COLOR = $86
 SCANLINES = 262
 #endif
 
-; game state sxxxyyyi
-; s = state (edit/eval), x = game type, y = mode, i = input mask
+; game state sxxxyyyy
+; s = state (edit/eval), x = game type, y = mode
 ; REPL 0xxxyyyi
 GAME_STATE_EDIT          = %00000000
 GAME_STATE_EDIT_KEYS     = %00000001
@@ -39,6 +39,13 @@ GAME_STATE_EDIT_KEYS     = %00000001
 GAME_STATE_EVAL          = %10000000
 GAME_STATE_EVAL_APPLY    = %10000001
 GAME_STATE_EVAL_CONTINUE = %10000010
+; GAME types
+GAME_TYPE_MASK           = %01110000
+__GAME_TYPE_CALC         = %00000000
+__GAME_TYPE_MUSIC        = %00010000
+__GAME_TYPE_PADDLE       = %00100000
+__GAME_TYPE_TOWER        = %00110000
+__GAME_TYPE_STEPS        = %01000000
 
 FUNCTION_TABLE_SIZE = 3
 CELL_SIZE           = 2
@@ -373,6 +380,8 @@ oom
 
     include "_eval_kernel.asm"
 
+    include "_calc_kernel.asm"
+
     include "_logo_kernel.asm"
 
     include "_heap_init.asm"
@@ -525,6 +534,10 @@ MENU_GRAPHICS
     word #SYMBOL_GRAPHICS_S00_DEFN
     word #SYMBOL_GRAPHICS_S0E_F2
     word #SYMBOL_GRAPHICS_S00_DEFN
+    word #SYMBOL_GRAPHICS_S00_CALC
+    word #SYMBOL_GRAPHICS_S01_CALC
+    word #SYMBOL_GRAPHICS_S00_DISK
+    word #SYMBOL_GRAPHICS_S01_DISK
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors

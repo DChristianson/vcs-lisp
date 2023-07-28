@@ -185,7 +185,7 @@ _repl_update_menu_skip_left
             lda #1
 _repl_update_set_menu
             adc repl_menu_tab ; should be carry clear
-            and #$03
+            and #$07
             sta repl_menu_tab
             jmp _repl_update_skip_move
 _repl_update_menu_select
@@ -471,77 +471,33 @@ _prep_repl_end
 ; Repl display
 ;
 
-        align 256
-
 repl_draw
 
-header
             lda #0
             sta COLUBK
+
             ldx #HEADER_HEIGHT / 2
-            jsr wsync_loop
+            jsr sub_wsync_loop
+            jsr sfd_draw_accumulator
 
-; ACCUMULATOR
-accumulator_draw
+            ldx #HEADER_HEIGHT / 2
+            jsr sub_wsync_loop
 
-            ; convert accumulator to BCD
-            lda accumulator_msb
-            sta repl_fmt_arg + 1
-            lda accumulator_lsb
-            sta repl_fmt_arg
-            jsr sub_fmt
+            jsr sub_draw_menu
+            jsr sfd_draw_prompt
 
-            jsr prep_repl_graphics
-            lda #1                       ;2
-            sta VDELP0                   ;3
-            sta VDELP1                   ;3
-            sta WSYNC                    ;--  0
-            lda #1                       ;2   2
-            sta NUSIZ0                   ;3   5
-            sta NUSIZ1                   ;3   8
-            lda #$b0                     ;2  10
-            sta HMP0                     ;3  13
-            lda #$c0                     ;2  15
-            sta HMP1                     ;3  18
-            SLEEP 23                      ;6  24
-            sta RESP0                    ;3  27
-            sta RESP1                    ;3  30
-            SLEEP 21                     ;37 68
-            ldy #CHAR_HEIGHT - 1         ;2  70
-            sta HMOVE                    ;3  73
-_accumulator_draw_loop    ; 40/41 w page jump
-            sta WSYNC                    ;-   --
-            lda (repl_s2_addr),y         ;5    5
-            sta GRP0                     ;3    8
-            lda (repl_s3_addr),y         ;5   13
-            sta GRP1                     ;3   16
-            lda (repl_s4_addr),y         ;5   21
-            sta GRP0                     ;3   24
-            SLEEP 17                     ;----
-            lda (repl_s5_addr),y         ;5   31
-            sta GRP1                     ;3   34
-            sta GRP0                     ;3   37 
-            dey                          ;2   39  
-            bpl _accumulator_draw_loop   ;2   41  
-
-accumulator_draw_end
             sta WSYNC
-            lda #0
-            sta NUSIZ0
-            sta NUSIZ1
-            sta VDELP0                              ;3
-            sta VDELP1                              ;3
-            ldx #$ff ; reset stack pointer
-            txs            
-                
-pre_menu
-            ldx #HEADER_HEIGHT / 2
-            jsr wsync_loop
+            lda #BLACK
+            sta COLUBK
+            ldx #FOOTER_HEIGHT
+            jsr sub_wsync_loop
+
+            jmp waitOnOverscan
 
 
             ; MENU
             ; 
-menu
+sub_draw_menu
             sta WSYNC                    ;--  0
             lda #$c0                     ;2   2
             sta HMP0                     ;3   5
@@ -550,14 +506,13 @@ menu
             SLEEP 9                      ;9  19
             sta RESP0                    ;3  22
             sta RESP1                    ;3  25
-            SLEEP 42                     ;42 67
-            sta HMOVE                    ;3  70
 
             sta WSYNC
-            lda #RED
-            ldx repl_edit_line
-            bpl _menu_set_colubk
-            lda #CURSOR_COLOR
+            sta HMOVE                    ;3   3 - don't need early hmove since COLUBK is black
+            lda #RED                     ;2   5
+            ldx repl_edit_line           ;3   8
+            bpl _menu_set_colubk         ;2  10
+            lda #CURSOR_COLOR            ;2  12
 _menu_set_colubk
             sta COLUBK
             lda repl_menu_tab
@@ -580,18 +535,55 @@ _menu_loop
             lda (repl_s1_addr),y         
             sta GRP1                     
             dey
-            bpl _menu_loop
+            sbpl _menu_loop
             sta GRP0 ; clear VDEL register
+            rts
+
+sub_wsync_loop
+_header_loop
+            sta WSYNC
+            dex
+            bpl _header_loop
+            rts
+
+sub_fmt
+            lda #<SYMBOL_GRAPHICS_S1E_HASH
+            sta repl_s1_addr
+            lda #<SYMBOL_GRAPHICS_S1F_BLANK
+            sta repl_s5_addr
+            WRITE_DIGIT_LO repl_fmt_arg+1, repl_s2_addr ;16 15
+            WRITE_DIGIT_HI repl_fmt_arg, repl_s3_addr   ;14 29
+            WRITE_DIGIT_LO repl_fmt_arg, repl_s4_addr   ;16 45
+            rts
+
+
+sub_prep_repl_graphics
+            ; prep for symbol graphics
+            lda #>SYMBOL_GRAPHICS_S00_TERM
+            sta repl_s0_addr+1
+            sta repl_s1_addr+1
+            sta repl_s2_addr+1
+            sta repl_s3_addr+1
+            sta repl_s4_addr+1
+            sta repl_s5_addr+1
+            rts
+
+PROMPT_ENCODE_JMP
+    word _prompt_encode_s4-1
+    word _prompt_encode_s3-1
+    word _prompt_encode_s2-1
+    word _prompt_encode_s1-1
+    word _prompt_encode_s0-1
 
             ; PROMPT
             ; BUGBUG: change name from prompt
             ; draw repl cell tree
-prompt
+sfd_draw_prompt ; stack 1 level deep
             lda #(PROMPT_HEIGHT * 76 / 64) 
             sta TIM64T
             ldy #(EDITOR_LINES - 1)
             sty repl_editor_line
-            jsr prep_repl_graphics
+            jsr sub_prep_repl_graphics
 
             ; position cursor
             sta WSYNC               ; --
@@ -802,7 +794,6 @@ _prompt_encode_keys
             sta repl_s4_addr
             lda #<SYMBOL_GRAPHICS_S1F_BLANK
             sta repl_s5_addr
-            jmp prompt_display
 
 prompt_display
             ; ------------------------------------
@@ -850,9 +841,9 @@ _prompt_delay_loop                       ; A=80 at first position
             SLEEP 3                      ;3   47
             sbcs _prompt_delay_loop      ;2/3 49
             adc #16                      ;2   51
-            sbmi _prompt_draw_entry_0     ;2/3 53 ; -24, transition at +0  
+            bmi _prompt_draw_entry_0     ;2/3 53 ; -24, transition at +0  BUGBUG: DASM is weird about sbmi here
             SLEEP 4                      ;4   57
-            sbne _prompt_draw_entry_2     ;2   59 ; -16, transition at +5
+            bne _prompt_draw_entry_2     ;2   59 ; -16, transition at +5 BUGBUG: DASM is weird about sbmi here
             jmp _prompt_draw_entry_1     ;3   62 ;  -8, transition at +3
 _prompt_draw_entry_0 ; 54          
 _prompt_draw_entry_2 ; 54/--/60
@@ -890,7 +881,7 @@ _prompt_draw_loop    ; 40/41 w page jump
             txs                          ;2    3
             lax (repl_s3_addr),y         ;5    8
             lda (repl_s5_addr),y         ;5   13
-_prompt_draw_entry
+            ; the next statement needs to fire as we start drawing the first GRP0
             stx GRP1                     ;3   16   0 -  9  !0!8 ** ++ 32 40
             tsx                          ;2   18   9 - 15   0!8!16 24 ++ 40
             stx GRP0                     ;3   21  15 - 24   0 8!16!** ++ 40
@@ -899,7 +890,7 @@ _prompt_draw_entry
             dey                          ;2   29  
             sbpl _prompt_draw_loop        ;2   31  
 
-            ldx #$ff ; reset the stack   ;2   33
+            ldx #$fd ; reset the stack   ;2   33
             txs                          ;2   35
             lda #0                       ;2   37
             sta VDELP0                   ;3   40
@@ -936,54 +927,7 @@ prompt_end_line
             jmp prompt_next_line
 prompt_done
             jsr waitOnTimer
-
-            ; FOOTER
-footer
-            sta WSYNC
-            lda #BLACK
-            sta COLUBK
-            ldx #FOOTER_HEIGHT
-_footer_loop
-            sta WSYNC
-            dex
-            bpl _footer_loop
-
-            jmp waitOnOverscan
-
-prep_repl_graphics
-            ; prep for symbol graphics
-            lda #>SYMBOL_GRAPHICS_S00_TERM
-            sta repl_s0_addr+1
-            sta repl_s1_addr+1
-            sta repl_s2_addr+1
-            sta repl_s3_addr+1
-            sta repl_s4_addr+1
-            sta repl_s5_addr+1
             rts
-
-wsync_loop
-_header_loop
-            sta WSYNC
-            dex
-            bpl _header_loop
-            rts
-
-sub_fmt
-            lda #<SYMBOL_GRAPHICS_S1E_HASH
-            sta repl_s1_addr
-            lda #<SYMBOL_GRAPHICS_S1F_BLANK
-            sta repl_s5_addr
-            WRITE_DIGIT_LO repl_fmt_arg+1, repl_s2_addr ;16 15
-            WRITE_DIGIT_HI repl_fmt_arg, repl_s3_addr   ;14 29
-            WRITE_DIGIT_LO repl_fmt_arg, repl_s4_addr   ;16 45
-            rts
-
-PROMPT_ENCODE_JMP
-    word _prompt_encode_s4-1
-    word _prompt_encode_s3-1
-    word _prompt_encode_s2-1
-    word _prompt_encode_s1-1
-    word _prompt_encode_s0-1
 
     ; line width X sprite arrangement
     ; we use the same display kernel for all 
