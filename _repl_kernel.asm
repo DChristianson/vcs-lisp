@@ -186,13 +186,19 @@ _repl_update_menu_skip_left
 _repl_update_set_menu
             adc repl_menu_tab ; should be carry clear
             and #$07
+            cmp #$05 ; BUGBUG magic number should be constant
+            bcc _repl_update_save_menu_tab
+            lda #0
+_repl_update_save_menu_tab
             sta repl_menu_tab
             jmp _repl_update_skip_move
 _repl_update_menu_select
-            ; eval
-            ldx #GAME_STATE_EVAL
-            stx game_state
-            jmp _repl_update_skip_move            
+            ldx repl_menu_tab
+            lda REPL_MENU_JMP_HI,x
+            pha
+            lda REPL_MENU_JMP_LO,x
+            pha
+            rts       
 
 _repl_update_edit_move
             ; check cursor movement
@@ -476,12 +482,17 @@ repl_draw
             lda #0
             sta COLUBK
 
-            ldx #HEADER_HEIGHT / 2
-            jsr sub_wsync_loop
-            jsr sfd_draw_accumulator
-
-            ldx #HEADER_HEIGHT / 2
-            jsr sub_wsync_loop
+            lda game_state
+            lsr
+            lsr
+            lsr
+            tax
+            lda REPL_DRAW_JMP_HI,x
+            pha
+            lda REPL_DRAW_JMP_LO,x
+            pha
+            rts
+repl_draw_return
 
             jsr sub_draw_menu
             jsr sfd_draw_prompt
@@ -520,60 +531,8 @@ _menu_set_colubk
             asl
             adc #3 ; don't need to clc due to AND #$07 + ASL's
             tax
-            ldy #3
-_menu_load_loop
-            lda MENU_GRAPHICS,x
-            sta repl_s1_addr,y
-            dex
-            dey
-            bpl _menu_load_loop
-            ldy #CHAR_HEIGHT - 1
-_menu_loop
-            sta WSYNC              ; BUGBUG: position
-            lda (repl_s0_addr),y   ; BUGBUG: position   
-            sta GRP0                    
-            lda (repl_s1_addr),y         
-            sta GRP1                     
-            dey
-            sbpl _menu_loop
-            sta GRP0 ; clear VDEL register
+            jsr sub_draw_glyph_2
             rts
-
-sub_wsync_loop
-_header_loop
-            sta WSYNC
-            dex
-            bpl _header_loop
-            rts
-
-sub_fmt
-            lda #<SYMBOL_GRAPHICS_S1E_HASH
-            sta repl_s1_addr
-            lda #<SYMBOL_GRAPHICS_S1F_BLANK
-            sta repl_s5_addr
-            WRITE_DIGIT_LO repl_fmt_arg+1, repl_s2_addr ;16 15
-            WRITE_DIGIT_HI repl_fmt_arg, repl_s3_addr   ;14 29
-            WRITE_DIGIT_LO repl_fmt_arg, repl_s4_addr   ;16 45
-            rts
-
-
-sub_prep_repl_graphics
-            ; prep for symbol graphics
-            lda #>SYMBOL_GRAPHICS_S00_TERM
-            sta repl_s0_addr+1
-            sta repl_s1_addr+1
-            sta repl_s2_addr+1
-            sta repl_s3_addr+1
-            sta repl_s4_addr+1
-            sta repl_s5_addr+1
-            rts
-
-PROMPT_ENCODE_JMP
-    word _prompt_encode_s4-1
-    word _prompt_encode_s3-1
-    word _prompt_encode_s2-1
-    word _prompt_encode_s1-1
-    word _prompt_encode_s0-1
 
             ; PROMPT
             ; BUGBUG: change name from prompt
@@ -929,6 +888,116 @@ prompt_done
             jsr waitOnTimer
             rts
 
+sub_fmt
+            lda #<SYMBOL_GRAPHICS_S1E_HASH
+            sta repl_s1_addr
+            lda #<SYMBOL_GRAPHICS_S1F_BLANK
+            sta repl_s5_addr
+            WRITE_DIGIT_LO repl_fmt_arg+1, repl_s2_addr ;16 15
+            WRITE_DIGIT_HI repl_fmt_arg, repl_s3_addr   ;14 29
+            WRITE_DIGIT_LO repl_fmt_arg, repl_s4_addr   ;16 45
+            rts
+
+repl_menu_press_game
+            ; inc game
+            lda game_state
+            clc
+            adc #$10
+            sta game_state
+            jmp _repl_update_skip_move            
+repl_menu_press_eval
+            ; eval
+            ldx #GAME_STATE_EVAL
+            stx game_state
+repl_menu_press_noop
+            jmp _repl_update_skip_move     
+
+sub_wsync_loop
+_header_loop
+            sta WSYNC
+            dex
+            bpl _header_loop
+            rts
+
+; BUGBUG can probably ditch this for a loop
+sub_prep_repl_graphics
+            ; prep for symbol graphics
+            lda #>SYMBOL_GRAPHICS_S00_TERM
+            sta repl_s0_addr+1
+            sta repl_s1_addr+1
+            sta repl_s2_addr+1
+            sta repl_s3_addr+1
+            sta repl_s4_addr+1
+            sta repl_s5_addr+1
+            rts
+
+; BUGBUG can probably ditch this for a loop
+PROMPT_ENCODE_JMP
+    word _prompt_encode_s4-1
+    word _prompt_encode_s3-1
+    word _prompt_encode_s2-1
+    word _prompt_encode_s1-1
+    word _prompt_encode_s0-1
+
+REPL_MENU_JMP_LO
+    byte <(repl_menu_press_eval-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1)
+    byte <(repl_menu_press_game-1)
+REPL_MENU_JMP_HI
+    byte >(repl_menu_press_eval-1),>(repl_menu_press_noop-1),>(repl_menu_press_noop-1),>(repl_menu_press_noop-1)
+    byte >(repl_menu_press_game-1)
+
+; interleaved jump table
+; BUGBUG: notation for this?
+REPL_DRAW_JMP_LO
+REPL_DRAW_JMP_HI = REPL_DRAW_JMP_LO + 1
+    word (repl_draw_accumulator-1)
+    word (repl_draw_music-1)
+    word (repl_draw_game-1)
+    word (repl_draw_steps-1)
+    word (repl_draw_tower-1)
+
+sub_respxx
+            ; a has position, y has swap position
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop        ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            tya                     ;2   19  ; check y  for who goes first
+            lsr                     ;2   21 : SPACE: use lsr to check order bit
+            bcs _respxx_swap        ;2/3 23 ; .
+            sta.w RESP0             ;4   27 shim to 27
+            sta RESP1               ;3   30
+            jmp _respxx_swap_end
+_respxx_swap
+            sta RESP1               ;3   27
+            sta RESP0               ;3   30
+_respxx_swap_end
+            rts
+
+sub_draw_glyph_2
+            ldy #3
+_glyph_load_loop
+            lda MENU_GRAPHICS,x
+            sta repl_s1_addr,y
+            dex
+            dey
+            bpl _glyph_load_loop
+            ldy #CHAR_HEIGHT - 1
+_glyph_loop
+            sta WSYNC              ; BUGBUG: position
+            lda (repl_s0_addr),y   ; BUGBUG: position   
+            sta GRP0                    
+            lda (repl_s1_addr),y         
+            sta GRP1                     
+            dey
+            sbpl _glyph_loop
+            sta GRP0 ; clear VDEL register
+            rts
+
     ; line width X sprite arrangement
     ; we use the same display kernel for all 
     ; code, but manipulate respx and nusizex 
@@ -939,8 +1008,6 @@ prompt_done
     ; 3 - 2 2 - 31 31       31 31 31 01 01
     ; 4 - 3 2 - 31 33    33 31 33 31 03 01 
     ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03  
-
-    align 256 
 
 DISPLAY_COLS_INDENT
     byte 80,88,96,104,112

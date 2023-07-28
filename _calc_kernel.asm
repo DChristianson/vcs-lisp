@@ -1,3 +1,11 @@
+repl_draw_accumulator
+            ldx #HEADER_HEIGHT / 2
+            jsr sub_wsync_loop
+            jsr sfd_draw_accumulator
+            ldx #HEADER_HEIGHT / 2
+            jsr sub_wsync_loop
+            jmp repl_draw_return
+
 sfd_draw_accumulator
             ; convert accumulator to BCD
             lda accumulator_msb

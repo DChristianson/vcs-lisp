@@ -382,6 +382,14 @@ oom
 
     include "_calc_kernel.asm"
 
+    include "_music_kernel.asm"
+
+    include "_game_kernel.asm"
+
+    include "_tower_kernel.asm"
+
+    include "_steps_kernel.asm"
+
     include "_logo_kernel.asm"
 
     include "_heap_init.asm"
