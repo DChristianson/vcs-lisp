@@ -1,4 +1,5 @@
 # LISP Programming 
+Play the game on [Javatari.org](https://javatari.org/?ROM=https://github.com/DChristianson/vcs-lisp/releases/download/alpha/lisp_NTSC_20230714.bin)!
 
 This is an Atari 2600 game from an alternate reality...
 
@@ -6,11 +7,15 @@ This is an Atari 2600 game from an alternate reality...
 - has been hastily crammed onto a VCS ROM cartridge in 1977
 - so you can learn to write programs of the type you find in the first chapter of a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984.
 
-  ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png) ![](https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png) 
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png" height=180></img><img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png" height=180></img><img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png" height=180></img>
 
-It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game".
+It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game"...
+
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" width=180></img>
 
 ## Instructions
+
+Probably some explanations are in order...
 
 The basics:
 
@@ -58,13 +63,13 @@ The fundamental data structure in vcs-lisp is the cell. This concept borrows dir
 
 Using 2 bytes for the cell is a natural choice. There are only 128 bytes of RAM available onboard the Atari 2600... we have to keep the heap small.
 
-Using BCD for numbers, and then limiting them to 3 digits sames a lot of time and space as well:
+Using BCD for numbers, and then limiting them to 3 digits saves a lot of time and space as well:
 - Displaying character graphics on the Atari 2600 requires specialized code, so having to deal with only three digits allows us to simplify the display kernel dramatically. 
 - Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space.
 
 ### Cell and Symbol References
 
-Each byte of a pair can contain a references to another cell, a reference to a symbol, or the null reference.
+Each byte of a pair can contain a reference to another cell, a reference to a symbol, or the null reference.
 
 ```
   10xxxxx0 - cell reference (5 significant bits - 32 cells in total)
@@ -96,9 +101,9 @@ f0...f2          ds 1  ; there are three user assignable expressions
 accumulator      ds 2  ; a cell holding the result of the last expression
 ```
 
-### Expression evaluation
+### Stack Execution 
+Expression evaluation relies entirely on the stack, using the following memory locations:
 
-The following memory locations track expression evaluation:
 ```
 
 accumulator      ds 2 ; the result accumulator
@@ -147,11 +152,18 @@ eval_frame = FP+0  ...(arg1 arg2)
 
 ## References, Credits and Inspirations
 
+Special thanks to the authors of [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) and [SICP](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) for providing the inspiration.
+
+Thank you [DALL-E mini](https://www.craiyon.com/), and the [Atari Label Maker](https://www.labelmaker2600.com/) for producing the concept box art.
+
+The following resources have been *very* helpful in developing this codebase.
+
 - [PicoLisp](https://picolisp.com/) 
 - R. Kent Dybvig's [Three Implementation Models for Scheme](https://www.cs.unm.edu/~williams/cs491/three-imp.pdf) 
 - [uLisp](http://www.ulisp.com/)
 - David A. Wheeler's [6502 Language Implementation Approaches](https://dwheeler.com/6502/)
 - [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
 - [Skimp](http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/)
+- [6502.org](https6502.org)
 
-I owe a great deal of credit to the community at the [AtariAge forums](https://www.atariage.com/forums), and to resources like [6502.org](https6502.org), the [Atari Background Builder](https://alienbill.com/2600/atari-background-builder/) and the [Atari Label Maker](https://www.labelmaker2600.com/)
+I also owe a great debt to the community at the [AtariAge forums](https://www.atariage.com/forums) and all the tools and emulators that have been made available.

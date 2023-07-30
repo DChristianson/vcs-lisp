@@ -75,41 +75,46 @@ DONE
       - multiply (as continuation)
   - demo 5
       - play beep
+  - controls 2
+      - game mode switch when push in menu
+  - interpreter
+     - safety against no free mem left
+     - crude safety (inexact) against stack overflow
 BUGS
   - code
     - complex program takes too long to analyze in vblank
 BETA
+  - game modes 2
+      - steps (tweetmaze)
+      - towers of hanoi
+      - paddle pong
+      - music matcher (simon?)
+      - calc mode
+  - library 2
+      - modulo function
+      - music functions (map... or progn?)
+      - game functions
   - library 1
       - all functions working
   - virtual keyboard 3
       - can only see symbols you can use
   - display 4 
       - menus are messed up
-  - controls 2
-      - game mode switch when push in menu
-  - game modes 2
-      - towers of hanoi
-      - paddle pong
-      - tweetmaze
-      - cows and bulls
+      - different colors depending on function selection
   - code 2
       - reduce need for extra lookups
       - no / limited numbers constants
       - bigger symbol table? 
       - compact numbers?
-  - library 2
-      - modulo function
-      - music functions (map... or progn?)
   - dev support
      - some way to do unit tests?
   - eval graphics kernel
      - graphics zone
-     - stack / heap / free accumulator
-     - song that plays during eval
+     - song that plays during eval?
   - interpreter
-     - show free mem
-     - safeties against stack overflow
-     - safety against no free mem left
+     - be able to interrupt eval
+     - show free mem / stack / heap 
+     - real safeties against stack overflow
 SPRINKLES
   - font
      - tune font / symbols
@@ -132,6 +137,6 @@ BONUS
      - matching shapes (boolean logic)
      - mouse maze
      - tictactoe?
-     - mastermind?
+     - mastermind / cows and bulls
      - ant
      - sqrt using .. rational math?
