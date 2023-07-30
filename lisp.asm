@@ -453,9 +453,6 @@ STD_HMOVE_BEGIN
 STD_HMOVE_END
 LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
 
-FREE_LOOKUP_TABLE
-    byte $00, $01, $03, $07, $0f, $1f, $3f, $7f, $ff
-
     ; menu graphics
 
 SYMBOL_GRAPHICS_S00_EVAL
