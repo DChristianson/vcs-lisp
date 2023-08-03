@@ -15,7 +15,7 @@ It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BA
 
 ## Instructions
 
-Probably some explanations are in order...
+Some explanations are in order...
 
 The basics:
 
