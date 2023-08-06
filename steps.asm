@@ -62,9 +62,15 @@ player_step        ds 1
 player_score       ds 1
 lava_step          ds 1
 lava_timer         ds 1
+step_max           ds 1
 
 draw_s0_addr ds 2
 draw_s1_addr ds 2
+
+; random var
+seed
+random        ds 2
+maze_ptr      ds 1
 
 ; ----------------------------------
 ; code
@@ -80,6 +86,13 @@ CleanStart
             lda #WHITE
             sta COLUP0
             sta COLUP1
+
+            ; init RNG
+            lda #17
+            sta seed
+            sta seed + 1
+            jsr sub_galois
+
             ; bootstrap steps
             jsr sub_steps_init
 
@@ -165,10 +178,16 @@ _gx_update_check_down
 _gx_update_check_left
             ror
             bcs _gx_update_check_right
+            bit steps_hmove_a
+            bmi _gx_update_rev_left
+_gx_update_rev_right
             jmp gx_go_down
 _gx_update_check_right
             ror
             bcs gx_update_return
+            bit steps_hmove_a
+            bmi _gx_update_rev_right
+_gx_update_rev_left
             jmp gx_go_up
 gx_update_return
 
@@ -197,7 +216,6 @@ gx_steps_resp
             lda #$00
             sta HMP1
             sta HMP0
-            lda #$00
             jmp _gx_shim_end
 _gx_shim_swap
             lda #$40
@@ -320,19 +338,19 @@ sub_steps_advance
             sta num_steps
             sec
             sbc #1
-            lsr 
-            tax 
-            lda #$01
-            bcs _bootstrap_steps_odd
-            lda #$00
-_bootstrap_steps_odd
+            lsr
+            tax
+            clc
+            adc maze_ptr
+            tay
+            adc #1
+            sta maze_ptr
+_maze_loop
+            lda MAZES,y
             sta steps,x
+            dey
             dex
-            lda #$11
-_bootstrap_steps_loop
-            sta steps,x
-            dex
-            bpl _bootstrap_steps_loop
+            bpl _maze_loop
             ; visual 
             ; swap hmoves
             lda steps_hmove_a
@@ -373,6 +391,17 @@ _add_steps_wsync
             ; done
             rts
 
+MAZES
+    byte $33, $11, $00
+    byte $23, $12, $00
+    byte $22, $22, $30
+    byte $34, $21, $30
+    byte $45, $12, $24, $00
+    byte $23, $12, $11, $00
+    byte $25, $14, $12, $20
+    byte $25, $32, $11, $10
+
+
 sub_respxx
             ; a has position
             sta WSYNC               ; --
@@ -411,7 +440,35 @@ _step_get_lo
             rts
 _step_get_overflow            
             lda #12
-            rts
+            rts       
+
+sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/master
+            lda seed+1
+            tay ; store copy of high byte
+            ; compute seed+1 ($39>>1 = %11100)
+            lsr ; shift to consume zeroes on left...
+            lsr
+            lsr
+            sta seed+1 ; now recreate the remaining bits in reverse order... %111
+            lsr
+            eor seed+1
+            lsr
+            eor seed+1
+            eor seed+0 ; recombine with original low byte
+            sta seed+1
+            ; compute seed+0 ($39 = %111001)
+            tya ; original high byte
+            sta seed+0
+            asl
+            eor seed+0
+            asl
+            eor seed+0
+            asl
+            asl
+            asl
+            eor seed+0
+            sta seed+0
+            rts            
 
 gx_go_up
             tya

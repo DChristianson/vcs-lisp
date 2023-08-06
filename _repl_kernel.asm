@@ -3,6 +3,8 @@
 ;; code editor
 ;;
 
+repl_kernel_start
+
 _repl_update_edit_digit
             ldy #3
 _repl_update_edit_digit_loop
