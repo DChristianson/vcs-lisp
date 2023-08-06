@@ -959,25 +959,18 @@ REPL_DRAW_JMP_HI = REPL_DRAW_JMP_LO + 1
     word (repl_draw_tower-1)
 
 sub_respxx
-            ; a has position, y has swap position
+            ; a has position
             sta WSYNC               ; --
 _respxx_loop
             sbc #15                 ;2    2
-            sbcs _respxx_loop        ;2/3  4
+            sbcs _respxx_loop       ;2/3  4
             tax                     ;2    6
             lda LOOKUP_STD_HMOVE,x  ;5   11
             sta HMP0                ;3   14
             sta HMP1                ;3   17
-            tya                     ;2   19  ; check y  for who goes first
-            lsr                     ;2   21 : SPACE: use lsr to check order bit
-            bcs _respxx_swap        ;2/3 23 ; .
-            sta.w RESP0             ;4   27 shim to 27
-            sta RESP1               ;3   30
-            jmp _respxx_swap_end
-_respxx_swap
+            NOP                     ;2   19
+            sta.w RESP0             ;4   23
             sta RESP1               ;3   27
-            sta RESP0               ;3   30
-_respxx_swap_end
             rts
 
 sub_draw_glyph_2

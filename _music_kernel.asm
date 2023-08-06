@@ -5,7 +5,6 @@ repl_draw_music
         ldx #(HEADER_HEIGHT / 4)
         jsr sub_wsync_loop
         ldx #$50
-        ldy #$00
         jsr sub_respxx
         lda #0
         pha

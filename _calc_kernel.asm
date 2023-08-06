@@ -14,23 +14,23 @@ sfd_draw_accumulator
             sta repl_fmt_arg
             jsr sub_fmt
             jsr sub_prep_repl_graphics
-            lda #1                       ;2
-            sta VDELP0                   ;3
-            sta VDELP1                   ;3
-            sta WSYNC                    ;--  0
-            lda #1                       ;2   2
-            sta NUSIZ0                   ;3   5
-            sta NUSIZ1                   ;3   8
-            lda #$b0                     ;2  10
-            sta HMP0                     ;3  13
-            lda #$c0                     ;2  15
-            sta HMP1                     ;3  18
-            SLEEP 23                      ;6  24
-            sta RESP0                    ;3  27
-            sta RESP1                    ;3  30
-            SLEEP 21                     ;37 68
+            lda #68
+            jsr sub_respxx
+            sta WSYNC
+            sta HMOVE
+            ldx #1                      ;2   2  
+            stx VDELP0                  ;3   5  
+            stx VDELP1                  ;3   8
+            stx NUSIZ0                  ;3  11
+            dex                         ;2  13; get to zero
+            stx NUSIZ1                  ;3  16
+            lda #$10                    ;2  18
+            sta WSYNC                   ;-----
+            stx HMP0                    ;3   3
+            sta HMP1                    ;3   6
+            sta HMOVE                   ;3   9
+
             ldy #CHAR_HEIGHT - 1         ;2  70
-            sta HMOVE                    ;3  73
 _accumulator_draw_loop    ; 40/41 w page jump
             sta WSYNC                    ;-   --
             lda (repl_s2_addr),y         ;5    5
