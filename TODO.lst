@@ -80,20 +80,24 @@ DONE
   - interpreter
      - safety against no free mem left
      - crude safety (inexact) against stack overflow
+  - code 2
+    - compaction pass
+        - 75 logo color bytes removed
+        - 375 bytes of logo
 BUGS
   - code
     - complex program takes too long to analyze in vblank
 BETA
   - code 2
       - compaction pass
-        - 87 bytes of sleeps
-        - 75 logo color bytes
-        - 24 zp y offset lookups
-        - 375 bytes of logo
         - 80 bytes of symbol function lookup
         - 32 bytes of symbol / menu lookup
         - 196 unused bytes between symbol lookup and symbol data
         - 48 unused bytes on last page 
+        - multiple ways to repl - can consolidate?
+        - multiple ways to draw - can consolidate?
+        - 87 bytes of sleeps
+        - 24 zp y offset lookups
       - reduce need for extra lookups
       - no / limited numbers constants
       - bigger symbol table? 

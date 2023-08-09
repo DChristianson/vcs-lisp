@@ -8,16 +8,18 @@ repl_draw_accumulator
 
 sfd_draw_accumulator
             ; convert accumulator to BCD
-            lda accumulator_msb
-            sta repl_fmt_arg + 1
+            lda accumulator_msb    
+            sta repl_fmt_arg + 1     ; BUGBUG: SPACE: unwieldy? can get rid of?
             lda accumulator_lsb
             sta repl_fmt_arg
             jsr sub_fmt
             jsr sub_prep_repl_graphics
+            ; prep for a 24 px sprite graphic
+            ; BUGBUG: SPACE: same as logo
             lda #68
             jsr sub_respxx
             sta WSYNC
-            sta HMOVE
+            sta HMOVE                   
             ldx #1                      ;2   2  
             stx VDELP0                  ;3   5  
             stx VDELP1                  ;3   8
@@ -33,14 +35,14 @@ sfd_draw_accumulator
             ldy #CHAR_HEIGHT - 1         ;2  70
 _accumulator_draw_loop    ; 40/41 w page jump
             sta WSYNC                    ;-   --
-            lda (repl_s2_addr),y         ;5    5
+            lda (gx_s2_addr),y         ;5    5
             sta GRP0                     ;3    8
-            lda (repl_s3_addr),y         ;5   13
+            lda (gx_s3_addr),y         ;5   13
             sta GRP1                     ;3   16
-            lda (repl_s4_addr),y         ;5   21
+            lda (gx_s4_addr),y         ;5   21
             sta GRP0                     ;3   24
-            SLEEP 17                     ;----
-            lda (repl_s5_addr),y         ;5   31
+            SLEEP 19                    ;----
+            lda #0                       ;5   31
             sta GRP1                     ;3   34
             sta GRP0                     ;3   37 
             dey                          ;2   39  

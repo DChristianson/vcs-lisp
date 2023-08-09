@@ -685,7 +685,7 @@ prompt_encode
 _prompt_encode_symbol
             tax
             lda LOOKUP_SYMBOL_GRAPHICS,x
-            sta repl_s4_addr
+            sta gx_s4_addr
             lda #<SYMBOL_GRAPHICS_S1F_BLANK
             jmp _prompt_encode_end
 _prompt_encode_ref
@@ -704,18 +704,16 @@ _prompt_encode_ref
             rts
             ; unrolled encoding loop
 _prompt_encode_s0
-            MAP_CAR repl_s0_addr
+            MAP_CAR gx_s0_addr
 _prompt_encode_s1
-            MAP_CAR repl_s1_addr
+            MAP_CAR gx_s1_addr
 _prompt_encode_s2
-            MAP_CAR repl_s2_addr
+            MAP_CAR gx_s2_addr
 _prompt_encode_s3
-            MAP_CAR repl_s3_addr
+            MAP_CAR gx_s3_addr
 _prompt_encode_s4
-            MAP_CAR repl_s4_addr
-            lda #0
+            MAP_CAR gx_s4_addr
 _prompt_encode_end
-            sta repl_s5_addr
             jmp prompt_display
 _prompt_encode_number
             sta repl_fmt_arg + 1
@@ -740,25 +738,24 @@ _prompt_encode_keys
             asl
             asl
             asl
-            sta repl_s0_addr
+            sta gx_s0_addr
             clc
             adc #8
-            sta repl_s1_addr
+            sta gx_s1_addr
             clc
             adc #8
-            sta repl_s2_addr
+            sta gx_s2_addr
             clc
             adc #8
-            sta repl_s3_addr
+            sta gx_s3_addr
             clc
             adc #8
-            sta repl_s4_addr
-            lda #<SYMBOL_GRAPHICS_S1F_BLANK
-            sta repl_s5_addr
+            sta gx_s4_addr
 
 prompt_display
             ; ------------------------------------
-            ; cell display kernel mechanics
+            ; cell display kernel
+            ;
             ;   - cells are displayed using player / missile graphics
             ;     - missiles are used to draw cell walls
             ;     - players are used to draw cell contents
@@ -831,23 +828,21 @@ _prompt_draw_start_loop ; skip a line
             ldy #CHAR_HEIGHT - 1         ;2   32
 
 _prompt_draw_loop    ; 40/41 w page jump
-            SLEEP 16                     ;16  48/51
-            lda (repl_s0_addr),y         ;5   53/56
-            sta GRP0                     ;3   56
-            lda (repl_s1_addr),y         ;5   61
-            sta GRP1                     ;3   64
-            lda (repl_s2_addr),y         ;5   69
-            sta GRP0                     ;3   72
-            lax (repl_s4_addr),y         ;5    1
-            txs                          ;2    3
-            lax (repl_s3_addr),y         ;5    8
-            lda (repl_s5_addr),y         ;5   13
+            SLEEP 23                     ;23  55/58
+            lda (gx_s0_addr),y           ;5   60/64
+            sta GRP0                     ;3   63
+            lda (gx_s1_addr),y           ;5   68
+            sta GRP1                     ;3   71
+            lda (gx_s2_addr),y           ;5   76
+            sta GRP0                     ;3    3
+            lax (gx_s3_addr),y           ;5    8
+            lda (gx_s4_addr),y           ;5   13
             ; the next statement needs to fire as we start drawing the first GRP0
             stx GRP1                     ;3   16   0 -  9  !0!8 ** ++ 32 40
-            tsx                          ;2   18   9 - 15   0!8!16 24 ++ 40
-            stx GRP0                     ;3   21  15 - 24   0 8!16!** ++ 40
-            sta GRP1                     ;3   24  24 - 33   0 8 16!24!** ++
-            sty GRP0                     ;3   27  33 - 42   0 8 16 24!32!** 
+            ldx #0                       ;2   18   9 - 15   0!8!16 24 ++ 40
+            sta GRP0                     ;3   21  15 - 24   0 8!16!** ++ 40
+            stx GRP1                     ;3   24  24 - 33   0 8 16!24!** ++
+            stx GRP0                     ;3   27  33 - 42   0 8 16 24!32!** 
             dey                          ;2   29  
             sbpl _prompt_draw_loop        ;2   31  
 
@@ -892,12 +887,10 @@ prompt_done
 
 sub_fmt
             lda #<SYMBOL_GRAPHICS_S1E_HASH
-            sta repl_s1_addr
-            lda #<SYMBOL_GRAPHICS_S1F_BLANK
-            sta repl_s5_addr
-            WRITE_DIGIT_LO repl_fmt_arg+1, repl_s2_addr ;16 15
-            WRITE_DIGIT_HI repl_fmt_arg, repl_s3_addr   ;14 29
-            WRITE_DIGIT_LO repl_fmt_arg, repl_s4_addr   ;16 45
+            sta gx_s1_addr
+            WRITE_DIGIT_LO repl_fmt_arg+1, gx_s2_addr ;16 15
+            WRITE_DIGIT_HI repl_fmt_arg, gx_s3_addr   ;14 29
+            WRITE_DIGIT_LO repl_fmt_arg, gx_s4_addr   ;16 45
             rts
 
 repl_menu_press_game
@@ -925,12 +918,11 @@ _header_loop
 sub_prep_repl_graphics
             ; prep for symbol graphics
             lda #>SYMBOL_GRAPHICS_S00_TERM
-            sta repl_s0_addr+1
-            sta repl_s1_addr+1
-            sta repl_s2_addr+1
-            sta repl_s3_addr+1
-            sta repl_s4_addr+1
-            sta repl_s5_addr+1
+            sta gx_s0_addr+1
+            sta gx_s1_addr+1
+            sta gx_s2_addr+1
+            sta gx_s3_addr+1
+            sta gx_s4_addr+1
             rts
 
 ; BUGBUG can probably ditch this for a loop
@@ -977,16 +969,16 @@ sub_draw_glyph_2
             ldy #3
 _glyph_load_loop
             lda MENU_GRAPHICS,x
-            sta repl_s1_addr,y
+            sta gx_s1_addr,y
             dex
             dey
             bpl _glyph_load_loop
             ldy #CHAR_HEIGHT - 1
 _glyph_loop
             sta WSYNC              ; BUGBUG: position
-            lda (repl_s0_addr),y   ; BUGBUG: position   
+            lda (gx_s0_addr),y   ; BUGBUG: position   
             sta GRP0                    
-            lda (repl_s1_addr),y         
+            lda (gx_s1_addr),y         
             sta GRP1                     
             dey
             sbpl _glyph_loop

@@ -67,7 +67,6 @@ REPL_DISPLAY_MARGIN = 16
 
 FRAME_ARG_OFFSET_LSB = -1
 FRAME_ARG_OFFSET_MSB = -2
-STACK_DANGER_ZONE = eval_func_ptr + 3 ; rough guess as to what is safe
 
 ; ----------------------------------
 ; heap
@@ -111,7 +110,13 @@ player_input       ds 2
 ; debounced p0 input
 player_input_latch ds 1
 ; reserve for game data
-game_data          ds 8
+game_data          ds 6
+
+; player graphics
+gx_addr
+gx_s4_addr         ds 2
+gx_s3_addr         ds 2
+gx_s2_addr         ds 2
 
 ; ----------------------------------
 ; repl kernel vars
@@ -119,7 +124,11 @@ game_data          ds 8
 
   SEG.U REPL
 
-    ORG $D4
+    ORG $D8
+
+; additional graphics addresses
+gx_s1_addr          ds 2
+gx_s0_addr          ds 2
 
 repl_menu_tab       ds 1 ; which menu tab is active BUGBUG: collapse with game state?
 repl_scroll         ds 1 ; lines to scroll
@@ -135,17 +144,10 @@ repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each li
 repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
 
 repl_fmt_arg     ds 2 ; numeric conversion BUGBUG: need?
-repl_tmp_width        ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
-repl_gx_addr
-repl_s5_addr     ds 2
+repl_tmp_width   ds 1 ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
 repl_tmp_indent       ; ds 1  temporary indent storage during layout BUGBUG: need?
-repl_tmp_cell_count   ; ds 1 temporary cell countdown during layout BUGBUG: need?
-repl_s4_addr     ds 2
+repl_tmp_cell_count ds 1  ; ds 1 temporary cell countdown during layout BUGBUG: need?
 repl_tmp_scroll        ; ds 1temporary cell storage during layout BUGBUG: need?
-repl_s3_addr     ds 2
-repl_s2_addr     ds 2
-repl_s1_addr     ds 2
-repl_s0_addr     ds 2
 repl_editor_line ds 1  ; line counter storage during editor display
 
 ; ----------------------------------
@@ -153,12 +155,14 @@ repl_editor_line ds 1  ; line counter storage during editor display
 ; for expression eval
   SEG.U EVAL
 
-    ORG $D4
+    ORG $D8
 
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
 eval_env         ds 1 ; top of stack for calling frame
 eval_func_ptr    ds 2 ; jump pointer to kernel function
+
+STACK_DANGER_ZONE = eval_func_ptr + 3 ; rough guess as to what is safe
 
 ; ----------------------------------
 ; code
