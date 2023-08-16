@@ -12,8 +12,7 @@ sfd_draw_accumulator
             sta repl_fmt_arg + 1     ; BUGBUG: SPACE: unwieldy? can get rid of?
             lda accumulator_lsb
             sta repl_fmt_arg
-            jsr sub_fmt
-            jsr sub_prep_repl_graphics
+            jsr sub_fmt_number
             ; prep for a 24 px sprite graphic
             ; BUGBUG: SPACE: same as logo
             lda #68

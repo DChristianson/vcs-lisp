@@ -24,7 +24,7 @@ _music_loop
         sta COLUP0
         pla
         sta COLUP1
-        ldx #MUSIC_GRAPHICS
+        lda #SYMBOL_BEEP
         jsr sub_draw_glyph_2
         jmp _music_loop
 _music_end

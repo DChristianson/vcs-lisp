@@ -401,52 +401,6 @@ oom
 ; ----------------------------------
 ; data
 
-    ORG $FD00
-
-LOOKUP_SYMBOL_FUNCTION
-LOOKUP_SYMBOL_VALUE
-LOOKUP_SYMBOL_VALUE_MSB
-LOOKUP_SYMBOL_VALUE_LSB = LOOKUP_SYMBOL_VALUE_MSB + 1
-    word #$0000;
-    word FUNC_S01_MULT
-    word FUNC_S02_ADD
-    word FUNC_S03_SUB
-    word FUNC_S04_DIV
-    word FUNC_S05_EQUALS
-    word FUNC_S06_GT
-    word FUNC_S07_LT
-    word FUNC_S08_AND
-    word FUNC_S09_OR
-    word FUNC_S0A_NOT
-FUNCTION_REF_IF = $C0 + (. - LOOKUP_SYMBOL_FUNCTION) / 2
-    word $0000
-FUNCTION_SYMBOL_F0 = (. - LOOKUP_SYMBOL_FUNCTION) / 2 ; beginning of functions
-    word FUNC_S0C_F0
-    word FUNC_S0D_F1
-    word FUNC_S0E_F2
-    word FUNC_S0F_BEEP
-ARGUMENT_SYMBOL_A0 = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of arguments
-    word $0000
-    word $0000
-    word $0000
-    word $0000
-NUMERIC_SYMBOL_ZERO = (. - LOOKUP_SYMBOL_VALUE) / 2 ; beginning of numbers
-    dc.s %0000000000000000 ; S14_ZERO
-    dc.s %0000000000000001 ; S15_ONE
-    dc.s %0000000000000010 ; S16_TWO   
-    dc.s %0000000000000011 ; S17_THREE  
-    dc.s %0000000000000100 ; S18_FOUR   
-    dc.s %0000000000000101 ; S19_FIVE   
-    dc.s %0000000000000110 ; S1A_SIX 
-    dc.s %0000000000000111 ; S1B_SEVEN   
-    dc.s %0000000000001000 ; S1C_EIGHT  
-    dc.s %0000000000001001 ; S1D_NINE  
-
-; ----------------------------------
-; symbol graphics 
-
-    ORG $FE00
-
     include "_graphics_symbols.asm"
 
     ORG $FF00
@@ -457,97 +411,107 @@ STD_HMOVE_BEGIN
 STD_HMOVE_END
 LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
 
-    ; menu graphics
+    ; eval
+LOOKUP_SYMBOL_FUNCTION
+    word $00
+    word FUNC_S01_MULT-1
+    word FUNC_S02_ADD-1
+    word FUNC_S03_SUB-1
+    word FUNC_S04_DIV-1
+    word $00
+    word FUNC_S05_EQUALS-1
+    word FUNC_S06_GT-1
+    word FUNC_S07_LT-1
+    word FUNC_S08_AND-1
+    word FUNC_S09_OR-1
+    word FUNC_S0A_NOT-1
 
-SYMBOL_GRAPHICS_S00_EVAL
-    byte $0,$64,$84,$8a,$ca,$8a,$8a,$62; 8
-SYMBOL_GRAPHICS_S01_EVAL
-    byte $0,$ae,$a8,$a8,$e8,$a8,$a8,$48; 8
-SYMBOL_GRAPHICS_S00_DEFN
-    byte $0,$c6,$a8,$a8,$ac,$a8,$a8,$c6; 8
-SYMBOL_GRAPHICS_S01_DEFN
-    byte $0,$80,$80,$80,$c0,$80,$80,$60; 8
-SYMBOL_GRAPHICS_S00_CALC
-    byte $0,$6a,$8a,$8a,$8e,$8a,$8a,$64; 8
-SYMBOL_GRAPHICS_S01_CALC
-    byte $0,$e6,$88,$88,$88,$88,$88,$86; 8
-SYMBOL_GRAPHICS_S00_DISK
-    byte $0,$ce,$a4,$a4,$a4,$a4,$a4,$ce; 8
-SYMBOL_GRAPHICS_S01_DISK
-    byte $0,$ea,$2a,$2a,$ec,$8a,$8a,$ea; 8
-SYMBOL_GRAPHICS_S00_BALL
-    byte $0,$ca,$aa,$aa,$ee,$aa,$aa,$c4; 8
-SYMBOL_GRAPHICS_S01_BALL
-    byte $0,$ee,$88,$88,$88,$88,$88,$88; 8
-SYMBOL_GRAPHICS_S00_MAZE
-    byte $0,$aa,$aa,$aa,$ae,$ea,$ea,$e4; 8
-SYMBOL_GRAPHICS_S01_MAZE
-    byte $0,$ee,$a8,$88,$4e,$28,$28,$ee; 8
-SYMBOL_GRAPHICS_S00_FLAG
-    byte $0,$c0,$c0,$c0,$ff,$ff,$ff,$ff; 8
-SYMBOL_GRAPHICS_S01_NUTS
-    byte $0,$1c,$3c,$3e,$6c,$6c,$46,$6; 8
-SYMBOL_GRAPHICS_S00_LISP
-    byte $0,$ee,$84,$84,$84,$84,$84,$8e; 8
-SYMBOL_GRAPHICS_S01_LISP
-    byte $0,$e8,$28,$28,$ee,$8a,$8a,$ee; 8
+    ;
+MENU_PAGE_0_LO
+    byte <SYMBOL_GRAPHICS_TERM
+    byte <SYMBOL_GRAPHICS_MULT
+    byte <SYMBOL_GRAPHICS_ADD
+    byte <SYMBOL_GRAPHICS_SUB
 
-; ----------------------------------
-; symbol graphics lookup 
-; 64 bytes starts at upper half of page
-; this aligns with symbol indexes 
-    
-    ORG $FFC0
+    byte <SYMBOL_GRAPHICS_DIV
+    byte <SYMBOL_GRAPHICS_TERM
+    byte <SYMBOL_GRAPHICS_EQUALS
+    byte <SYMBOL_GRAPHICS_GT
 
-LOOKUP_SYMBOL_GRAPHICS = $FF00
-SYMBOL_GRAPHICS_LOOKUP_TABLE
-    byte #<SYMBOL_GRAPHICS_S00_TERM
-    byte #<SYMBOL_GRAPHICS_S01_MULT
-    byte #<SYMBOL_GRAPHICS_S02_ADD
-    byte #<SYMBOL_GRAPHICS_S03_SUB
-    byte #<SYMBOL_GRAPHICS_S04_DIV
-    byte #<SYMBOL_GRAPHICS_S05_EQUALS
-    byte #<SYMBOL_GRAPHICS_S06_GT
-    byte #<SYMBOL_GRAPHICS_S07_LT
-    byte #<SYMBOL_GRAPHICS_S08_AND
-    byte #<SYMBOL_GRAPHICS_S09_OR 
-    byte #<SYMBOL_GRAPHICS_S0A_NOT
-    byte #<SYMBOL_GRAPHICS_S0B_IF
-    byte #<SYMBOL_GRAPHICS_S0C_F0
-    byte #<SYMBOL_GRAPHICS_S0D_F1
-    byte #<SYMBOL_GRAPHICS_S0E_F2
-    byte #<SYMBOL_GRAPHICS_S0F_F3
-    byte #<SYMBOL_GRAPHICS_S10_A0
-    byte #<SYMBOL_GRAPHICS_S11_A1
-    byte #<SYMBOL_GRAPHICS_S12_A2
-    byte #<SYMBOL_GRAPHICS_S13_A3
-    byte #<SYMBOL_GRAPHICS_S14_ZERO
-    byte #<SYMBOL_GRAPHICS_S15_ONE
-    byte #<SYMBOL_GRAPHICS_S16_TWO
-    byte #<SYMBOL_GRAPHICS_S17_THREE
-    byte #<SYMBOL_GRAPHICS_S18_FOUR
-    byte #<SYMBOL_GRAPHICS_S19_FIVE
-    byte #<SYMBOL_GRAPHICS_S1A_SIX
-    byte #<SYMBOL_GRAPHICS_S1B_SEVEN
-    byte #<SYMBOL_GRAPHICS_S1C_EIGHT
-    byte #<SYMBOL_GRAPHICS_S1D_NINE
-    byte #<SYMBOL_GRAPHICS_S1E_HASH
-    byte #<SYMBOL_GRAPHICS_S1F_BLANK
+    byte <SYMBOL_GRAPHICS_LT
+    byte <SYMBOL_GRAPHICS_AND
+    byte <SYMBOL_GRAPHICS_OR
+    byte <SYMBOL_GRAPHICS_NOT
 
-MENU_GRAPHICS
-    word #SYMBOL_GRAPHICS_S01_EVAL
-    word #SYMBOL_GRAPHICS_S00_EVAL
-    word #SYMBOL_GRAPHICS_S0C_F0
-    word #SYMBOL_GRAPHICS_S00_DEFN
-    word #SYMBOL_GRAPHICS_S0D_F1
-    word #SYMBOL_GRAPHICS_S00_DEFN
-    word #SYMBOL_GRAPHICS_S0E_F2
-    word #SYMBOL_GRAPHICS_S00_DEFN
-    word #SYMBOL_GRAPHICS_S0F_F3
-    word #SYMBOL_GRAPHICS_S0F_F3
-MUSIC_GRAPHICS = . - MENU_GRAPHICS - 1
-    word #SYMBOL_GRAPHICS_S00_DISK
-    word #SYMBOL_GRAPHICS_S01_DISK
+    byte <SYMBOL_GRAPHICS_IF
+    byte <SYMBOL_GRAPHICS_F0
+    byte <SYMBOL_GRAPHICS_F1
+    byte <SYMBOL_GRAPHICS_F2
+
+    byte <SYMBOL_GRAPHICS_A0
+    byte <SYMBOL_GRAPHICS_A1
+    byte <SYMBOL_GRAPHICS_A2
+    byte <SYMBOL_GRAPHICS_A3
+
+    byte <SYMBOL_GRAPHICS_HASH
+    byte <SYMBOL_GRAPHICS_ZERO
+    byte <SYMBOL_GRAPHICS_ONE
+    byte <SYMBOL_GRAPHICS_TWO
+
+    byte <SYMBOL_GRAPHICS_THREE
+    byte <SYMBOL_GRAPHICS_FOUR
+    byte <SYMBOL_GRAPHICS_FIVE
+    byte <SYMBOL_GRAPHICS_SIX
+
+    byte <SYMBOL_GRAPHICS_SEVEN
+    byte <SYMBOL_GRAPHICS_EIGHT
+    byte <SYMBOL_GRAPHICS_NINE
+    byte <SYMBOL_GRAPHICS_BEEP
+
+    byte <SYMBOL_GRAPHICS_TERM
+    byte <SYMBOL_GRAPHICS_TERM
+    byte <SYMBOL_GRAPHICS_TERM
+    byte <SYMBOL_GRAPHICS_TERM
+
+MENU_PAGE_0_HI
+    byte >SYMBOL_GRAPHICS_TERM
+    byte >SYMBOL_GRAPHICS_MULT
+    byte >SYMBOL_GRAPHICS_ADD
+    byte >SYMBOL_GRAPHICS_SUB
+    byte >SYMBOL_GRAPHICS_DIV
+    byte >SYMBOL_GRAPHICS_TERM
+    byte >SYMBOL_GRAPHICS_EQUALS
+    byte >SYMBOL_GRAPHICS_GT
+    byte >SYMBOL_GRAPHICS_LT
+    byte >SYMBOL_GRAPHICS_AND
+    byte >SYMBOL_GRAPHICS_OR
+    byte >SYMBOL_GRAPHICS_NOT
+    byte >SYMBOL_GRAPHICS_IF
+    byte >SYMBOL_GRAPHICS_F0
+    byte >SYMBOL_GRAPHICS_F1
+    byte >SYMBOL_GRAPHICS_F2
+    byte >SYMBOL_GRAPHICS_A0
+    byte >SYMBOL_GRAPHICS_A1
+    byte >SYMBOL_GRAPHICS_A2
+    byte >SYMBOL_GRAPHICS_A3
+    byte >SYMBOL_GRAPHICS_HASH
+    byte >SYMBOL_GRAPHICS_ZERO
+    byte >SYMBOL_GRAPHICS_ONE
+    byte >SYMBOL_GRAPHICS_TWO
+    byte >SYMBOL_GRAPHICS_THREE
+    byte >SYMBOL_GRAPHICS_FOUR
+    byte >SYMBOL_GRAPHICS_FIVE
+    byte >SYMBOL_GRAPHICS_SIX
+    byte >SYMBOL_GRAPHICS_SEVEN
+    byte >SYMBOL_GRAPHICS_EIGHT
+    byte >SYMBOL_GRAPHICS_NINE
+    byte >SYMBOL_GRAPHICS_BEEP
+    byte >SYMBOL_GRAPHICS_TERM
+    byte >SYMBOL_GRAPHICS_TERM
+    byte >SYMBOL_GRAPHICS_TERM
+    byte >SYMBOL_GRAPHICS_TERM
+
+
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors

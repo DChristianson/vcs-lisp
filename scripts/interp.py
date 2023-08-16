@@ -11,6 +11,7 @@ _symbols = [
     '+',
     '-',
     '/',
+    'mod',
     '=',
     '>',
     '<',
@@ -18,17 +19,39 @@ _symbols = [
     '|',
     '!',
     'if',
+    'cons',
+    'car',
+    'cdr',
     'f0',
     'f1',
     'f2',
-    'f3',
+    'beep',
+    'progn',
+    'loop',
+    'stack',
+    'steps',
+    'p0',
+    'p1',
+    'ball',
+    'x1b',
+    'x1c',
+    'x1d',
+    'x1e',
+    'x1f',
+    '0',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
     'a0',
     'a1',
     'a2',
-    'a3',
-    '0',
-    '1',
-    '2'
+    'a3'
 ]
 
 _quote = '"\''
@@ -237,4 +260,3 @@ for pair in heap.cells:
         break
     print(f'{indent}{pair.code()}')  
 print('')
-

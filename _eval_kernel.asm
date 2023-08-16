@@ -28,9 +28,7 @@ eval_apply
             pha
             stx eval_env
             lda 0,x     ; READABILITY: notation
-            and #$3f    ; READABILITY: notation
-            sec
-            sbc #FUNCTION_SYMBOL_F0
+            and #$0f    ; READABILITY: notation - this is the function #
             tax
             lda function_table,x ; deref function
             jmp eval_iter
@@ -44,7 +42,7 @@ eval_iter
             tax                   ; read head of cell reference in accumulator 
             lda HEAP_CAR_ADDR,x   ; .
             bpl _eval_number      ; branch if it's a number
-            cmp #FUNCTION_REF_IF  ; special case if we are applying test
+            cmp #SYMBOL_IF        ; special case if we are applying test
             bne _eval_funcall     ; otherwise eval as funcall
 _eval_test
             ; BUGBUG: need 1 stack
@@ -80,18 +78,13 @@ _eval_funcall_arg
             cmp #$40              ; .
             bpl _eval_funcall_args_expression ; if a funcall we recurse
             ; arg is a symbol (constant or variable) reference
-            and #$03f                  ; strip significant bits
-            cmp #NUMERIC_SYMBOL_ZERO   ; check if it's a local variable
-            bmi _eval_funcall_args_env ; read
-            ; arg is a constant, push to accumulator and return
-            asl
-            tax
-            ; BUGBUG: need 2 stack
-            ; this is a short circuit from doing a frame eval
-            lda LOOKUP_SYMBOL_VALUE_LSB,x
-            sta accumulator_lsb ; BUGBUG: may not be needed?
+            and #$01f                  ; strip significant bits
+            cmp #$0A                   ; check if it's a local variable BUGBUG: magic number
+            bpl _eval_funcall_args_env ; read
+            ; arg is a numeric constant, push to accumulator and return
+            sta accumulator_lsb
             pha
-            lda LOOKUP_SYMBOL_VALUE_MSB,x
+            lda #0
             sta accumulator_msb
             pha
             jmp _eval_funcall_args_next
@@ -99,7 +92,7 @@ _eval_funcall_args_env
             ; evaluate a local variable (a, b, c, d...)
             ; compute relative argument offset, then load accumulator and push to stack
             sec
-            sbc #ARGUMENT_SYMBOL_A0
+            sbc #SYMBOL_A0
             asl
             eor #$ff
             clc
@@ -138,11 +131,11 @@ _eval_funcall_exec
             and #$3f
             asl
             tax
+            lda LOOKUP_SYMBOL_FUNCTION+1,x ; reverse jump
+            pha
             lda LOOKUP_SYMBOL_FUNCTION,x
-            sta eval_func_ptr
-            lda LOOKUP_SYMBOL_FUNCTION+1,x
-            sta eval_func_ptr+1
-            jmp (eval_func_ptr)
+            pha
+            rts
 
 exec_frame_return
             ; called when we've made a funcall or evaluated an expression

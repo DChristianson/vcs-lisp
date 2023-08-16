@@ -305,6 +305,7 @@ if __name__ == "__main__":
     parser.add_argument('--mirror', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--bits', type=int, choices=[1] + list(range(8, 8 * 32 + 1, 8)), default=8)
+    parser.add_argument('--tile', type=int, default=-1)
     parser.add_argument('--symfile', type=str, default=None)
     parser.add_argument('filenames', nargs='*')
 
@@ -327,14 +328,25 @@ if __name__ == "__main__":
     for spritename, files in sprites.items():
         for i, filename in enumerate(files):
             varname = f'{spritename}_{i}'
-            with Image.open(filename, 'r') as image:
-                width, _ = image.size
-                if args.bits > 8:
-                    emit_spriteMulti(varname, image, out, bits=args.bits, fmt=fmt, symbols=symbols)
-                elif width == 8:
-                    emit_spriteMulti(varname, image, out, bits=8, fmt=fmt)
-                elif args.bits == 1:
-                    emit_varmissile(varname, image, out, reverse=args.reverse, mirror=args.mirror, fmt=fmt, debug=args.debug)
+            with Image.open(filename, 'r') as base_image:
+                width, height = base_image.size
+                images = []
+                if args.tile > 0:
+                    byteswide = int(width / 8)
+                    for r in range(0, height, args.tile):
+                        box = (0,r,width,r + args.tile)
+                        i = base_image.crop(box)
+                        images.append((i, symbols[0:byteswide]))
+                        symbols = symbols[byteswide:]
                 else:
-                    emit_varsprite8(varname, image, out, reverse=args.reverse, mirror=args.mirror, fmt=fmt, debug=args.debug)
-        
+                    images.append((base_image, symbols))
+                for image, symbols in images:
+                    if args.bits > 8:
+                        emit_spriteMulti(varname, image, out, bits=args.bits, fmt=fmt, symbols=symbols)
+                    elif width == 8:
+                        emit_spriteMulti(varname, image, out, bits=8, fmt=fmt)
+                    elif args.bits == 1:
+                        emit_varmissile(varname, image, out, reverse=args.reverse, mirror=args.mirror, fmt=fmt, debug=args.debug)
+                    else:
+                        emit_varsprite8(varname, image, out, reverse=args.reverse, mirror=args.mirror, fmt=fmt, debug=args.debug)
+

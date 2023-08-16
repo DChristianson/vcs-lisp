@@ -84,50 +84,48 @@ DONE
     - compaction pass
         - 75 logo color bytes removed
         - 375 bytes of logo
+        - 80 bytes of symbol function lookup
+        - 32 bytes of symbol / menu lookup
+        - 196 unused bytes between symbol lookup and symbol data
+   - reduce need for extra lookups
+   - bigger symbol table? 
 BUGS
   - code
     - complex program takes too long to analyze in vblank
 BETA
-  - code 2
-      - compaction pass
-        - 80 bytes of symbol function lookup
-        - 32 bytes of symbol / menu lookup
-        - 196 unused bytes between symbol lookup and symbol data
-        - 48 unused bytes on last page 
-        - multiple ways to repl - can consolidate?
-        - multiple ways to draw - can consolidate?
-        - 87 bytes of sleeps
-        - 24 zp y offset lookups
-      - reduce need for extra lookups
-      - no / limited numbers constants
-      - bigger symbol table? 
-      - compact numbers?
   - game modes 2
       - music matcher (simon?)
       - steps (tweetmaze)
       - towers of hanoi
       - paddle pong
       - calc mode
-  - display 4 
-      - menus are messed up
-      - different colors depending on function selection
+  - virtual keyboard 3
+      - can only see symbols you can use
+  - eval graphics kernel
+     - graphics zone
+     - song that plays during eval?
   - library 2
       - modulo function
       - music functions (map... or progn?)
       - game functions
+  - display 4 
+      - use PF0 to hide HMOVE / switch to std HMOVE..?.
+      - different colors depending on function selection
   - interpreter
      - be able to interrupt eval
      - show free mem / stack / heap 
      - real safeties against stack overflow
   - library 1
       - all functions working
-  - virtual keyboard 3
-      - can only see symbols you can use
+  - code 2
+      - compaction pass
+        - 48 unused bytes on last page 
+        - multiple ways to repl - can consolidate?
+        - multiple ways to draw - can consolidate?
+        - 87 bytes of sleeps
+        - 24 zp y offset lookups
   - dev support
      - some way to do unit tests?
-  - eval graphics kernel
-     - graphics zone
-     - song that plays during eval?
 SPRINKLES
   - font
      - tune font / symbols

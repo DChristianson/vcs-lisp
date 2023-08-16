@@ -13,18 +13,29 @@ _repl_update_edit_digit_loop
             dey
             bpl _repl_update_edit_digit_loop
             lda repl_edit_sym
-            sec
-            sbc #$14
+            and #$0f
             ora HEAP_CDR_ADDR,x
             sta HEAP_CDR_ADDR,x
             lda #$0f
             and HEAP_CAR_ADDR,x
             sta HEAP_CAR_ADDR,x
             jmp _repl_update_skip_move ; don't exit editor
+_repl_update_edit_number
+            ; we've changed to a number using # symbol
+            lda HEAP_CAR_ADDR,x
+            bpl _repl_update_edit_number_skip ; already a number
+_repl_update_edit_set_number
+            ; clear car and free cdr
+            lda #0
+            sta HEAP_CAR_ADDR,x
+            jsr set_cdr
+_repl_update_edit_number_skip
+            jmp _repl_update_edit_done
+
 _repl_update_edit_head
             lda repl_edit_sym
             beq _repl_update_edit_delete ; edit function or . symbol
-            cmp #$10 ; BUGBUG: magic number (var versus function)
+            cmp #$20 ; BUGBUG: magic number (var versus function)
             bcc _repl_update_edit_set_car
             jmp _repl_update_edit_done ; can't replace with symbol
 _repl_update_keys_move_jmp
@@ -37,9 +48,23 @@ _repl_update_edit_set_funcar
             ldy #0
             sty HEAP_CDR_ADDR,x
             jmp _repl_update_edit_set_car
+_repl_update_edit_funcall
+            tax
+            lda repl_edit_sym
+            beq _repl_update_edit_delete   ; delete current cell
+            cmp #$20 ; BUGBUG: magic number (var versus function)                        
+            bcc _repl_update_edit_set_funcar   ; edit funcall operator
+            cmp #$40 ; BUGBUG: hash
+            beq _repl_update_edit_number
+            ora #$c0
+            ldx repl_curr_cell
+            dex
+            jsr set_cdr
+            jmp _repl_update_edit_done
 _repl_update_edit_keys
             lda player_input_latch         ; check button push
             bmi _repl_update_keys_move_jmp  ; no push
+            jsr sub_repl_edit_symbol
             ldx repl_curr_cell
             beq _repl_update_edit_extend   ; curr cell is null
 _repl_update_edit_apply
@@ -53,13 +78,13 @@ _repl_update_edit_apply
             ; curr cell is a symbol
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
-            cmp #$1e ; BUGBUG: hash
+            cmp #$40 ; BUGBUG: hash
             bne _repl_update_edit_symbol ; BUGBUG could be simpler?
             dex
             jsr alloc_cdr
             jmp _repl_update_edit_set_number
 _repl_update_edit_symbol
-            cmp #$10 ; BUGBUG: magic number (var versus function)                
+            cmp #$20 ; BUGBUG: magic number (var versus function)                
             bcs _repl_update_edit_set_car  ; edit symbol
             dex
             jsr alloc_cdr       
@@ -83,30 +108,7 @@ _repl_update_edit_delete
             ldx repl_prev_cell             ; 
             jsr set_cdr                    ;
             jmp _repl_update_edit_done
-_repl_update_edit_funcall
-            tax
-            lda repl_edit_sym
-            beq _repl_update_edit_delete   ; delete current cell
-            cmp #$10 ; BUGBUG: magic number (var versus function)                        
-            bcc _repl_update_edit_set_funcar   ; edit funcall operator
-            cmp #$1e ; BUGBUG: hash
-            beq _repl_update_edit_number
-            ora #$c0
-            ldx repl_curr_cell
-            dex
-            jsr set_cdr
-            jmp _repl_update_edit_done
-_repl_update_edit_number
-            ; we've changed to a number using # symbol
-            lda HEAP_CAR_ADDR,x
-            bpl _repl_update_edit_number_skip ; already a number
-_repl_update_edit_set_number
-            ; clear car and free cdr
-            lda #0
-            sta HEAP_CAR_ADDR,x
-            jsr set_cdr
-_repl_update_edit_number_skip
-            jmp _repl_update_edit_done
+
 
 repl_update
             ; disambiguate editor state
@@ -136,10 +138,10 @@ _repl_update_edit_keys_start
             jmp _repl_update_edit_save_sym
 _repl_update_edit_number_start
             ; current cell is a number
-            lda #$14 ; BUGBUG: ZERO
+            lda #$20 ; BUGBUG: ZERO
 _repl_update_edit_save_sym
-            and #$1f
-            sta repl_edit_sym
+            and #$3f
+            sta repl_edit_sym ; BUGBUG find right sym
             jmp _repl_update_skip_move
 
 _repl_update_keys_move
@@ -346,7 +348,7 @@ _prep_repl_line_next_skip_prev
             pla ; pull next cell from stack
             bmi _prep_repl_line_complex_next ; not null
 _prep_repl_line_next_terminal
-            lda #$c0; SYMBOL_GRAPHICS_S00_TERM
+            lda #$c0; SYMBOL_GRAPHICS_S00_TERM BUGBUG: magic number
             sta repl_display_list,y
             jmp _prep_repl_line_next_dey
 _prep_repl_line_clear
@@ -479,61 +481,43 @@ _prep_repl_end
 ; Repl display
 ;
 
-repl_draw
-
-            lda #0
-            sta COLUBK
-
-            lda game_state
-            lsr
-            lsr
-            lsr
-            tax
-            lda REPL_DRAW_JMP_HI,x
-            pha
-            lda REPL_DRAW_JMP_LO,x
-            pha
-            rts
-repl_draw_return
-
-            jsr sub_draw_menu
-            jsr sfd_draw_prompt
-
-            sta WSYNC
-            lda #BLACK
-            sta COLUBK
-            ldx #FOOTER_HEIGHT
-            jsr sub_wsync_loop
-
-            jmp waitOnOverscan
-
-
             ; MENU
             ; 
 sub_draw_menu
+            lda #$00
+            jsr sub_respxx
             sta WSYNC                    ;--  0
-            lda #$c0                     ;2   2
-            sta HMP0                     ;3   5
-            lda #$d0                     ;2   7
-            sta HMP1                     ;3  10
-            SLEEP 9                      ;9  19
-            sta RESP0                    ;3  22
-            sta RESP1                    ;3  25
-
-            sta WSYNC
-            sta HMOVE                    ;3   3 - don't need early hmove since COLUBK is black
+            sta HMOVE
+            lda repl_menu_tab            ; multiply by 16 + 2
+            clc
+            adc #1
+            asl
+            asl
+            asl
+            asl
+            ldy #>SYMBOL_GRAPHICS_P2
+            ldx #3
+_menu_loop
+            sty gx_addr,x
+            dex
+            sta gx_addr,x
+            adc #8
+            dex
+            bpl _menu_loop
+            inx                         ; get to 0
+        	stx HMP0                    
+            lda #$10 
+            sta HMP1
+        	sta WSYNC                   
+            sta HMOVE
             lda #RED                     ;2   5
             ldx repl_edit_line           ;3   8
             bpl _menu_set_colubk         ;2  10
             lda #CURSOR_COLOR            ;2  12
 _menu_set_colubk
             sta COLUBK
-            lda repl_menu_tab
-            asl
-            asl
-            adc #3 ; don't need to clc due to AND #$07 + ASL's
-            tax
             jsr sub_draw_glyph_2
+            sta GRP0 ; forces GRP1 delay register to clear
             rts
 
             ; PROMPT
@@ -544,7 +528,6 @@ sfd_draw_prompt ; stack 1 level deep
             sta TIM64T
             ldy #(EDITOR_LINES - 1)
             sty repl_editor_line
-            jsr sub_prep_repl_graphics
 
             ; position cursor
             sta WSYNC               ; --
@@ -683,43 +666,34 @@ prompt_encode
             cmp #$40
             bpl _prompt_encode_ref
 _prompt_encode_symbol
-            tax
-            lda LOOKUP_SYMBOL_GRAPHICS,x
-            sta gx_s4_addr
-            lda #<SYMBOL_GRAPHICS_S1F_BLANK
-            jmp _prompt_encode_end
+            ldy #0
+            jsr sub_fmt_symbol
+            jmp prompt_display
 _prompt_encode_ref
             tax
             lda HEAP_CAR_ADDR,x
             bpl _prompt_encode_number
-            ; load indent level onto stack so we can jmp
+            ; load width and find offset to write graphics
             lda repl_display_indent,y 
             and #$07
-            asl ; multiply by two
-            tay
-            lda PROMPT_ENCODE_JMP+1,y
-            pha
-            lda PROMPT_ENCODE_JMP,y
-            pha
-            rts
-            ; unrolled encoding loop
-_prompt_encode_s0
-            MAP_CAR gx_s0_addr
-_prompt_encode_s1
-            MAP_CAR gx_s1_addr
-_prompt_encode_s2
-            MAP_CAR gx_s2_addr
-_prompt_encode_s3
-            MAP_CAR gx_s3_addr
-_prompt_encode_s4
-            MAP_CAR gx_s4_addr
+            asl ; multiply by 2
+            tay ; load offset into y
+            ;  encoding loop
+_prompt_encode_loop
+            lda HEAP_CAR_ADDR,x ; read car
+            jsr sub_fmt_symbol
+            lda HEAP_CDR_ADDR,x
+            dey
+            dey
+            tax
+            bne _prompt_encode_loop
 _prompt_encode_end
             jmp prompt_display
 _prompt_encode_number
             sta repl_fmt_arg + 1
             lda HEAP_CDR_ADDR,x
             sta repl_fmt_arg
-            jsr sub_fmt
+            jsr sub_fmt_number
             jmp prompt_display
 
 _prompt_encode_blank
@@ -732,25 +706,20 @@ _prompt_encode_blank_loop
 
 _prompt_encode_keys
             lda repl_edit_sym
-            sec
             sbc #2
+            ldx #9
+_prompt_encode_keys_loop
             and #$1f
-            asl
-            asl
-            asl
-            sta gx_s0_addr
-            clc
-            adc #8
-            sta gx_s1_addr
-            clc
-            adc #8
-            sta gx_s2_addr
-            clc
-            adc #8
-            sta gx_s3_addr
-            clc
-            adc #8
-            sta gx_s4_addr
+            tay
+            lda MENU_PAGE_0_HI,y
+            sta gx_addr,x
+            dex
+            lda MENU_PAGE_0_LO,y
+            sta gx_addr,x
+            iny
+            tya
+            dex
+            bpl _prompt_encode_keys_loop
 
 prompt_display
             ; ------------------------------------
@@ -844,7 +813,7 @@ _prompt_draw_loop    ; 40/41 w page jump
             stx GRP1                     ;3   24  24 - 33   0 8 16!24!** ++
             stx GRP0                     ;3   27  33 - 42   0 8 16 24!32!** 
             dey                          ;2   29  
-            sbpl _prompt_draw_loop        ;2   31  
+            sbpl _prompt_draw_loop       ;2   31  
 
             ldx #$fd ; reset the stack   ;2   33
             txs                          ;2   35
@@ -885,9 +854,40 @@ prompt_done
             jsr waitOnTimer
             rts
 
-sub_fmt
-            lda #<SYMBOL_GRAPHICS_S1E_HASH
+repl_draw
+
+            lda #0
+            sta COLUBK
+
+            lda game_state
+            lsr
+            lsr
+            lsr
+            tax
+            lda REPL_DRAW_JMP_HI,x
+            pha
+            lda REPL_DRAW_JMP_LO,x
+            pha
+            rts
+repl_draw_return
+
+            jsr sub_draw_menu
+            jsr sub_clear_gx
+            jsr sfd_draw_prompt
+
+            sta WSYNC
+            lda #BLACK
+            sta COLUBK
+            ldx #FOOTER_HEIGHT
+            jsr sub_wsync_loop
+
+            jmp waitOnOverscan
+
+sub_fmt_number
+            lda #<SYMBOL_GRAPHICS_HASH
             sta gx_s1_addr
+            lda #>SYMBOL_GRAPHICS_HASH
+            sta gx_s1_addr + 1
             WRITE_DIGIT_LO repl_fmt_arg+1, gx_s2_addr ;16 15
             WRITE_DIGIT_HI repl_fmt_arg, gx_s3_addr   ;14 29
             WRITE_DIGIT_LO repl_fmt_arg, gx_s4_addr   ;16 45
@@ -913,25 +913,6 @@ _header_loop
             dex
             bpl _header_loop
             rts
-
-; BUGBUG can probably ditch this for a loop
-sub_prep_repl_graphics
-            ; prep for symbol graphics
-            lda #>SYMBOL_GRAPHICS_S00_TERM
-            sta gx_s0_addr+1
-            sta gx_s1_addr+1
-            sta gx_s2_addr+1
-            sta gx_s3_addr+1
-            sta gx_s4_addr+1
-            rts
-
-; BUGBUG can probably ditch this for a loop
-PROMPT_ENCODE_JMP
-    word _prompt_encode_s4-1
-    word _prompt_encode_s3-1
-    word _prompt_encode_s2-1
-    word _prompt_encode_s1-1
-    word _prompt_encode_s0-1
 
 REPL_MENU_JMP_LO
     byte <(repl_menu_press_eval-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1)
@@ -966,23 +947,56 @@ _respxx_loop
             rts
 
 sub_draw_glyph_2
-            ldy #3
-_glyph_load_loop
-            lda MENU_GRAPHICS,x
-            sta gx_s1_addr,y
-            dex
-            dey
-            bpl _glyph_load_loop
             ldy #CHAR_HEIGHT - 1
 _glyph_loop
             sta WSYNC              ; BUGBUG: position
-            lda (gx_s0_addr),y   ; BUGBUG: position   
+            lda (gx_s3_addr),y   ; BUGBUG: position   
             sta GRP0                    
-            lda (gx_s1_addr),y         
+            lda (gx_s4_addr),y         
             sta GRP1                     
             dey
             sbpl _glyph_loop
-            sta GRP0 ; clear VDEL register
+            rts
+
+sub_fmt_symbol
+            ; a is a symbol value, y is location
+            asl ; multiply by 8
+            asl ; .
+            asl ; .
+            sta gx_addr,y
+            lda #>SYMBOL_GRAPHICS_P0
+            adc #0 ; will pick up carry bit
+            sta gx_addr+1,y
+            rts
+
+sub_clear_gx
+            ; clear gx
+            lda #>SYMBOL_GRAPHICS_BLANK
+            ldy #<SYMBOL_GRAPHICS_BLANK
+            ldx #9
+_clear_gx_loop
+            sta gx_addr,x
+            dex
+            sty gx_addr,x
+            dex
+            bpl _clear_gx_loop
+            rts
+
+sub_repl_edit_symbol
+            ldx repl_edit_sym
+            lda MENU_PAGE_0_HI,x            ; convert repl_edit_sym to symbol
+            sec
+            sbc #>SYMBOL_GRAPHICS_P0
+            lsr
+            ror
+            ror
+            sta repl_edit_sym
+            lda MENU_PAGE_0_LO,x
+            lsr
+            lsr
+            ora repl_edit_sym
+            lsr
+            sta repl_edit_sym
             rts
 
     ; line width X sprite arrangement
@@ -1010,12 +1024,12 @@ DISPLAY_REPL_COLORS
     byte #$7A,#$7E,#$86 ; BUGBUG: make pal safe
 
     MAC WRITE_DIGIT_HI 
-            lda {1}                         ;3  3
-            and #$f0                        ;2  5
-            lsr                             ;2  7
-            clc                             ;2  9
-            adc #<SYMBOL_GRAPHICS_S14_ZERO  ;2 11
-            sta {2}                         ;3 13
+            lda {1}
+            and #$f0
+            lsr
+            sta {2}
+            lda #>SYMBOL_GRAPHICS_ZERO
+            sta {2}+1
     ENDM
 
     MAC WRITE_DIGIT_LO
@@ -1024,23 +1038,17 @@ DISPLAY_REPL_COLORS
             asl
             asl
             asl
-            clc
-            adc #<SYMBOL_GRAPHICS_S14_ZERO
             sta {2}
+            lda #>SYMBOL_GRAPHICS_ZERO
+            sta {2}+1
     ENDM
 
     MAC MAP_CAR
-            ldy HEAP_CAR_ADDR,x ; read car
-            lda LOOKUP_SYMBOL_GRAPHICS,y
-            sta {1}
+            lda HEAP_CAR_ADDR,x ; read car
+            ldy #{1}
+            jsr sub_fmt_symbol
             lda HEAP_CDR_ADDR,x
             tax
     ENDM
 
-    MAC WRITE_ADDR
-            lda #<{1}
-            sta {2}
-            lda #>{1}
-            sta {2}+1
-    ENDM
 
