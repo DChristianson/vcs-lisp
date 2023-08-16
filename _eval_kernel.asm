@@ -42,7 +42,7 @@ eval_iter
             tax                   ; read head of cell reference in accumulator 
             lda HEAP_CAR_ADDR,x   ; .
             bpl _eval_number      ; branch if it's a number
-            cmp #SYMBOL_IF        ; special case if we are applying test
+            cmp #SYMBOL_IF + $c0  ; special case if we are applying test
             bne _eval_funcall     ; otherwise eval as funcall
 _eval_test
             ; BUGBUG: need 1 stack
@@ -213,9 +213,9 @@ stack_overflow
             stx eval_frame
             jmp exec_frame_return
 
-FUNC_S0C_F0
-FUNC_S0D_F1
-FUNC_S0E_F2
+FUNC_F0
+FUNC_F1
+FUNC_F2
             ; check for tail call when we call an user defined function
             ; we will immediately collapse the stack
             ; the function expression will be evaluated on the next vblank

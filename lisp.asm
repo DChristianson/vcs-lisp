@@ -413,19 +413,27 @@ LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
 
     ; eval
 LOOKUP_SYMBOL_FUNCTION
-    word $00
+    word $0000
     word FUNC_S01_MULT-1
     word FUNC_S02_ADD-1
     word FUNC_S03_SUB-1
     word FUNC_S04_DIV-1
-    word $00
+    word $0000
     word FUNC_S05_EQUALS-1
     word FUNC_S06_GT-1
     word FUNC_S07_LT-1
     word FUNC_S08_AND-1
     word FUNC_S09_OR-1
     word FUNC_S0A_NOT-1
-
+    word $0000
+    word $0000
+    word $0000
+    word $0000
+    word FUNC_F0-1
+    word FUNC_F1-1
+    word FUNC_F2-1
+    word FUNC_BEEP-1
+    
     ;
 MENU_PAGE_0_LO
     byte <SYMBOL_GRAPHICS_TERM

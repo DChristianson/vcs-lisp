@@ -166,7 +166,7 @@ _not_return
             sty accumulator_msb
             jmp exec_frame_return
 
-FUNC_S0F_BEEP
+FUNC_BEEP
             ; beep
             ;  - we subtract 1 from arg1 and save in place
             ;  - if arg1 < 0 we return normally
