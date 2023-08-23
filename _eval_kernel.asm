@@ -3,7 +3,9 @@
 ;
 
 eval_wait
-            lda #GAME_STATE_EVAL_CONTINUE
+            lda game_state
+            and #$f0
+            ora #GAME_STATE_EVAL_CONTINUE
             sta game_state
             jmp update_return
 
@@ -149,7 +151,8 @@ exec_frame_return
             sta repl_scroll
             sta repl_edit_line
             sta repl_edit_col
-            lda #GAME_STATE_EDIT
+            lda game_state
+            and #GAME_TYPE_MASK; #GAME_STATE_EDIT
             sta game_state
             jmp update_return
 _eval_pop_frame
@@ -266,7 +269,9 @@ _apply_shift_loop
             ldx eval_next
             stx eval_frame
 _apply
-            lda #GAME_STATE_EVAL_APPLY
+            lda game_state
+            and #$f0
+            ora #GAME_STATE_EVAL_APPLY
             sta game_state
             jmp update_return
 

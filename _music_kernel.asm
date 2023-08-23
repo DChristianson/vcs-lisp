@@ -4,8 +4,20 @@ repl_draw_music
         ;; color whichever one is playing
         ldx #(HEADER_HEIGHT / 4)
         jsr sub_wsync_loop
-        ldx #$50
+        lda #$4f
         jsr sub_respxx
+        sta WSYNC
+        sta HMOVE
+        lda #5
+        sta NUSIZ0
+        sta NUSIZ1
+        ldy #2
+        lda #SYMBOL_BEEP
+        jsr sub_fmt_symbol
+        dey
+        dey
+        lda #SYMBOL_BEEP
+        jsr sub_fmt_symbol
         lda #0
         pha
         lda #$10
@@ -24,10 +36,12 @@ _music_loop
         sta COLUP0
         pla
         sta COLUP1
-        lda #SYMBOL_BEEP
         jsr sub_draw_glyph_2
         jmp _music_loop
 _music_end
+        lda #0
+        sta NUSIZ0
+        sta NUSIZ1
         ldx #(HEADER_HEIGHT / 4)
         jsr sub_wsync_loop
         jmp repl_draw_return

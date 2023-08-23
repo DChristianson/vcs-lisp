@@ -3,6 +3,13 @@
 ;; code editor
 ;;
 
+sub_wsync_loop
+_header_loop
+            sta WSYNC
+            dex
+            bpl _header_loop
+            rts
+
 repl_kernel_start
 
 _repl_update_edit_digit
@@ -93,8 +100,9 @@ _repl_update_edit_set_car
             ora #$c0
             sta HEAP_CAR_ADDR,x
 _repl_update_edit_done
-            ldx #GAME_STATE_EDIT
-            stx game_state
+            lda game_state
+            and #$f0 ; #GAME_STATE_EDIT
+            sta game_state
             jmp _repl_update_skip_move
 _repl_update_edit_extend
             ldx repl_prev_cell
@@ -112,17 +120,19 @@ _repl_update_edit_delete
 
 repl_update
             ; disambiguate editor state
-            ldx game_state
-            cpx #GAME_STATE_EDIT_KEYS
-            beq _repl_update_edit_keys
+            lda game_state
+            lsr ; #GAME_STATE_EDIT_KEYS == 1
+            bcs _repl_update_edit_keys
+            ; moving line
             lda repl_edit_line
             bmi _repl_update_menu
             lda player_input_latch     ; check button push
             bmi _repl_update_edit_move ; BUGBUG: better name prefix - _repl_keys_...?
 _repl_update_edit_keys_start
             ; button was pushed, so we need to display keyboard
-            ldx #GAME_STATE_EDIT_KEYS
-            stx game_state
+            lda game_state
+            ora #GAME_STATE_EDIT_KEYS
+            sta game_state
             lda repl_curr_cell
             beq _repl_update_edit_save_sym ; curr cell is null
             tax
@@ -370,6 +380,9 @@ _prep_repl_line_end
             adc repl_scroll
             sta repl_last_line ; last cleared line
             ; adjust cursor to stay within line bounds
+            lda #$ff
+            sta repl_edit_y 
+            sta repl_keys_y
             lda repl_edit_line           ; check if we are at -1
             bmi _prep_repl_key_end       ; if so, skip (that's the menu)
 _prep_repl_line_adjust 
@@ -425,10 +438,12 @@ _prep_repl_line_adjust_end
             clc
             adc repl_display_cursor
             sta repl_display_cursor
+            sty repl_edit_y
             ; show keyboard if we are in that game state
             ; keep y as edit line
             lda game_state
-            beq _prep_repl_key_end
+            lsr ; GAME_STATE_EDIT_KEYS
+            bcc _prep_repl_key_end
             lda repl_display_cursor
             sec
             sbc #2
@@ -437,9 +452,9 @@ _prep_repl_line_adjust_end
             asl
             ora #4 ; keyboard is 5 cells wide
             dey
+            sty repl_keys_y
             sta repl_display_indent,y
-            lda #$ff
-            sta repl_display_list,y
+            stx repl_display_list,y
 _prep_repl_key_end
 
             ; find curr cell based on editor position
@@ -535,7 +550,7 @@ sfd_draw_prompt ; stack 1 level deep
             asl                     ;2    5
             asl                     ;2    7
             asl                     ;2    9
-            sec                     ;2   11
+            sec                     ;2   11; BUGBUG: space: use generic object position?
 _prompt_repos_col
             sbc #15                 ;2   13
             sbcs _prompt_repos_col  ;2/3 15
@@ -581,48 +596,27 @@ _prompt_repos_swap_end
             lda #$30                ;2   13
             sta CTRLPF              ;3   16
             tya                     ;2   18 
-            eor #$ff                ;2   20
-            clc                     ;2   22
-            adc #(EDITOR_LINES)     ;2   24
-            clc                     ;2   26   
-            adc repl_scroll         ;3   29
-            cmp repl_edit_line      ;3   32
-            bne _prompt_skip_cursor_bk ;2 34
-_prompt_jmp_cursor_bk
-            sec                     ;2   36
-            sbc #1                  ;2   38
-            and #$01                ;2   40
-            tax                     ;2   42
-            lda DISPLAY_REPL_COLORS,x ;4 46
-            ldx #CURSOR_COLOR       ;2   48 
-            SLEEP 6                 ;6   54
-            jmp _prompt_cursor_bk_1 ;3   57
-_prompt_skip_cursor_bk
-            sec                     ;2   37
-            sbc #1                  ;2   39
-            cmp repl_edit_line      ;3   42
-            beq _prompt_check_vk_bk ;2   44
-            and #$01                ;2   46
-            tax                     ;2   48
-            lda DISPLAY_REPL_COLORS,x ;4 52
-            tax                     ;2   54
-            jmp _prompt_cursor_bk_1 ;3   57
-_prompt_check_vk_bk
-            ldx game_state          ;3   48
-            bne _prompt_vk_bk       ;2   50
-            and #$01                ;2   52
-            tax                     ;2   54
-            lda DISPLAY_REPL_COLORS,x ;4 58
-            tax                     ;2   60   
-            jmp _prompt_cursor_bk_2 ;3   63         
-_prompt_vk_bk
-            lda #0                  ;2   53
-            ldx #CURSOR_COLOR + 1   ;2   55 ; KLUDGE (+ 1 indicator)
-            SLEEP 2                 ;2   57
+            clc                     ;2   20
+            adc repl_scroll         ;3   23
+            and #$01                ;2   25
+            tax                     ;2   27
+            lda DISPLAY_REPL_COLORS,x ;4 31
+            cpy repl_keys_y         ;3   34
+            bne _prompt_keys_skip   ;2*  36
+            lda #0                  ;2   38
+            ldx #CURSOR_COLOR+1     ;2   40
+            SLEEP 4                 ;4   44
+            jmp _prompt_cursor_bk_1 ;3   47
+_prompt_keys_skip
+            cpy repl_edit_y         ;3   40
+            bne _prompt_cursor_skip ;2*  42
+            ldx #CURSOR_COLOR       ;2   44
+            jmp _prompt_cursor_bk_1 ;3   47
+_prompt_cursor_skip
+            tax                     ;2   45    
+            SLEEP 2                 ;2   47
 _prompt_cursor_bk_1
-            SLEEP 6                 ;6   63
-_prompt_cursor_bk_2            
-            SLEEP 4                 ;4   67
+            SLEEP 20                ;20  67
             stx COLUPF              ;3   70
             sta HMOVE               ;3   73
             sta COLUBK              ;3   76
@@ -845,10 +839,9 @@ _prompt_draw_loop    ; 40/41 w page jump
             sta ENAM1
             sta ENABL
 prompt_end_line
-            ldy repl_editor_line
-            dey 
+            dec repl_editor_line
             bmi prompt_done
-            sty repl_editor_line
+            ldy repl_editor_line
             jmp prompt_next_line
 prompt_done
             jsr waitOnTimer
@@ -898,21 +891,19 @@ repl_menu_press_game
             lda game_state
             clc
             adc #$10
+            cmp #(__GAME_TYPE_STEPS + $10)
+            bcc _menu_press_save_game
+            lda #GAME_STATE_EDIT
+_menu_press_save_game
             sta game_state
             jmp _repl_update_skip_move            
 repl_menu_press_eval
             ; eval
-            ldx #GAME_STATE_EVAL
-            stx game_state
+            lda game_state
+            ora #GAME_STATE_EVAL
+            sta game_state
 repl_menu_press_noop
             jmp _repl_update_skip_move     
-
-sub_wsync_loop
-_header_loop
-            sta WSYNC
-            dex
-            bpl _header_loop
-            rts
 
 REPL_MENU_JMP_LO
     byte <(repl_menu_press_eval-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1)

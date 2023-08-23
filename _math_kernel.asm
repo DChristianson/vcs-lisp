@@ -200,3 +200,58 @@ _beep_end
             lda #0
             sta AUDV0
             jmp exec_frame_return
+
+FUNC_PROGN
+FUNC_LOOP
+            jmp exec_frame_return
+
+FUNC_POS_P0
+            ldy #game_p0_x
+            jmp _func_pos_store
+FUNC_POS_P1
+            ldy #game_p1_x
+_func_pos_store
+            ldx eval_frame
+            jsr sub_store_acc
+            dex
+            dex
+            iny
+            iny
+            jsr sub_store_acc            
+            jmp exec_frame_return
+
+FUNC_POS_BL
+            ldx eval_frame
+            ldy #game_bl_x
+            jsr sub_store_acc
+            ldy #game_bl_y
+            jsr sub_store_acc            
+            jmp exec_frame_return
+
+sub_store_acc
+            lda FRAME_ARG_OFFSET_MSB,x
+            and #$0f
+            sta accumulator_lsb
+            asl
+            asl
+            clc
+            adc accumulator_lsb
+            asl
+            lda FRAME_ARG_OFFSET_LSB,x
+            lsr
+            lsr
+            lsr
+            lsr
+            clc
+            adc accumulator_lsb
+            sta accumulator_lsb
+            asl
+            asl
+            clc
+            adc accumulator_lsb
+            sta accumulator_lsb
+            lda FRAME_ARG_OFFSET_LSB,x
+            and #$0f
+            adc accumulator_lsb
+            sta #0,y
+            rts

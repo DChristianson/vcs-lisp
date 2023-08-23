@@ -140,9 +140,11 @@ repl_curr_cell      ds 1
 repl_last_line      ds 1 ; last line in BUGBUG: can be tmp?
 
 repl_display_cursor ds 1 ; cursor position for display
-repl_display_list   ds EDITOR_LINES ; 6 line display, cell to display on each line
-repl_display_indent ds EDITOR_LINES ; 6 line display, 4 bits indent level x 4 bits line width
+repl_display_list   ds EDITOR_LINES ; 5 line display, cell to display on each line
+repl_display_indent ds EDITOR_LINES ; 5 line display, 4 bits indent level + 4 bits line width
 
+repl_keys_y       ds 1 ; y index of keys
+repl_edit_y        ds 1 ;y index of edit line
 repl_fmt_arg     ds 2 ; numeric conversion BUGBUG: need?
 repl_tmp_width   ds 1 ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
 repl_tmp_indent       ; ds 1  temporary indent storage during layout BUGBUG: need?
@@ -378,9 +380,9 @@ oom
 ; -------------------
 ; Display kernels
 
-    include "_math_kernel.asm"
-
     include "_repl_kernel.asm"
+
+    include "_math_kernel.asm"
 
     include "_eval_kernel.asm"
 
@@ -418,7 +420,7 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_S02_ADD-1
     word FUNC_S03_SUB-1
     word FUNC_S04_DIV-1
-    word $0000
+    word $0000 ; FUNC_MOD
     word FUNC_S05_EQUALS-1
     word FUNC_S06_GT-1
     word FUNC_S07_LT-1
@@ -433,7 +435,14 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_F1-1
     word FUNC_F2-1
     word FUNC_BEEP-1
-    
+    word FUNC_PROGN-1
+    word FUNC_LOOP-1
+    word $0000 ;FUNC_STACK-1
+    word $0000 ;FUNC_STEPS-1
+    word FUNC_POS_P0-1
+    word FUNC_POS_P1-1
+    word FUNC_POS_BL-1
+
     ;
 MENU_PAGE_0_LO
     byte <SYMBOL_GRAPHICS_TERM
