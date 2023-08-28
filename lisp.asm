@@ -109,6 +109,9 @@ game_state         ds 1
 player_input       ds 2
 ; debounced p0 input
 player_input_latch ds 1
+; beep frequency and time
+beep_f0            ds 1
+beep_t0            ds 1
 ; reserve for game data
 game_data          ds 6
 
@@ -124,7 +127,7 @@ gx_s2_addr         ds 2
 
   SEG.U REPL
 
-    ORG $D8
+    ORG $DA
 
 ; additional graphics addresses
 gx_s1_addr          ds 2
@@ -145,7 +148,6 @@ repl_display_indent ds EDITOR_LINES ; 5 line display, 4 bits indent level + 4 bi
 
 repl_keys_y       ds 1 ; y index of keys
 repl_edit_y        ds 1 ;y index of edit line
-repl_fmt_arg     ds 2 ; numeric conversion BUGBUG: need?
 repl_tmp_width   ds 1 ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
 repl_tmp_indent       ; ds 1  temporary indent storage during layout BUGBUG: need?
 repl_tmp_cell_count ds 1  ; ds 1 temporary cell countdown during layout BUGBUG: need?
@@ -157,7 +159,7 @@ repl_editor_line ds 1  ; line counter storage during editor display
 ; for expression eval
   SEG.U EVAL
 
-    ORG $D8
+    ORG $DA
 
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
@@ -285,9 +287,25 @@ endVBlank_loop
 
             sta WSYNC ; SL 35
 
+            lda #0
+            sta COLUBK
+
+            lda game_state
+            and #$70
+            lsr
+            lsr
+            lsr
+            tax
+            lda REPL_DRAW_JMP_HI,x
+            pha
+            lda REPL_DRAW_JMP_LO,x
+            pha
+            rts
+game_draw_return
+
             lda game_state
             bpl _jmp_repl_draw ; BUGBUG is there a better way -- jump table?
-            jmp eval_draw
+            jmp logo_draw
 _jmp_repl_draw
             jmp repl_draw
 

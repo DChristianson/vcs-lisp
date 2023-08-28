@@ -4,44 +4,44 @@ repl_draw_music
         ;; color whichever one is playing
         ldx #(HEADER_HEIGHT / 4)
         jsr sub_wsync_loop
-        lda #$4f
-        jsr sub_respxx
+        lda #$40       ; BUGBUG - magic constant screen pos 
+        jsr sub_respxx ; position both players at once
         sta WSYNC
         sta HMOVE
-        lda #5
+        lda #5 ; double size players
         sta NUSIZ0
         sta NUSIZ1
-        ldy #2
-        lda #SYMBOL_BEEP
-        jsr sub_fmt_symbol
-        dey
-        dey
-        lda #SYMBOL_BEEP
-        jsr sub_fmt_symbol
-        lda #0
-        pha
-        lda #$10
-        clc
-        ldx #3
-_music_color_loop        
-        pha
-        adc #$10
-        pha
-        adc #$10
-        dex
-        bpl _music_color_loop
+        ldy #2               ; load gx_s3 with the musical note
+        lda #SYMBOL_BEEP     ; .
+        jsr sub_fmt_symbol   ; 
+        ldy #0               ; load gx_s4 with the musical note
+        sty HMP0       ; take advantage of y = 0 to clear HMP0
+        lda #SYMBOL_BEEP     ; .
+        jsr sub_fmt_symbol   ; . 
+        lda #$80       ; move player 1 to right by 8
+        sta HMP1       ; .
+        sta WSYNC     
+        sta HMOVE
+        ; draw glyphs
+        ldx #$07
 _music_loop
-        pla 
-        beq _music_end
+        txa
+        lsr ; multiply by 32 by shifting right and rolling
+        ror ; .
+        ror ; .
+        ror ; .
         sta COLUP0
-        pla
+        sec
+        sbc #$10
         sta COLUP1
-        jsr sub_draw_glyph_2
-        jmp _music_loop
+        dex 
+        jsr sub_draw_glyph_16px
+        dex
+        bpl _music_loop
 _music_end
         lda #0
         sta NUSIZ0
         sta NUSIZ1
         ldx #(HEADER_HEIGHT / 4)
         jsr sub_wsync_loop
-        jmp repl_draw_return
+        jmp game_draw_return

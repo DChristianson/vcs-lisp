@@ -168,21 +168,15 @@ _not_return
 
 FUNC_BEEP
             ; beep
-            ;  - we subtract 1 from arg1 and save in place
+            ;  - we count down from arg1
             ;  - if arg1 < 0 we return normally
             ;  - otherwise load note into audio registers and accumulator
-_beep_continue
             ldx eval_frame
-            sed
-            sec
+            ; get timer
             lda FRAME_ARG_OFFSET_LSB - 2,x
-            sbc #1
-            sta FRAME_ARG_OFFSET_LSB - 2,x
-            lda FRAME_ARG_OFFSET_MSB - 2,x
-            sbc #0
-            sta FRAME_ARG_OFFSET_MSB - 2,x
-            cld
-            bcc _beep_end
+            and #$0f
+            sta beep_t0
+            beq _beep_end
             ; play sound
             lda #4
             sta AUDC0
@@ -192,13 +186,17 @@ _beep_continue
             sta accumulator_msb
             lda FRAME_ARG_OFFSET_LSB,x
             sta accumulator_lsb
-            and #$1f ; modulo frequency            
+            and #$0f ; modulo frequency            
             sta AUDF0
+            sta beep_f0            
+_beep_continue
+            dec beep_t0
+            beq _beep_end
             jsr eval_wait
-            jmp _beep_continue
 _beep_end
             lda #0
             sta AUDV0
+            sta beep_f0
             jmp exec_frame_return
 
 FUNC_PROGN

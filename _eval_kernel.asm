@@ -274,13 +274,3 @@ _apply
             ora #GAME_STATE_EVAL_APPLY
             sta game_state
             jmp update_return
-
-eval_draw
-            ldx #58
-_eval_draw_loop
-            sta WSYNC
-            dex
-            bne _eval_draw_loop
-            jmp logo_draw
-logo_draw_return
-            jmp waitOnOverscan

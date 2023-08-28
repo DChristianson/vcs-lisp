@@ -499,7 +499,7 @@ _prep_repl_end
             ; MENU
             ; 
 sub_draw_menu
-            lda #$00
+            lda #14                      ; menu at pixel 14
             jsr sub_respxx
             sta WSYNC                    ;--  0
             sta HMOVE
@@ -525,13 +525,16 @@ _menu_loop
             sta HMP1
         	sta WSYNC                   
             sta HMOVE
-            lda #RED                     ;2   5
-            ldx repl_edit_line           ;3   8
-            bpl _menu_set_colubk         ;2  10
-            lda #CURSOR_COLOR            ;2  12
+            lda #WHITE             
+            sta COLUP0     
+            sta COLUP1    
+            lda #RED     
+            ldx repl_edit_line        
+            bpl _menu_set_colubk     
+            lda #CURSOR_COLOR           
 _menu_set_colubk
             sta COLUBK
-            jsr sub_draw_glyph_2
+            jsr sub_draw_glyph_16px
             sta GRP0 ; forces GRP1 delay register to clear
             rts
 
@@ -589,7 +592,7 @@ _prompt_repos_swap
             sta RESP0               ;3   32
 _prompt_repos_swap_end
             sta WSYNC               ;--
-            lda #WHITE              ;2    2
+            lda #WHITE              ;2    2 ; BUGBUG clean this up, not needed every line
             sta COLUP0              ;3    5
             sta COLUP1              ;3    8
             sta COLUPF              ;3   11
@@ -684,9 +687,10 @@ _prompt_encode_loop
 _prompt_encode_end
             jmp prompt_display
 _prompt_encode_number
-            sta repl_fmt_arg + 1
-            lda HEAP_CDR_ADDR,x
-            sta repl_fmt_arg
+            lda #<SYMBOL_GRAPHICS_HASH
+            sta gx_s1_addr
+            lda #>SYMBOL_GRAPHICS_HASH
+            sta gx_s1_addr + 1
             jsr sub_fmt_number
             jmp prompt_display
 
@@ -849,21 +853,6 @@ prompt_done
 
 repl_draw
 
-            lda #0
-            sta COLUBK
-
-            lda game_state
-            lsr
-            lsr
-            lsr
-            tax
-            lda REPL_DRAW_JMP_HI,x
-            pha
-            lda REPL_DRAW_JMP_LO,x
-            pha
-            rts
-repl_draw_return
-
             jsr sub_draw_menu
             jsr sub_clear_gx
             jsr sfd_draw_prompt
@@ -877,13 +866,9 @@ repl_draw_return
             jmp waitOnOverscan
 
 sub_fmt_number
-            lda #<SYMBOL_GRAPHICS_HASH
-            sta gx_s1_addr
-            lda #>SYMBOL_GRAPHICS_HASH
-            sta gx_s1_addr + 1
-            WRITE_DIGIT_LO repl_fmt_arg+1, gx_s2_addr ;16 15
-            WRITE_DIGIT_HI repl_fmt_arg, gx_s3_addr   ;14 29
-            WRITE_DIGIT_LO repl_fmt_arg, gx_s4_addr   ;16 45
+            WRITE_DIGIT_LO HEAP_CAR_ADDR, gx_s2_addr ;16 15
+            WRITE_DIGIT_HI HEAP_CDR_ADDR, gx_s3_addr   ;14 29
+            WRITE_DIGIT_LO HEAP_CDR_ADDR, gx_s4_addr   ;16 45
             rts
 
 repl_menu_press_game
@@ -924,6 +909,7 @@ REPL_DRAW_JMP_HI = REPL_DRAW_JMP_LO + 1
 
 sub_respxx
             ; a has position
+            sec
             sta WSYNC               ; --
 _respxx_loop
             sbc #15                 ;2    2
@@ -937,11 +923,11 @@ _respxx_loop
             sta RESP1               ;3   27
             rts
 
-sub_draw_glyph_2
+sub_draw_glyph_16px ; draw p0 and p1, using y and a registers
             ldy #CHAR_HEIGHT - 1
 _glyph_loop
-            sta WSYNC              ; BUGBUG: position
-            lda (gx_s3_addr),y   ; BUGBUG: position   
+            sta WSYNC          
+            lda (gx_s3_addr),y   
             sta GRP0                    
             lda (gx_s4_addr),y         
             sta GRP1                     
@@ -1015,7 +1001,7 @@ DISPLAY_REPL_COLORS
     byte #$7A,#$7E,#$86 ; BUGBUG: make pal safe
 
     MAC WRITE_DIGIT_HI 
-            lda {1}
+            lda {1},x
             and #$f0
             lsr
             sta {2}
@@ -1024,7 +1010,7 @@ DISPLAY_REPL_COLORS
     ENDM
 
     MAC WRITE_DIGIT_LO
-            lda {1}
+            lda {1},x
             and #$0f
             asl
             asl

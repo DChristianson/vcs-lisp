@@ -39,5 +39,5 @@ _logo_loop
     dex                         ;2   50
     bpl _logo_loop              ;2   52
 
-	jmp logo_draw_return
+	jmp waitOnOverscan
 

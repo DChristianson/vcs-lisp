@@ -31,7 +31,7 @@ _draw_game_loop
         sta GRP0
         sta GRP1
         sta ENABL
-        jmp repl_draw_return
+        jmp game_draw_return
 
 sub_respx_object
         lda game_p0_x,x

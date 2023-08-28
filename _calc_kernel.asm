@@ -1,17 +1,14 @@
 repl_draw_accumulator
             ldx #HEADER_HEIGHT / 2
             jsr sub_wsync_loop
-            jsr sfd_draw_accumulator
+            jsr sub_draw_accumulator
             ldx #HEADER_HEIGHT / 2
             jsr sub_wsync_loop
-            jmp repl_draw_return
+            jmp game_draw_return
 
-sfd_draw_accumulator
+sub_draw_accumulator
             ; convert accumulator to BCD
-            lda accumulator_msb    
-            sta repl_fmt_arg + 1     ; BUGBUG: SPACE: unwieldy? can get rid of?
-            lda accumulator_lsb
-            sta repl_fmt_arg
+            ldx #<accumulator
             jsr sub_fmt_number
             ; prep for a 24 px sprite graphic
             ; BUGBUG: SPACE: same as logo
@@ -52,6 +49,4 @@ _accumulator_draw_loop    ; 40/41 w page jump
             sta NUSIZ1
             sta VDELP0                              ;3
             sta VDELP1                              ;3
-            ldx #$fd ; reset stack pointer
-            txs            
             rts

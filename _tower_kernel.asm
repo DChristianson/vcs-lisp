@@ -5,8 +5,8 @@ repl_draw_tower
         ldx #$50
         jsr sub_respxx
         ldx #SYMBOL_BEEP
-        jsr sub_draw_glyph_2
+        jsr sub_draw_glyph_16px
         ldx #(HEADER_HEIGHT / 2)
         jsr sub_wsync_loop
-        jmp repl_draw_return
+        jmp game_draw_return
 
