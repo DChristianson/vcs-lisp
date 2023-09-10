@@ -100,6 +100,12 @@ BUGS
   - code
     - complex program takes too long to analyze in vblank
 BETA
+  - dev support
+     - self hosted javatari page
+       - allow load/save of programs
+       - display and editing of programs as text
+       - allow joystick and keyboard controller
+     - some way to do unit tests?
   - game modes 2
       - music game (simon?)
         - changes color with different beeps
@@ -162,8 +168,6 @@ BETA
         - multiple ways to draw - can consolidate?
         - 87 bytes of sleeps
         - 24 zp y offset lookups
-  - dev support
-     - some way to do unit tests?
 SPRINKLES
   - font
      - tune font / symbols

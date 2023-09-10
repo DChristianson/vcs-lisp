@@ -175,8 +175,13 @@ _repl_update_keys_skip_left
 _repl_update_keys_set
             clc
             adc repl_edit_sym
-_repl_update_check_keys_limit
-            and #$1f
+            bmi _repl_update_check_keys_roll
+            sec
+            sbc #46
+            bcs _repl_update_check_keys_save
+_repl_update_check_keys_roll
+            adc #46
+_repl_update_check_keys_save
             sta repl_edit_sym
 _repl_update_keys_skip_move
             jmp _repl_update_skip_move
@@ -705,17 +710,22 @@ _prompt_encode_blank_loop
 _prompt_encode_keys
             lda repl_edit_sym
             sbc #2
-            ldx #9
-_prompt_encode_keys_loop
-            and #$1f
+            bcs _prompt_encode_keys_mod
+            adc #46
+_prompt_encode_keys_mod
             tay
+            ldx #9 ; fill in 10 addresses
+_prompt_encode_keys_loop
             lda MENU_PAGE_0_HI,y
             sta gx_addr,x
             dex
             lda MENU_PAGE_0_LO,y
             sta gx_addr,x
             iny
-            tya
+            cpy #46
+            bne _prompt_encode_keys_roll
+            ldy #0
+_prompt_encode_keys_roll
             dex
             bpl _prompt_encode_keys_loop
 

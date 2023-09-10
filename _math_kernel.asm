@@ -66,11 +66,62 @@ FUNC_S03_SUB
             sta accumulator_msb
             jmp exec_frame_return
 
+FUNC_MOD
+            ldx eval_frame
+            lda FRAME_ARG_OFFSET_LSB,x
+            sta accumulator_lsb
+            lda FRAME_ARG_OFFSET_MSB,x
+            sta accumulator_msb
+_mod_continue
+            ldx eval_frame
+            sed
+            sec
+            lda accumulator_lsb
+            sbc FRAME_ARG_OFFSET_LSB - 2,x
+            tay
+            lda accumulator_msb
+            sbc FRAME_ARG_OFFSET_MSB - 2,x            
+            bmi _mod_return
+            and #$0f
+            sta accumulator_msb
+            sty accumulator_lsb
+            cld
+            jsr eval_wait
+            jmp _mod_continue
+_mod_return            
+            cld
+            jmp exec_frame_return
+
 FUNC_S04_DIV
             lda #0
             sta accumulator_lsb
             sta accumulator_msb
+_div_continue
             ldx eval_frame
+            sed
+            sec
+            lda FRAME_ARG_OFFSET_LSB,x
+            sbc FRAME_ARG_OFFSET_LSB - 2,x
+            sta FRAME_ARG_OFFSET_LSB
+            lda FRAME_ARG_OFFSET_MSB,x
+            sbc FRAME_ARG_OFFSET_MSB - 2,x
+            bmi _div_return
+            and #$0f
+            sta FRAME_ARG_OFFSET_MSB
+            lda #1
+            clc
+            adc accumulator_lsb
+            sta accumulator_lsb
+            lda #0
+            adc accumulator_msb
+            sta accumulator_msb
+            cld
+            jsr eval_wait
+            jmp _div_continue
+_div_return            
+            cld
+            jmp exec_frame_return
+
             ; BUGBUG: code as a rational
             jmp exec_frame_return
 
@@ -201,6 +252,8 @@ _beep_end
 
 FUNC_PROGN
 FUNC_LOOP
+FUNC_STACK
+FUNC_STEPS
             jmp exec_frame_return
 
 FUNC_POS_P0

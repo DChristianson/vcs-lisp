@@ -23,21 +23,33 @@ repl_draw_music
         sta WSYNC     
         sta HMOVE
         ; draw glyphs
-        ldx #$07
+        ldx #$08
 _music_loop
         txa
+        sec
+        sbc #1
         lsr ; multiply by 32 by shifting right and rolling
         ror ; .
         ror ; .
         ror ; .
-        sta COLUP0
+        tay
+        cpx beep_f0
+        bne _music_loop_save_colup0
+        ldy #WHITE
+_music_loop_save_colup0
+        sty COLUP0
         sec
         sbc #$10
-        sta COLUP1
         dex 
+        tay
+        cpx beep_f0
+        bne _music_loop_save_colup1
+        ldy #WHITE
+_music_loop_save_colup1
+        sty COLUP1
         jsr sub_draw_glyph_16px
         dex
-        bpl _music_loop
+        bne _music_loop
 _music_end
         lda #0
         sta NUSIZ0
