@@ -53,7 +53,7 @@ vλ: starts as (* a a) - if you EVAL (λ 5) you will get 25
   Pair     Number
 ```
 
-The fundamental data structure in vcs-lisp is the cell. This concept borrows directly from [PicoLisp](https://picolisp.com) although with a few differences.
+The fundamental data structure in vcs-lisp is the cell. 
 
  - A cell is 2 bytes wide and represents either a number or a pair. 
  - Pairs have a head (car) and tail (cdr). 
@@ -61,11 +61,12 @@ The fundamental data structure in vcs-lisp is the cell. This concept borrows dir
   - The tail must be a reference to another pair or the null reference
  - Numbers are 3 digit binary coded decimals. 
 
-Using 2 bytes for the cell is a natural choice. There are only 128 bytes of RAM available onboard the Atari 2600... we have to keep the heap small.
+The cell concept is borrowed directly from [PicoLisp](https://picolisp.com) but resized to live in the world of Atari 2600:
 
-Using BCD for numbers, and then limiting them to 3 digits saves a lot of time and space as well:
-- Displaying character graphics on the Atari 2600 requires specialized code, so having to deal with only three digits allows us to simplify the display kernel dramatically. 
-- Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space.
+- There are only 128 bytes of RAM available onboard the Atari 2600, so using 1 byte for references is more than adequate to address every possible RAM location.
+- Using BCD for numbers, and then limiting them to 3 digits saves a lot of time and space as well
+ - Displaying character graphics on the Atari 2600 requires specialized code, so having to deal with only three digits allows us to simplify the display kernel dramatically. 
+ - Avoiding expensive conversions that have to be done to convert to/from binary formats further simplifies the code and saves significant time and space.
 
 ### Cell and Symbol References
 
@@ -73,7 +74,7 @@ Each byte of a pair can contain a reference to another cell, a reference to a sy
 
 ```
   10xxxxx0 - cell reference (5 significant bits - 32 cells in total)
-  110xxxxx - symbol reference (5 significant bits - 32 symbols in total)
+  11xxxxxx - symbol reference (6 significant bits - 64 symbols in total)
   00000000 - null pointer (when seen in the cell cdr, if seen in the car implies the cell is a number)
 ```
 
@@ -84,7 +85,6 @@ Symbol references start at hex value $C0. Similar to how cell references line up
 There are some unused bits in these schemes (very wasteful...)
 - We reserve the 6th bit of a cell reference to perform operations on off-heap zeropage data as if it were on heap.
 - We manipulate the 0th bit of a cell reference to perform operations that reference the car of a cell as if it were the cdr (and vice versa).
-- The 6th bit of a symbol reference is completely unused at this time.
 
 ### Off-Heap Registers
 
@@ -95,7 +95,7 @@ heap             ds 64 ; the heap contains all program memory, organized into 32
 free             ds 1  ; this points to the linked list of free cells on the heap
 repl             ds 1  ; this points to an expression that we want the evaluator to execute
                        ; repl mode allows the user to edit this expression
-f0...f2          ds 1  ; there are three user assignable expressions
+f0...f2          ds 3  ; there are three user assignable expressions
                        ; each one points to a cell in the heap
                        ; repl mode allows the user to edit these expressions
 accumulator      ds 2  ; a cell holding the result of the last expression
@@ -152,18 +152,23 @@ eval_frame = FP+0  ...(arg1 arg2)
 
 ## References, Credits and Inspirations
 
-Special thanks to the authors of [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) and [SICP](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) for providing the inspiration.
+This work would not be possible without the [AtariAge forums](https://www.atariage.com/forums) and all
+ the tools and resources developed by the Atari 2600 homebrew community.
 
-Thank you [DALL-E mini](https://www.craiyon.com/), and the [Atari Label Maker](https://www.labelmaker2600.com/) for producing the concept box art.
+The original concept box art was produced with the help of [DALL-E mini](https://www.craiyon.com/), and the [Atari Label Maker](https://www.labelmaker2600.com/)
 
-The following resources have been *very* helpful in developing this codebase.
+### Lisp
+ - [Structure and Interpretation of Computer Programs](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) 
+ - [PicoLisp](https://picolisp.com/) 
+ - R. Kent Dybvig's [Three Implementation Models for Scheme](https://www.cs.unm.edu/~williams/cs491/three-imp.pdf) 
+ - [uLisp](http://www.ulisp.com/)
 
-- [PicoLisp](https://picolisp.com/) 
-- R. Kent Dybvig's [Three Implementation Models for Scheme](https://www.cs.unm.edu/~williams/cs491/three-imp.pdf) 
-- [uLisp](http://www.ulisp.com/)
-- David A. Wheeler's [6502 Language Implementation Approaches](https://dwheeler.com/6502/)
-- [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
-- [Skimp](http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/)
-- [6502.org](https6502.org)
+### Atari 2600 Basic
+ - [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
+ - [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming)
 
-I also owe a great debt to the community at the [AtariAge forums](https://www.atariage.com/forums) and all the tools and emulators that have been made available.
+### 6502  
+ - David A. Wheeler's [6502 Language Implementation Approaches](https://dwheeler.com/6502/)
+ - [Skimp](http://web.archive.org/web/20100131151915/http://www.ip9.org/munro/skimp/)
+ - [6502.org](https6502.org)
+
