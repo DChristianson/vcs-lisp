@@ -30,9 +30,16 @@ CURSOR_COLOR = $86
 SCANLINES = 262
 #endif
 
-INITIAL_LAVA_INTERVAL = 255
 CHAR_HEIGHT = 8
-STEPS_LEAD = 2
+DRAW_TABLE_SIZE = 18
+DRAW_TABLE_BYTES = DRAW_TABLE_SIZE
+
+JUMP_TABLE_SIZE = 16
+JUMP_TABLE_BYTES = JUMP_TABLE_SIZE / 2
+
+GAME_STATE_START   = 0
+GAME_STATE_CLIMB   = 1
+GAME_STATE_SCROLL  = 2
 
 ; ----------------------------------
 ; vars
@@ -45,32 +52,61 @@ STEPS_LEAD = 2
 clock              ds 1
 game_state         ds 1
 
-steps_wsync        ds 1
-steps_respx        ds 1
-steps_hmove_a      ds 1
-steps_hmove_b      ds 1
+steps_wsync        ds 1 ; amount to shim steps up/down
+steps_respx        ds 1 ; initial pos
+steps_dir          ds 1 ; steps direction
+steps_hmove_a      ds 1 ; initial HMOVE
+steps_hmove_b      ds 1 ; reverse HMOVE
 
 ; combined player input
 ; bits: f...rldu
 player_input       ds 2
 ; debounced p0 input
 player_input_latch ds 1
-; reserve for game data
-steps              ds 8
-num_steps          ds 1
-player_step        ds 1
+player_step        ds 1 ; step the player is at
 player_score       ds 1
-lava_step          ds 1
-lava_timer         ds 1
-step_max           ds 1
 
-draw_s0_addr ds 2
-draw_s1_addr ds 2
+; game state
+jump_table        ds JUMP_TABLE_BYTES 
+jump_table_size   ds 1
+jump_table_offset ds 1 ; where to locate jump table for drawing
+
+; drawing registers
+draw_table         ds DRAW_TABLE_BYTES
+draw_s0_addr       ds 2
+draw_s1_addr       ds 2
 
 ; random var
 seed
-random        ds 2
-maze_ptr      ds 1
+random             ds 2
+maze_ptr           ds 1
+
+; DONE
+;  - basic step display
+;  - static sprite moves according to rules
+;  - debug steps
+; TODO
+;  - visual 1
+;   - start on ground (first step below)
+;   - stair outlines
+;   - smooth scroll up
+;   - values disappear as you climb
+;  - sounds 1
+;   - bounce up/down fugue
+;   - fall down notes
+;   - landing song
+;   - final success
+;  - gameplay 1
+;   - start
+;   - status display
+;   - win condition
+;   - mix of puzzles
+;  - visual 2
+;   - animated jumps
+;   - background
+;  - gameplay 2
+;   - lava
+;   - second player
 
 ; ----------------------------------
 ; code
@@ -86,6 +122,11 @@ CleanStart
             lda #WHITE
             sta COLUP0
             sta COLUP1
+            sta COLUPF
+
+            lda #>SYMBOL_GRAPHICS
+            sta draw_s0_addr + 1
+            sta draw_s1_addr + 1
 
             ; init RNG
             lda #17
@@ -164,7 +205,6 @@ _jx_update_end
 
 gx_update
             ldx player_step
-            dex
             jsr sub_step_getx
             tay
             lda player_input_latch
@@ -202,71 +242,67 @@ endVBlank_loop
 
             sta WSYNC ; SL 35
 
-gx_steps_resp
-            lda steps_respx
-            ldy steps_hmove_a
-            jsr sub_respxx
-            sta WSYNC
-            sta HMOVE
+            ; shim wsync
             ldx steps_wsync
             jsr sub_wsync_loop
-            ; shim hmove
-            tya                     
-            bmi _gx_shim_swap 
-            lda #$00
-            sta HMP1
+
+gx_steps_resp
+            jsr sub_steps_respxx
+            ; prep HMOVE
+            lda steps_hmove_a
             sta HMP0
-            jmp _gx_shim_end
-_gx_shim_swap
-            lda #$40
-            sta HMP0
-            lda #$00
             sta HMP1
-            lda #$08
-            ; end shim
-_gx_shim_end
-            sta REFP0
-            jsr sub_draw_lead_steps
-            ldx num_steps
-            dex
+            ldx #DRAW_TABLE_SIZE - 1
 gx_step_draw
             sta WSYNC
             sta HMOVE
+            ; read graphics
+            ; phg.ssss
+            lda draw_table,x
             ; get player graphic
-            lda #>SYMBOL_GRAPHICS_S00_ZERO
-            sta draw_s0_addr + 1
-            sta draw_s1_addr + 1
-            lda #<SYMBOL_GRAPHICS_S12_BLANK
-            cpx player_step
-            bne _gx_set_s0
-            lda #<SYMBOL_GRAPHICS_S11_NUTS
-_gx_set_s0
-            sta draw_s0_addr
+            ldy #<SYMBOL_GRAPHICS_S12_BLANK
+            asl 
+            bcc _gx_draw_set_p0
+            ldy #<SYMBOL_GRAPHICS_S11_NUTS
+_gx_draw_set_p0
+            sty draw_s0_addr
+            ; swap directions
+            asl
+            bcc _gx_draw_end_swap_direction
+            pha
+            lda steps_hmove_a
+            ldy steps_hmove_b
+            sty HMP0
+            sty HMP1
+            sty steps_hmove_a
+            sta steps_hmove_b
+            pla
+_gx_draw_end_swap_direction
             ; get step graphic
-            jsr sub_step_getx
-            asl
-            asl
             asl
             sta draw_s1_addr
+            ; check ground bit
+            lda #$00
+            bcc _gx_draw_set_pf
+            lda #$ff
+_gx_draw_set_pf
             ldy #CHAR_HEIGHT - 1
 _gx_draw_loop
             sta WSYNC
+            sta PF0
+            sta PF1
+            sta PF2
             lda (draw_s0_addr),y
             sta GRP0
             lda (draw_s1_addr),y
             sta GRP1
+            lda #$00
             dey 
             bpl _gx_draw_loop
-            lda steps_hmove_a
-            sta HMP0
-            sta HMP1
             dex 
             bpl gx_step_draw
             ; end steps
-            lda steps_hmove_b
-            sta HMP0
-            sta HMP1
-            jsr sub_draw_lead_steps
+            
 
 ;--------------------
 ; Overscan start
@@ -287,123 +323,79 @@ _header_loop
             bne _header_loop
             rts
 
-sub_draw_lead_steps
-            ldx #STEPS_LEAD-1
-_draw_lead_loop
-            sta WSYNC
-            sta HMOVE
-            ; get player graphic
-            lda #>SYMBOL_GRAPHICS_S00_ZERO
-            sta draw_s0_addr + 1
-            sta draw_s1_addr + 1
-            lda #<SYMBOL_GRAPHICS_S12_BLANK
-            sta draw_s0_addr
-            lda #<SYMBOL_GRAPHICS_S00_ZERO
-            sta draw_s1_addr
-            ldy #CHAR_HEIGHT - 1
-_draw_lead_step_loop
-            sta WSYNC
-            lda (draw_s0_addr),y
-            sta GRP0
-            lda (draw_s1_addr),y
-            sta GRP1
-            dey 
-            bpl _draw_lead_step_loop
-            lda steps_hmove_b
-            sta HMP0
-            sta HMP1
-            dex 
-            bpl _draw_lead_loop
-            ; end steps
+sub_steps_init
+            lda #0
+            sta steps_dir  
+            lda #53
+            sta steps_respx
+            lda #(160 - DRAW_TABLE_SIZE * CHAR_HEIGHT)
+            sta steps_wsync
+            ; jump init
+            lda #6
+            sta jump_table_size
+            lda #$11
+            ldx #JUMP_TABLE_BYTES - 1
+_steps_jump_init_loop
+            sta jump_table,x
+            dex
+            bpl _steps_jump_init_loop
+            ; draw init
+            lda #$1
+            ldx #DRAW_TABLE_BYTES - 1
+_steps_draw_init_loop
+            sta draw_table,x
+            dex
+            bpl _steps_draw_init_loop
+            lda #$40
+            sta draw_table + 15
+            sta draw_table + 10
+            sta draw_table + 5
+            lda #$81
+            sta draw_table + 1
+            lda #$21
+            sta draw_table
             rts
 
-sub_steps_init
-            ; bootstrap steps
-            lda #(160)
-            sta steps_wsync
-            lda #(53)
-            sta steps_respx
-            ldx #0
-            stx player_score
-            inx ; save a byte
-            stx player_step            
-            ldx #INITIAL_LAVA_INTERVAL
-            stx lava_timer
-            ldx #$90
-            stx steps_hmove_a
-            ldx #$70
-            stx steps_hmove_b
-            lda #$05
 sub_steps_advance
-            sta num_steps
-            sec
-            sbc #1
-            lsr
-            tax
+            lda jump_table_size
             clc
-            adc maze_ptr
-            tay
-            adc #1
-            sta maze_ptr
-_maze_loop
-            lda MAZES,y
-            sta steps,x
-            dey
-            dex
-            bpl _maze_loop
-            ; visual 
-            ; swap hmoves
-            lda steps_hmove_a
-            ldx steps_hmove_b
-            sta steps_hmove_b
-            stx steps_hmove_a
-            ; calc size of steps array
-            lda num_steps       ; num_steps * 7
-            asl                 ;  = num_steps * (8 - 1)
-            asl                 ;  = num_steps * 8 - num_steps
-            asl                 ; .
-            sec                 ; .
-            sbc num_steps       ; .
-            tax
-            ; calc respx
-            sec
-            sbc #((STEPS_LEAD + 4) * 7)
-            bit steps_hmove_a
-            bpl _add_steps_respx
-            eor #$ff
-            clc
-            adc #1
-_add_steps_respx
-            clc
-            adc steps_respx
-            sta steps_respx
-            ; calc wsync
-            txa
-            eor #$ff
-            clc
-            adc #1
-            clc
-            adc steps_wsync
-            bpl _add_steps_wsync
-            lda #20
-_add_steps_wsync
-            sta steps_wsync
-            ; done
+            adc jump_table_offset
+            tax 
+            adc jump_table_size
+            sbc #(DRAW_TABLE_SIZE - 2)
+            bmi _sub_steps_advance_save
+            ; scroll
+            ;BUGBUG: SCROLL MODE
             rts
+_sub_steps_advance_save
+            stx jump_table_offset
+            rts
+       
+FLIGHTS
+    byte 8,8,10,10,10,10,12,12,12,12,14,14,14,14,16,16,16,16,16,16
+MAX_FLIGHTS = . - FLIGHTS
 
 MAZES
-    byte $33, $11, $00
-    byte $23, $12, $00
-    byte $22, $22, $30
-    byte $34, $21, $30
-    byte $45, $12, $24, $00
-    byte $23, $12, $11, $00
-    byte $25, $14, $12, $20
-    byte $25, $32, $11, $10
+    byte $11, $11, $11, $11
+    byte $11, $11, $11, $11
+    byte $11, $11, $11, $11
+    byte $11, $11, $11, $11
+    byte $11, $11, $11, $11
+    byte $11, $11, $11, $11
+    byte $11, $11, $11, $11
+    byte $11, $11, $11, $11
+    ; byte $33, $11, $00
+    ; byte $23, $12, $00
+    ; byte $22, $22, $30
+    ; byte $34, $21, $30
+    ; byte $45, $12, $24, $00
+    ; byte $23, $12, $11, $00
+    ; byte $25, $14, $12, $20
+    ; byte $25, $32, $11, $10
 
-
-sub_respxx
-            ; a has position
+sub_steps_respxx
+            lda steps_respx
+            ldy steps_dir
             sta WSYNC               ; --
 _respxx_loop
             sbc #15                 ;2    2
@@ -416,20 +408,33 @@ _respxx_loop
             bmi _respxx_swap        ;2   21
             sta.w RESP0             ;4   25
             sta RESP1               ;3   28
-            rts
+            sta WSYNC               ;
+            sta HMOVE               ;3    3
+            lda #$90                ;2    5
+            sta steps_hmove_a       ;3    8
+            lda #$70                ;2   10
+            sta steps_hmove_b       ;3   13
+            lda #$00                ;2   15
+            sta REFP0               ;3   18
+            rts                     ;6   24
 _respxx_swap            
             sta RESP1               ;3   25
             sta RESP0               ;3   28
-            rts
+            sta WSYNC
+            sta HMOVE
+            lda #$70                ;2    5
+            sta steps_hmove_a       ;3    8
+            lda #$90                ;2   10
+            sta steps_hmove_b       ;3   13
+            lda #$08                ;2   15
+            sta REFP0               ;3   18
+            rts                     ;6   24
 
 sub_step_getx
-            ; x has step number
-            cpx num_steps
-            bcs _step_get_overflow
-            txa
-            lsr
+            txa ; x has step number
+            lsr ; div by 2
             tay
-            lda steps,y
+            lda jump_table,y
             bcc _step_get_lo
             lsr
             lsr
@@ -437,10 +442,7 @@ sub_step_getx
             lsr
 _step_get_lo
             and #$0f
-            rts
-_step_get_overflow            
-            lda #12
-            rts       
+            rts 
 
 sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/master
             lda seed+1
@@ -482,7 +484,7 @@ _gx_go_add_step
             clc
             adc player_step
             beq _gx_go_fall
-            cmp num_steps
+            cmp jump_table_size
             bcc _gx_go_save_step
             bne _gx_go_fall
             ; win
@@ -498,38 +500,57 @@ _gx_add_steps
             jsr sub_steps_advance
 _gx_go_fall
             ; fall and recover
-            lda #1
+            lda #0
 _gx_go_save_step
             sta player_step
+            jsr sub_redraw_player_step
             jmp gx_update_return
+
+sub_redraw_player_step
+            ldx #(DRAW_TABLE_BYTES - 1)
+_sub_redraw_player_loop
+            lda #$7f
+            and draw_table+1,x
+            sta draw_table+1,x
+            dex
+            bpl _sub_redraw_player_loop
+            lda player_step
+            clc 
+            adc jump_table_offset
+            tax
+            lda #$80
+            ora draw_table+1,x
+            sta draw_table+1,x
+            rts
 
 ; ----------------------------------
 ; symbol graphics 
 
     ORG $FE00
     
+SYMBOL_GRAPHICS
 SYMBOL_GRAPHICS_S00_ZERO
-    byte $0,$70,$88,$88,$88,$88,$88,$70; 8
+    byte $0,$71,$89,$89,$89,$71,$1,$fe; 8
 SYMBOL_GRAPHICS_S01_ONE
-    byte $0,$70,$20,$20,$20,$20,$20,$60; 8
+    byte $0,$71,$21,$21,$21,$61,$1,$fe; 8 
 SYMBOL_GRAPHICS_S02_TWO
-    byte $0,$f8,$80,$80,$f8,$8,$8,$f8; 8
+    byte $0,$f8,$80,$f8,$8,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S03_THREE
-    byte $0,$f8,$8,$8,$f8,$8,$8,$f8; 8
+    byte $0,$f8,$8,$f8,$8,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S04_FOUR
-    byte $0,$8,$8,$8,$f8,$88,$88,$88; 8
+    byte $0,$8,$8,$f8,$88,$88,$0,$fe; 8 
 SYMBOL_GRAPHICS_S05_FIVE
-    byte $0,$f8,$8,$8,$f8,$80,$80,$f8; 8
+    byte $0,$f8,$8,$f8,$80,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S06_SIX
-    byte $0,$f8,$88,$88,$f8,$80,$80,$f8; 8
+    byte $0,$f8,$88,$f8,$80,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S07_SEVEN
-    byte $0,$8,$8,$8,$8,$8,$8,$f8; 8
+    byte $0,$8,$8,$8,$8,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S08_EIGHT
-    byte $0,$f8,$88,$88,$f8,$88,$88,$f8; 8
+    byte $0,$f8,$88,$f8,$88,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S09_NINE
-    byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
+    byte $0,$8,$8,$f8,$88,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S10_FLAG
-    byte $0,$c0,$c0,$c0,$ff,$ff,$ff,$ff; 8
+    byte $0,$c0,$c0,$ff,$ff,$ff,$0,$fe; 8 
 SYMBOL_GRAPHICS_S11_NUTS
     byte $0,$1c,$3c,$3e,$6c,$6c,$46,$6; 8
 SYMBOL_GRAPHICS_S12_BLANK
