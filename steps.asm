@@ -52,29 +52,34 @@ GAME_STATE_SCROLL  = 2
 clock              ds 1
 game_state         ds 1
 
-steps_wsync        ds 1 ; amount to shim steps up/down
-steps_respx        ds 1 ; initial pos
-steps_dir          ds 1 ; steps direction
-steps_hmove_a      ds 1 ; initial HMOVE
-steps_hmove_b      ds 1 ; reverse HMOVE
-
 ; combined player input
 ; bits: f...rldu
 player_input       ds 2
 ; debounced p0 input
 player_input_latch ds 1
 player_step        ds 1 ; step the player is at
-player_score       ds 1
+player_goal        ds 1 ; next goal
+player_score       ds 1 ; how far the player has traveled
 
 ; game state
-jump_table        ds JUMP_TABLE_BYTES 
-jump_table_size   ds 1
-jump_table_offset ds 1 ; where to locate jump table for drawing
+jump_table           ds JUMP_TABLE_BYTES 
+jump_table_end_byte  ds 1 ; last byte of jump table
+jump_table_offset    ds 1 ; where to locate jump table for drawing
+jump_table_size      ds 1 ; number of entries in jump table
 
 ; drawing registers
+steps_wsync        ds 1 ; amount to shim steps up/down
+steps_respx        ds 1 ; initial pos
+draw_steps_dir     ds 1 ; steps direction
+draw_player_dir    ds 1 ; player direction
+draw_hmove_a       ds 1 ; initial HMOVE
+draw_hmove_b       ds 1 ; reverse HMOVE
+draw_flight_offset ds 1 ; flight to start at
+draw_step_offset   ds 1 ; what step do we start drawing at
 draw_table         ds DRAW_TABLE_BYTES
 draw_s0_addr       ds 2
 draw_s1_addr       ds 2
+
 
 ; random var
 seed
@@ -176,6 +181,11 @@ _end_switches
             ; update clock
             inc clock
 
+            lda #GAME_STATE_SCROLL
+            cmp game_state
+            bne jx_update
+            rts
+
             ; update player input
 jx_update
             ldx #1
@@ -218,18 +228,20 @@ _gx_update_check_down
 _gx_update_check_left
             ror
             bcs _gx_update_check_right
-            bit steps_hmove_a
+            bit draw_player_dir
             bmi _gx_update_rev_left
 _gx_update_rev_right
             jmp gx_go_down
 _gx_update_check_right
             ror
             bcs gx_update_return
-            bit steps_hmove_a
+            bit draw_player_dir
             bmi _gx_update_rev_right
 _gx_update_rev_left
             jmp gx_go_up
 gx_update_return
+
+gx_continue
 
 ;---------------------
 ; end vblank
@@ -242,16 +254,27 @@ endVBlank_loop
 
             sta WSYNC ; SL 35
 
+
+gx_score
+            lda player_score
+            asl
+            asl
+            asl
+            sta draw_s1_addr
+            ldy #(CHAR_HEIGHT - 1)
+_gx_score_loop
+            sta WSYNC
+            lda (draw_s1_addr),y
+            sta GRP1
+            dey
+            bpl _gx_score_loop
+
             ; shim wsync
             ldx steps_wsync
             jsr sub_wsync_loop
 
 gx_steps_resp
             jsr sub_steps_respxx
-            ; prep HMOVE
-            lda steps_hmove_a
-            sta HMP0
-            sta HMP1
             ldx #DRAW_TABLE_SIZE - 1
 gx_step_draw
             sta WSYNC
@@ -268,16 +291,18 @@ _gx_draw_set_p0
             sty draw_s0_addr
             ; swap directions
             asl
-            bcc _gx_draw_end_swap_direction
             pha
-            lda steps_hmove_a
-            ldy steps_hmove_b
+            lda draw_hmove_a
+            sta HMP0
+            sta HMP1
+            bcc _gx_draw_end_swap_direction
+            lda draw_hmove_a
+            ldy draw_hmove_b
             sty HMP0
-            sty HMP1
-            sty steps_hmove_a
-            sta steps_hmove_b
-            pla
+            sty draw_hmove_a
+            sta draw_hmove_b
 _gx_draw_end_swap_direction
+            pla
             ; get step graphic
             asl
             sta draw_s1_addr
@@ -302,7 +327,6 @@ _gx_draw_loop
             dex 
             bpl gx_step_draw
             ; end steps
-            
 
 ;--------------------
 ; Overscan start
@@ -324,8 +348,6 @@ _header_loop
             rts
 
 sub_steps_init
-            lda #0
-            sta steps_dir  
             lda #53
             sta steps_respx
             lda #(160 - DRAW_TABLE_SIZE * CHAR_HEIGHT)
@@ -333,57 +355,128 @@ sub_steps_init
             ; jump init
             lda #6
             sta jump_table_size
-            lda #$11
-            ldx #JUMP_TABLE_BYTES - 1
-_steps_jump_init_loop
-            sta jump_table,x
+            lsr
+            sec
+            sbc #1
+            sta jump_table_end_byte
+            jsr sub_gen_steps
+            ldx jump_table_size
             dex
-            bpl _steps_jump_init_loop
-            ; draw init
-            lda #$1
-            ldx #DRAW_TABLE_BYTES - 1
-_steps_draw_init_loop
+            stx player_goal
+sub_steps_clear
+            ; clear draw table
+            ldx #(DRAW_TABLE_SIZE - 1)
+            lda #0
+_steps_draw_clear_loop
             sta draw_table,x
             dex
-            bpl _steps_draw_init_loop
+            bpl _steps_draw_clear_loop
+sub_steps_flights
+            ; add flight markers
+            ldy draw_flight_offset
+            lda draw_step_offset; current step
+_steps_draw_flights
+            clc
+            adc FLIGHTS,y
+            cmp #DRAW_TABLE_SIZE
+            bpl _steps_draw_flights_end
+            tax
             lda #$40
-            sta draw_table + 15
-            sta draw_table + 10
-            sta draw_table + 5
-            lda #$81
-            sta draw_table + 1
-            lda #$21
-            sta draw_table
-            rts
-
-sub_steps_advance
+            sta draw_table,x
+            dex
+            txa
+            iny
+            jmp _steps_draw_flights 
+_steps_draw_flights_end
+sub_steps_jump
+            ldx jump_table_end_byte
             lda jump_table_size
             clc
             adc jump_table_offset
+            tay
+            dey
+_steps_draw_jumps
+            lda jump_table,x
+            lsr
+            lsr
+            lsr
+            lsr
+            ora draw_table,y
+            sta draw_table,y
+            dey
+            lda jump_table,x
+            and #$0f
+            ora draw_table,y
+            sta draw_table,y
+            dey
+            dex
+            bpl _steps_draw_jumps
+            rts
+
+sub_steps_advance
+            ; move jump table "up" to next flight
+            lda jump_table_size
+            sec
+            sbc #1
+            clc
+            adc jump_table_offset
             tax 
+            clc 
             adc jump_table_size
-            sbc #(DRAW_TABLE_SIZE - 2)
+            sec
+            sbc #(DRAW_TABLE_SIZE - 1)
             bmi _sub_steps_advance_save
             ; scroll
-            ;BUGBUG: SCROLL MODE
-            rts
+            jsr sub_steps_scroll
+            jmp sub_steps_advance
 _sub_steps_advance_save
             stx jump_table_offset
-            rts
-       
+            lda #GAME_STATE_SCROLL ; BUGBUG: kludgey
+            cmp game_state
+            bne _sub_steps_advance_end
+            lda draw_steps_dir
+            eor #$ff
+            sta draw_steps_dir
+_sub_steps_advance_end
+            lda #GAME_STATE_CLIMB
+            sta game_state
+            lda draw_player_dir
+            eor #$88 ; invert plqyer dir between 8 and 0
+            sta draw_player_dir
+            sta REFP0
+            jmp sub_steps_clear     
+
+sub_steps_scroll
+            ; lda steps_wsync
+            ; clc
+            ; adc #1
+            ; and #$07
+            ; sta steps_wsync
+            ;  bne _sub_scroll_cont
+            dec jump_table_offset
+            ldy draw_flight_offset
+            dec draw_step_offset
+            lda draw_step_offset
+            clc
+            adc FLIGHTS,y
+            sec
+            sbc #1
+            bne _sub_scroll_cont
+            iny
+            sty draw_flight_offset
+            lda #0
+            sta draw_step_offset
+_sub_scroll_cont
+            lda #GAME_STATE_SCROLL
+            sta game_state
+            jmp gx_continue ; will continue later
+
 FLIGHTS
-    byte 8,8,10,10,10,10,12,12,12,12,14,14,14,14,16,16,16,16,16,16
+    byte 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
+    ;10,12,12,12,12,14,14,14,14,16,16,16,16,16,16
 MAX_FLIGHTS = . - FLIGHTS
 
 MAZES
-    byte $11, $11, $11, $11
-    byte $11, $11, $11, $11
-    byte $11, $11, $11, $11
-    byte $11, $11, $11, $11
-    byte $11, $11, $11, $11
-    byte $11, $11, $11, $11
-    byte $11, $11, $11, $11
-    byte $11, $11, $11, $11
     ; byte $33, $11, $00
     ; byte $23, $12, $00
     ; byte $22, $22, $30
@@ -395,40 +488,43 @@ MAZES
 
 sub_steps_respxx
             lda steps_respx
-            ldy steps_dir
+            ldy draw_steps_dir
             sta WSYNC               ; --
 _respxx_loop
             sbc #15                 ;2    2
-            sbcs _respxx_loop        ;2/3  4
+            sbcs _respxx_loop       ;2/3  4
             tax                     ;2    6
             lda LOOKUP_STD_HMOVE,x  ;5   11
             sta HMP0                ;3   14
             sta HMP1                ;3   17
             tya                     ;2   19
-            bmi _respxx_swap        ;2   21
+            bpl _respxx_swap        ;2   21
             sta.w RESP0             ;4   25
             sta RESP1               ;3   28
             sta WSYNC               ;
             sta HMOVE               ;3    3
-            lda #$90                ;2    5
-            sta steps_hmove_a       ;3    8
-            lda #$70                ;2   10
-            sta steps_hmove_b       ;3   13
+            lda #$70                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$90                ;2   10
+            sta draw_hmove_b        ;3   13
             lda #$00                ;2   15
-            sta REFP0               ;3   18
-            rts                     ;6   24
+            sta HMP0                ;3   21
+            sta HMP1                ;3   24
+            rts                     ;6   30
 _respxx_swap            
             sta RESP1               ;3   25
             sta RESP0               ;3   28
             sta WSYNC
             sta HMOVE
-            lda #$70                ;2    5
-            sta steps_hmove_a       ;3    8
-            lda #$90                ;2   10
-            sta steps_hmove_b       ;3   13
-            lda #$08                ;2   15
-            sta REFP0               ;3   18
-            rts                     ;6   24
+            lda #$90                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$70                ;2   10
+            sta draw_hmove_b        ;3   13
+            lda #$40                ;3   21
+            sta HMP0                ;3   24
+            lda #$00                ;3   27
+            sta HMP1                ;3   30
+            rts                     ;6   36
 
 sub_step_getx
             txa ; x has step number
@@ -443,6 +539,18 @@ sub_step_getx
 _step_get_lo
             and #$0f
             rts 
+
+sub_gen_steps
+            ldx jump_table_end_byte
+            lda #$01
+            sta jump_table,x
+            dex
+            lda #$11
+_sub_gen_steps_loop
+            sta jump_table,x
+            dex
+            bpl _sub_gen_steps_loop
+            rts
 
 sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/master
             lda seed+1
@@ -484,19 +592,11 @@ _gx_go_add_step
             clc
             adc player_step
             beq _gx_go_fall
-            cmp jump_table_size
+            cmp player_goal
             bcc _gx_go_save_step
             bne _gx_go_fall
             ; win
             inc player_score
-            lda player_score
-            lsr
-            ldx #4
-_gx_add_steps
-            inx
-            lsr
-            bne _gx_add_steps
-            txa
             jsr sub_steps_advance
 _gx_go_fall
             ; fall and recover
@@ -530,9 +630,9 @@ _sub_redraw_player_loop
     
 SYMBOL_GRAPHICS
 SYMBOL_GRAPHICS_S00_ZERO
-    byte $0,$71,$89,$89,$89,$71,$1,$fe; 8
+    byte $0,$70,$88,$88,$88,$70,$0,$0; 8
 SYMBOL_GRAPHICS_S01_ONE
-    byte $0,$71,$21,$21,$21,$61,$1,$fe; 8 
+    byte $0,$70,$20,$20,$20,$60,$0,$0; 8 
 SYMBOL_GRAPHICS_S02_TWO
     byte $0,$f8,$80,$f8,$8,$f8,$0,$fe; 8 
 SYMBOL_GRAPHICS_S03_THREE
