@@ -68,9 +68,11 @@ jump_table_offset    ds 1 ; where to locate jump table for drawing
 jump_table_size      ds 1 ; number of entries in jump table
 
 ; drawing registers
+draw_bugbug_margin ds 1
 steps_wsync        ds 1 ; amount to shim steps up/down
-steps_respx        ds 1 ; initial pos
-draw_steps_dir     ds 1 ; steps direction
+draw_base_dir      ds 1 ; base of steps direction
+draw_base_lr       ds 1 ; base of steps lr position
+draw_steps_dir     ds 1 ; top of steps direction
 draw_player_dir    ds 1 ; player direction
 draw_hmove_a       ds 1 ; initial HMOVE
 draw_hmove_b       ds 1 ; reverse HMOVE
@@ -274,7 +276,7 @@ _gx_score_loop
             jsr sub_wsync_loop
 
 gx_steps_resp
-            jsr sub_steps_respxx
+            jsr sub_calc_respx
             ldx #DRAW_TABLE_SIZE - 1
 gx_step_draw
             sta WSYNC
@@ -348,21 +350,15 @@ _header_loop
             rts
 
 sub_steps_init
-            lda #53
-            sta steps_respx
+            lda #5 ; BUGBUG magic number
+            sta draw_base_lr
             lda #(160 - DRAW_TABLE_SIZE * CHAR_HEIGHT)
             sta steps_wsync
             ; jump init
+            lda #$ff
+            sta draw_base_dir
             lda #6
-            sta jump_table_size
-            lsr
-            sec
-            sbc #1
-            sta jump_table_end_byte
             jsr sub_gen_steps
-            ldx jump_table_size
-            dex
-            stx player_goal
 sub_steps_clear
             ; clear draw table
             ldx #(DRAW_TABLE_SIZE - 1)
@@ -411,10 +407,12 @@ _steps_draw_jumps
             dey
             dex
             bpl _steps_draw_jumps
+            jsr sub_draw_player_step
             rts
 
 sub_steps_advance
             ; move jump table "up" to next flight
+            ldy player_score
             lda jump_table_size
             sec
             sbc #1
@@ -422,7 +420,7 @@ sub_steps_advance
             adc jump_table_offset
             tax 
             clc 
-            adc jump_table_size
+            adc FLIGHTS,y
             sec
             sbc #(DRAW_TABLE_SIZE - 1)
             bmi _sub_steps_advance_save
@@ -431,48 +429,54 @@ sub_steps_advance
             jmp sub_steps_advance
 _sub_steps_advance_save
             stx jump_table_offset
-            lda #GAME_STATE_SCROLL ; BUGBUG: kludgey
-            cmp game_state
-            bne _sub_steps_advance_end
-            lda draw_steps_dir
-            eor #$ff
-            sta draw_steps_dir
-_sub_steps_advance_end
+            ldy player_score
+            lda FLIGHTS,y
+            jsr sub_gen_steps
             lda #GAME_STATE_CLIMB
             sta game_state
             lda draw_player_dir
-            eor #$88 ; invert plqyer dir between 8 and 0
+            eor #$88 ; invert player dir between 8 and 0
             sta draw_player_dir
             sta REFP0
             jmp sub_steps_clear     
 
 sub_steps_scroll
-            ; lda steps_wsync
-            ; clc
-            ; adc #1
-            ; and #$07
-            ; sta steps_wsync
-            ;  bne _sub_scroll_cont
-            dec jump_table_offset
+            lda clock
+            and #$07
+            bne _sub_scroll_cont
+            dec jump_table_offset ; BUGBUG when goes negative
             ldy draw_flight_offset
             dec draw_step_offset
+            lda #-1
+            bit draw_base_dir
+            bpl _sub_scroll_lr_calc
+            lda #1
+_sub_scroll_lr_calc
+            clc
+            adc draw_base_lr
+            sta draw_base_lr
             lda draw_step_offset
             clc
             adc FLIGHTS,y
             sec
             sbc #1
-            bne _sub_scroll_cont
+            bne _sub_scroll_update
             iny
             sty draw_flight_offset
+            lda draw_base_dir
+            eor #$ff
+            sta draw_base_dir
             lda #0
             sta draw_step_offset
+_sub_scroll_update
+            jsr sub_steps_clear
 _sub_scroll_cont
             lda #GAME_STATE_SCROLL
             sta game_state
             jmp gx_continue ; will continue later
 
 FLIGHTS
-    byte 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
+    byte 6,6,6,6,8,8,8,8,10,10,10,12,12,12,16,16,16,16,16
     ;10,12,12,12,12,14,14,14,14,16,16,16,16,16,16
 MAX_FLIGHTS = . - FLIGHTS
 
@@ -486,9 +490,49 @@ MAZES
     ; byte $25, $14, $12, $20
     ; byte $25, $32, $11, $10
 
+
+
+sub_calc_respx
+            ldx #0
+            ldy draw_base_lr
+            bit draw_base_dir
+            bmi _calc_respx_right
+_calc_respx_left
+            lda draw_table + 1,x
+            and #$40
+            bne _calc_respx_switch_right
+_calc_respx_switch_left
+            dey
+            inx
+            cpx #(DRAW_TABLE_SIZE - 1)
+            bne _calc_respx_left
+            tya
+            ldy #$00
+            jmp _calc_respx_end
+_calc_respx_right
+            lda draw_table + 1,x
+            and #$40
+            bne _calc_respx_switch_left
+_calc_respx_switch_right
+            iny
+            inx
+            cpx #(DRAW_TABLE_SIZE - 1)
+            bne _calc_respx_right
+            dey
+            tya
+            ldy #$ff
+_calc_respx_end
+            sta draw_bugbug_margin
+            asl
+            asl
+            asl
+            sec
+            sbc draw_bugbug_margin 
+            clc 
+            adc #10 ; BUGBUG: magic number
 sub_steps_respxx
-            lda steps_respx
-            ldy draw_steps_dir
+            ; a is respx, y is direction
+            sec
             sta WSYNC               ; --
 _respxx_loop
             sbc #15                 ;2    2
@@ -507,8 +551,10 @@ _respxx_loop
             sta draw_hmove_a        ;3    8
             lda #$90                ;2   10
             sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
             lda #$00                ;2   15
             sta HMP0                ;3   21
+            lda #$30
             sta HMP1                ;3   24
             rts                     ;6   30
 _respxx_swap            
@@ -520,9 +566,10 @@ _respxx_swap
             sta draw_hmove_a        ;3    8
             lda #$70                ;2   10
             sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
             lda #$40                ;3   21
             sta HMP0                ;3   24
-            lda #$00                ;3   27
+            lda #$10                ;3   27
             sta HMP1                ;3   30
             rts                     ;6   36
 
@@ -541,7 +588,12 @@ _step_get_lo
             rts 
 
 sub_gen_steps
-            ldx jump_table_end_byte
+            sta jump_table_size
+            lsr
+            sec
+            sbc #1
+            sta jump_table_end_byte
+            tax
             lda #$01
             sta jump_table,x
             dex
@@ -550,6 +602,9 @@ _sub_gen_steps_loop
             sta jump_table,x
             dex
             bpl _sub_gen_steps_loop
+            ldx jump_table_size
+            dex
+            stx player_goal
             rts
 
 sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/master
@@ -581,9 +636,13 @@ sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/ma
             rts            
 
 gx_go_up
+            ; inc draw_bugbug_margin
+            ; jmp gx_update_return
             tya
             jmp _gx_go_add_step
 gx_go_down
+            ; dec draw_bugbug_margin
+            ; jmp gx_update_return
             tya
             eor #$ff
             clc
@@ -614,6 +673,7 @@ _sub_redraw_player_loop
             sta draw_table+1,x
             dex
             bpl _sub_redraw_player_loop
+sub_draw_player_step
             lda player_step
             clc 
             adc jump_table_offset
