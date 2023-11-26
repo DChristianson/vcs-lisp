@@ -308,6 +308,8 @@ def solutions(series, max_distance, target_solution_length):
         if s is None:
             continue
         w = interestingness(m, s, max_distance, target_solution_length)
+        if w == 0:
+            continue
         yield (w, m, s)
 
 def topk(k, series, limit=-1):
@@ -329,17 +331,17 @@ def byteify(m):
 
 for n, d in [(6, 4), (8, 5), (10, 6)]:
     print(f'Maze {n} X {d}')
-    for w, m, s in topk(16, solutions((m for m, _ in generate_solutions(n, d)), d, n)):
+    for w, m, s in topk(32, solutions((m for m, _ in generate_solutions(n, d)), d, n)):
        #print(m, s)
-       print('byte ' + ','.join((byteify(m))))
+       print('byte ' + ','.join((byteify(m))) + f' ; w: {w} sol: {len(s)}')
     print()
 
 
 for n, d in [(12, 7), (14, 9), (16, 9)]:
     print(f'Maze {n} X {d}')
-    for w, m, s in topk(16, solutions((m for m, _ in scramble_solutions(n, d, 100000, 100)), d, n)):
+    for w, m, s in topk(32, solutions((m for m, _ in scramble_solutions(n, d, 100000, 100)), d, n)):
        #print(m, s)
-       print('byte ' + ','.join((byteify(m))))
+       print('byte ' + ','.join((byteify(m))) + f' ; w: {w} sol: {len(s)}')
     print()
 
 

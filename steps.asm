@@ -43,9 +43,10 @@ JUMP_TABLE_BYTES = JUMP_TABLE_SIZE / 2
 GAME_STATE_INIT    = 0
 GAME_STATE_START   = 1
 GAME_STATE_CLIMB   = 2
-GAME_STATE_SCROLL  = 3
-GAME_STATE_FALL    = 4
-GAME_STATE_WIN     = 5
+GAME_STATE_JUMP    = 3
+GAME_STATE_SCROLL  = 4
+GAME_STATE_FALL    = 5
+GAME_STATE_WIN     = 6
 
 ; ----------------------------------
 ; vars
@@ -64,6 +65,8 @@ player_input       ds 2
 ; debounced p0 input
 player_input_latch ds 1
 player_step        ds 1 ; step the player is at
+player_jump        ds 1 ; number of squares to jump
+player_inc         ds 1 ; direction of movement
 player_goal        ds 1 ; next goal
 player_score       ds 1 ; decimal score
 player_flight      ds 1 ; current flight
@@ -112,22 +115,32 @@ maze_ptr           ds 2
 ;   - win condition
 ;   - score display
 ;   - timer display
-; MVP
-;  - gameplay 1
 ;   - mix of puzzles
-;   - fall penalty
-;   - no fall penalty from start step
+;   - climb step by step 
+;   - time based randomization
+;   - fall step by step
+; MVP
 ;  - sounds 1
 ;   - bounce up/down fugue
 ;   - fall down notes
 ;   - landing song
 ;   - final success
-; TODO
+;  - gameplay 1
+;   - no fall penalty from start step
 ;  - visual 2
-;   - color background
+;   - color stairs
+;   - contrasting background
+;   - PF gutters
+; TODO
+;  - visual 3
+;   - climb animation 
+;   - fall tumble animation
+;   - varied color background
 ;   - stair outlines
-;   - animated jumps
+;   - animated jumps + targeting
 ;  - gameplay 2
+;   - more maze variety (generate)
+;  - gameplay 3
 ;   - title intro
 ;   - difficulty select
 ;   - time limit (lava?)
@@ -241,6 +254,7 @@ GX_JUMP_LO
     byte <(gx_init-1)
     byte <(gx_start-1)
     byte <(gx_climb-1)
+    byte <(gx_jump-1)
     byte <(gx_scroll-1)
     byte <(gx_fall-1)
     byte <(gx_win-1)
@@ -248,29 +262,33 @@ GX_JUMP_HI
     byte >(gx_init-1)
     byte >(gx_start-1)
     byte >(gx_climb-1)
+    byte >(gx_jump-1)
     byte >(gx_scroll-1)
     byte >(gx_fall-1)
     byte >(gx_win-1)
 
-gx_scroll   
+gx_scroll
+gx_fall
+gx_jump
             ; continue from wherever we were
             rts
 
 gx_init
             ; bootstrap steps
-            jsr sub_steps_init
+            jsr sub_steps_blank
             lda #GAME_STATE_START
             sta game_state
 gx_start    
             ; start of climb
-            lda player_input_latch
-            eor #$8f
-            bne _start_game
+            bit player_input_latch
+            bpl _start_game
+            jsr sub_galois ; cycle randomization
             jmp gx_continue
 _start_game
+            jsr sub_steps_init
             lda #GAME_STATE_CLIMB
             sta game_state
-            jmp gx_climb
+            jmp gx_continue
             
 gx_win    
             lda frame
@@ -283,34 +301,8 @@ gx_win
 _reset_game
             jmp Reset ; BUGBUG - more smart reset?
 
-gx_fall
 gx_climb
-
-gx_climb_player_clock    
-            lda player_clock
-            clc
-            adc #1
-            cmp #CLOCK_HZ
-            bmi _clock_save
-            sed
-            lda player_timer
-            clc
-            adc #1
-            cmp #$60
-            bne _clock_save_sec
-            lda #0
-            sec
-_clock_save_sec
-            sta player_timer
-            lda player_timer + 1
-            adc #0
-            sta player_timer + 1
-            cld
-            lda #0
-_clock_save
-            sta player_clock 
-
-gx_climb_update
+gx_update
             ldx player_step
             jsr sub_step_getx
             tay
@@ -337,6 +329,30 @@ _gx_update_check_right
 _gx_update_rev_left
             jmp gx_go_up
 gx_update_return
+
+gx_player_clock    
+            lda player_clock
+            clc
+            adc #1
+            cmp #CLOCK_HZ
+            bmi _clock_save
+            sed
+            lda player_timer
+            clc
+            adc #1
+            cmp #$60
+            bne _clock_save_sec
+            lda #0
+            sec
+_clock_save_sec
+            sta player_timer
+            lda player_timer + 1
+            adc #0
+            sta player_timer + 1
+            cld
+            lda #0
+_clock_save
+            sta player_clock 
 
 gx_continue
             jsr sub_calc_respx
@@ -495,6 +511,19 @@ sub_write_digit
             sta draw_s0_addr,x
             rts
 
+sub_steps_blank
+            lda #$40 + ((SYMBOL_GRAPHICS_S12_BLANK - SYMBOL_GRAPHICS) / 8)
+            ldx #(DRAW_TABLE_SIZE - 3)
+_steps_blanks_loop
+            sta draw_table + 2,x
+            dex
+            bpl _steps_blanks_loop
+            lda #$80 + ((SYMBOL_GRAPHICS_S12_BLANK - SYMBOL_GRAPHICS) / 8)
+            sta draw_table + 1
+            lda #$20 + ((SYMBOL_GRAPHICS_S12_BLANK - SYMBOL_GRAPHICS) / 8)
+            sta draw_table
+            rts
+
 sub_steps_init
             lda #5 ; BUGBUG magic number
             sta draw_base_lr
@@ -503,7 +532,7 @@ sub_steps_init
             sta draw_base_dir
             lda #6
             jsr sub_gen_steps
-sub_steps_clear
+sub_steps_refresh
             ; clear draw table
             ldx #(DRAW_TABLE_SIZE - 1)
             lda #0
@@ -615,7 +644,7 @@ _sub_steps_advance_save
             lda draw_player_dir
             eor #$88 ; invert player dir between 8 and 0
             sta draw_player_dir
-            jmp sub_steps_clear ; redraw steps (will rts from there)
+            jmp sub_steps_refresh ; redraw steps (will rts from there)
 
 sub_steps_win
             lda #GAME_STATE_WIN
@@ -654,7 +683,7 @@ _sub_scroll_lr_calc
             lda #0
             sta draw_step_offset
 _sub_scroll_update
-            jsr sub_steps_clear
+            jsr sub_steps_refresh
 _sub_scroll_cont
             lda #GAME_STATE_SCROLL
             sta game_state
@@ -682,7 +711,7 @@ _respxx_loop
             lda #$90                ;2   10
             sta draw_hmove_b        ;3   13
             SLEEP 10 ; BUGBUG: kludge
-            lda #$00                ;2   15
+            lda #$20                ;2   15
             sta HMP0                ;3   21
             lda #$30
             sta HMP1                ;3   24
@@ -763,6 +792,7 @@ _step_get_lo
 sub_gen_steps
             sta jump_table_size
             lsr
+            sta maze_ptr ; save for multiply
             sec
             sbc #1
             sta jump_table_end_byte
@@ -770,7 +800,7 @@ sub_gen_steps
             lda MAZE_PTR_HI,y
             sta maze_ptr + 1
             jsr sub_galois
-            and #$f0
+            and #$f8 ; 32 get top 32 bits
             beq _sub_gen_steps_selected
             sta draw_bugbug_margin
             ldx #3
@@ -780,11 +810,10 @@ _sub_gen_steps_mul
             asl draw_bugbug_margin
             bcc _sub_gen_steps_skip
             clc
-            adc jump_table_size
+            adc maze_ptr
 _sub_gen_steps_skip
             dex 
             bpl _sub_gen_steps_mul
-            lsr
 _sub_gen_steps_selected
             clc
             ldy jump_table_end_byte
@@ -841,22 +870,39 @@ sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/ma
             rts            
 
 gx_go_up
-            tya
+            lda #1
             jmp _gx_go_add_step
 gx_go_down
-            tya
-            eor #$ff
-            clc
-            adc #1
+            lda #-1
 _gx_go_add_step
+            sty player_jump
+            sta player_inc
+            lda #GAME_STATE_JUMP
+            sta game_state
+            ; intentional fallthrough to jump process
+
+gx_process_jump
+            lda player_inc
             clc
             adc player_step
-            beq _gx_go_fall
-            cmp player_goal
-            bcc _gx_go_save_step
-            bne _gx_go_fall
-            ; advance
+            ; move player
             sta player_step
+            bmi _gx_go_fall_down
+            cmp player_goal
+            bcc _gx_process_dec_jump
+            bne _gx_go_fall_up
+_gx_process_dec_jump
+            dec player_jump
+            beq _gx_process_jump_arrive
+            ; continue movement
+            jsr _gx_go_redraw_player ; will continue back
+            jmp gx_process_jump
+_gx_process_jump_arrive
+            ldx #GAME_STATE_CLIMB
+            stx game_state
+            cmp player_goal
+            bne _gx_go_redraw_player
+            ; advance
             ldy player_flight
             sed
             lda FLIGHTS,y
@@ -870,11 +916,24 @@ _gx_go_add_step
             sty player_flight
             jsr sub_steps_advance
             jmp _gx_go_redraw_player
+_gx_go_fall_down
+            lda #0
+            sta player_step
+            sta player_inc
+            inc player_jump
+            jmp _gx_go_fall
+_gx_go_fall_up
+            lda player_goal
+            sta player_step
+            sta player_jump
+            lda #-1
+            sta player_inc
 _gx_go_fall
             ; fall and recover
-            lda #0
-_gx_go_save_step
-            sta player_step
+            ldx #GAME_STATE_FALL
+            stx game_state
+            jsr _gx_go_redraw_player ; will continue back
+            jmp gx_process_jump
 _gx_go_redraw_player
             jsr sub_redraw_player_step
             jmp gx_update_return
@@ -942,127 +1001,225 @@ sub_draw_player_step
 ; ----------------------------------
 ; maze data 
 
-    ORG $F800
+    ORG $F900
 
 MAZES_3
-    byte $14,$21,$2
-    byte $43,$14,$3
-    byte $44,$11,$2
-    byte $34,$43,$2
-    byte $32,$31,$1
-    byte $31,$21,$2
-    byte $43,$11,$4
-    byte $42,$12,$3
-    byte $14,$21,$3
-    byte $14,$13,$3
-    byte $42,$31,$3
-    byte $44,$13,$3
-    byte $31,$43,$2
-    byte $24,$23,$3
-    byte $21,$13,$3
-    byte $24,$13,$3
+
+    byte $22,$22,$3 ; w: 0.13333333333333333 sol: 6
+    byte $31,$21,$2 ; w: 0.4 sol: 6
+    byte $14,$21,$2 ; w: 0.3 sol: 5
+    byte $43,$11,$4 ; w: 0.4 sol: 5
+    byte $21,$13,$3 ; w: 0.5 sol: 5
+    byte $44,$11,$2 ; w: 0.3 sol: 5
+    byte $32,$31,$1 ; w: 0.5 sol: 5
+    byte $43,$14,$3 ; w: 0.4 sol: 5
+    byte $44,$13,$3 ; w: 0.4 sol: 4
+    byte $31,$43,$2 ; w: 0.5333333333333334 sol: 5
+    byte $24,$23,$3 ; w: 0.5 sol: 5
+    byte $24,$13,$3 ; w: 1.3333333333333333 sol: 6
+    byte $42,$12,$3 ; w: 0.6666666666666667 sol: 5
+    byte $42,$31,$3 ; w: 0.5333333333333334 sol: 4
+    byte $14,$21,$3 ; w: 0.5333333333333333 sol: 6
+    byte $14,$13,$3 ; w: 0.5 sol: 5
+    byte $34,$43,$2 ; w: 0.4 sol: 4
+    byte $43,$11,$4 ; w: 0.4 sol: 5
+    byte $21,$13,$3 ; w: 0.5 sol: 5
+    byte $44,$11,$2 ; w: 0.3 sol: 5
+    byte $32,$31,$1 ; w: 0.5 sol: 5
+    byte $43,$14,$3 ; w: 0.4 sol: 5
+    byte $44,$13,$3 ; w: 0.4 sol: 4
+    byte $31,$43,$2 ; w: 0.5333333333333334 sol: 5
+    byte $24,$23,$3 ; w: 0.5 sol: 5
+    byte $24,$13,$3 ; w: 1.3333333333333333 sol: 6
+    byte $42,$12,$3 ; w: 0.6666666666666667 sol: 5
+    byte $42,$31,$3 ; w: 0.5333333333333334 sol: 4
+    byte $14,$21,$3 ; w: 0.5333333333333333 sol: 6
+    byte $14,$13,$3 ; w: 0.5 sol: 5
+    byte $34,$43,$2 ; w: 0.4 sol: 4
+    byte $43,$11,$4 ; w: 0.4 sol: 5
 
 MAZES_4
-    byte $55,$42,$41,$4
-    byte $51,$23,$13,$4
-    byte $51,$21,$13,$4
-    byte $52,$13,$43,$3
-    byte $52,$24,$13,$3
-    byte $35,$32,$41,$1
-    byte $13,$35,$41,$2
-    byte $43,$35,$31,$2
-    byte $52,$43,$41,$2
-    byte $15,$24,$43,$2
-    byte $15,$32,$41,$1
-    byte $35,$44,$31,$5
-    byte $35,$42,$41,$5
-    byte $15,$42,$42,$3
-    byte $43,$35,$12,$5
-    byte $35,$35,$41,$4
 
-     ORG $F900
+    byte $15,$32,$31,$1 ; sol: 7
+    byte $15,$14,$43,$3 ; sol: 8
+    byte $15,$42,$41,$2 ; sol: 7
+    byte $43,$14,$24,$5 ; sol: 7
+    byte $25,$35,$42,$2 ; sol: 8
+    byte $22,$24,$13,$5 ; sol: 8
+    byte $25,$15,$14,$5 ; sol: 7
+    byte $25,$14,$33,$5 ; sol: 8
+    byte $35,$41,$42,$4 ; sol: 7
+    byte $15,$24,$33,$2 ; sol: 6
+    byte $55,$42,$41,$4 ; sol: 8
+    byte $35,$42,$31,$3 ; sol: 6
+    byte $42,$54,$13,$5 ; sol: 7
+    byte $43,$32,$13,$5 ; sol: 7
+    byte $35,$44,$31,$2 ; sol: 7
+    byte $51,$23,$13,$4 ; sol: 7
+    byte $15,$42,$42,$3 ; sol: 8
+    byte $35,$42,$41,$5 ; sol: 6
+    byte $52,$43,$41,$2 ; sol: 8
+    byte $25,$31,$43,$2 ; sol: 7
+    byte $15,$32,$41,$1 ; sol: 8
+    byte $52,$13,$43,$3 ; sol: 8
+    byte $43,$35,$12,$5 ; sol: 8
+    byte $43,$35,$31,$2 ; sol: 7
+    byte $13,$35,$41,$2 ; sol: 8
+    byte $25,$44,$31,$5 ; sol: 7
+    byte $35,$32,$41,$1 ; sol: 7
+    byte $15,$24,$43,$2 ; sol: 7
+    byte $35,$35,$41,$4 ; sol: 8
+    byte $35,$44,$31,$5 ; sol: 8
+    byte $51,$21,$13,$4 ; sol: 8
+    byte $52,$24,$13,$3 ; sol: 7
+
+    ORG $FA00
 
 MAZES_5
 
-    byte $16,$25,$15,$45,$3
-    byte $16,$26,$25,$34,$5
-    byte $26,$43,$15,$15,$6
-    byte $26,$15,$46,$15,$3
-    byte $36,$41,$42,$15,$3
-    byte $36,$26,$13,$24,$5
-    byte $46,$42,$31,$25,$6
-    byte $36,$46,$12,$25,$5
-    byte $46,$65,$23,$14,$4
-    byte $46,$52,$23,$54,$1
-    byte $36,$51,$42,$45,$3
-    byte $46,$62,$31,$15,$2
-    byte $36,$65,$42,$45,$1
-    byte $24,$16,$43,$65,$3
-    byte $46,$65,$31,$45,$2
-    byte $36,$26,$15,$64,$5
+    byte $52,$16,$43,$61,$5 ; sol: 9
+    byte $43,$46,$42,$51,$4 ; sol: 9
+    byte $52,$46,$43,$31,$5 ; sol: 10
+    byte $53,$52,$43,$41,$6 ; sol: 9
+    byte $53,$26,$65,$51,$4 ; sol: 9
+    byte $16,$26,$25,$34,$5 ; sol: 9
+    byte $62,$62,$14,$45,$3 ; sol: 10
+    byte $63,$51,$42,$31,$6 ; sol: 10
+    byte $26,$43,$15,$15,$6 ; sol: 10
+    byte $24,$54,$43,$41,$6 ; sol: 9
+    byte $24,$54,$43,$41,$6 ; sol: 9
+    byte $46,$52,$23,$54,$1 ; sol: 9
+    byte $26,$15,$46,$15,$3 ; sol: 9
+    byte $23,$46,$42,$51,$4 ; sol: 9
+    byte $63,$54,$31,$25,$4 ; sol: 10
+    byte $16,$25,$15,$45,$3 ; sol: 9
+    byte $14,$53,$23,$63,$2 ; sol: 9
+    byte $36,$46,$12,$25,$5 ; sol: 9
+    byte $36,$26,$13,$24,$5 ; sol: 9
+    byte $46,$65,$31,$45,$2 ; sol: 8
+    byte $36,$41,$42,$15,$3 ; sol: 10
+    byte $35,$64,$31,$61,$2 ; sol: 9
+    byte $24,$65,$14,$64,$3 ; sol: 10
+    byte $46,$65,$23,$14,$4 ; sol: 10
+    byte $36,$26,$15,$64,$5 ; sol: 8
+    byte $46,$42,$31,$25,$6 ; sol: 9
+    byte $24,$16,$43,$65,$3 ; sol: 8
+    byte $16,$52,$43,$45,$3 ; sol: 10
+    byte $43,$35,$14,$25,$6 ; sol: 10
+    byte $36,$51,$42,$45,$3 ; sol: 9
+    byte $46,$62,$31,$15,$2 ; sol: 8
+    byte $36,$65,$42,$45,$1 ; sol: 8
 
-     ORG $FA00
+    ORG $FB00
 
 MAZES_6
 
-    byte $57,$62,$23,$54,$13,$7
-    byte $57,$62,$73,$54,$13,$7
-    byte $57,$13,$25,$64,$13,$3
-    byte $57,$72,$35,$61,$64,$1
-    byte $57,$63,$14,$64,$25,$3
-    byte $57,$53,$27,$64,$51,$3
-    byte $73,$25,$75,$15,$74,$6
-    byte $57,$63,$27,$64,$14,$4
-    byte $47,$62,$31,$65,$37,$4
-    byte $24,$17,$63,$64,$31,$5
-    byte $57,$63,$21,$64,$13,$4
-    byte $56,$72,$41,$61,$73,$2
-    byte $65,$72,$41,$51,$43,$2
-    byte $25,$47,$36,$15,$56,$7
-    byte $24,$17,$53,$67,$43,$2
-    byte $27,$17,$74,$35,$37,$6
+    byte $36,$76,$42,$43,$31,$5 ; sol: 11
+    byte $27,$14,$65,$31,$17,$3 ; sol: 11
+    byte $46,$65,$27,$14,$57,$3 ; sol: 11
+    byte $27,$57,$31,$64,$34,$1 ; sol: 12
+    byte $37,$64,$31,$54,$27,$5 ; sol: 12
+    byte $27,$16,$45,$35,$42,$6 ; sol: 11
+    byte $27,$57,$31,$65,$14,$4 ; sol: 12
+    byte $57,$42,$63,$54,$41,$2 ; sol: 11
+    byte $57,$52,$63,$54,$41,$7 ; sol: 12
+    byte $57,$31,$46,$51,$53,$2 ; sol: 11
+    byte $37,$26,$17,$54,$31,$7 ; sol: 11
+    byte $27,$57,$31,$65,$34,$7 ; sol: 11
+    byte $37,$72,$42,$51,$63,$2 ; sol: 11
+    byte $57,$63,$14,$64,$25,$3 ; sol: 11
+    byte $57,$53,$27,$64,$51,$3 ; sol: 11
+    byte $73,$25,$75,$15,$74,$6 ; sol: 10
+    byte $27,$17,$74,$35,$37,$6 ; sol: 10
+    byte $57,$62,$73,$54,$13,$7 ; sol: 11
+    byte $57,$13,$25,$64,$13,$3 ; sol: 11
+    byte $57,$63,$27,$64,$14,$4 ; sol: 11
+    byte $47,$62,$31,$65,$37,$4 ; sol: 10
+    byte $57,$72,$35,$61,$64,$1 ; sol: 11
+    byte $25,$47,$36,$15,$56,$7 ; sol: 10
+    byte $57,$62,$23,$54,$13,$7 ; sol: 11
+    byte $57,$62,$23,$54,$13,$5 ; sol: 12
+    byte $47,$17,$24,$35,$37,$6 ; sol: 11
+    byte $47,$62,$52,$51,$13,$7 ; sol: 11
+    byte $24,$17,$53,$67,$43,$2 ; sol: 10
+    byte $56,$72,$41,$61,$73,$2 ; sol: 10
+    byte $57,$63,$21,$64,$13,$4 ; sol: 10
+    byte $24,$17,$63,$64,$31,$5 ; sol: 10
+    byte $65,$72,$41,$51,$43,$2 ; sol: 10
 
-     ORG $FB00
+    ORG $FC00
 
 MAZES_7
 
-    byte $72,$99,$26,$17,$84,$85,$3
-    byte $18,$39,$76,$22,$47,$85,$5
-    byte $59,$82,$91,$36,$75,$49,$4
-    byte $99,$85,$74,$23,$86,$74,$1
-    byte $14,$59,$53,$86,$42,$67,$3
-    byte $18,$39,$76,$12,$47,$85,$3
-    byte $15,$79,$24,$86,$47,$56,$3
-    byte $18,$39,$46,$52,$27,$85,$1
-    byte $39,$98,$62,$19,$85,$47,$7
-    byte $27,$64,$68,$35,$15,$96,$7
-    byte $87,$24,$68,$35,$15,$96,$7
-    byte $39,$95,$61,$24,$75,$59,$4
-    byte $79,$29,$41,$36,$51,$58,$1
-    byte $79,$28,$41,$46,$51,$53,$2
-    byte $18,$39,$46,$62,$27,$85,$7
-    byte $18,$39,$46,$62,$37,$85,$5
+    byte $79,$35,$87,$51,$74,$89,$2 ; sol: 14
+    byte $79,$85,$82,$53,$74,$69,$2 ; sol: 14
+    byte $18,$93,$15,$65,$62,$94,$5 ; sol: 12
+    byte $79,$28,$41,$46,$51,$94,$1 ; sol: 13
+    byte $86,$92,$41,$71,$73,$13,$4 ; sol: 12
+    byte $81,$75,$39,$26,$73,$84,$8 ; sol: 14
+    byte $19,$75,$68,$24,$75,$56,$4 ; sol: 12
+    byte $94,$87,$13,$74,$15,$67,$7 ; sol: 12
+    byte $81,$95,$39,$24,$73,$86,$6 ; sol: 14
+    byte $29,$15,$68,$24,$75,$56,$4 ; sol: 12
+    byte $87,$54,$68,$35,$15,$96,$7 ; sol: 12
+    byte $91,$97,$83,$25,$36,$77,$4 ; sol: 14
+    byte $81,$95,$36,$27,$73,$84,$8 ; sol: 14
+    byte $62,$53,$69,$14,$37,$81,$8 ; sol: 14
+    byte $15,$79,$24,$86,$47,$56,$3 ; sol: 13
+    byte $79,$29,$41,$37,$51,$58,$9 ; sol: 12
+    byte $87,$24,$68,$35,$15,$96,$7 ; sol: 12
+    byte $39,$98,$62,$19,$85,$47,$7 ; sol: 13
+    byte $79,$28,$41,$46,$51,$53,$2 ; sol: 12
+    byte $99,$85,$74,$23,$86,$74,$1 ; sol: 14
+    byte $72,$99,$26,$17,$84,$85,$3 ; sol: 14
+    byte $79,$29,$41,$36,$51,$58,$1 ; sol: 13
+    byte $27,$64,$68,$35,$15,$96,$7 ; sol: 13
+    byte $18,$39,$76,$22,$47,$85,$5 ; sol: 14
+    byte $52,$69,$74,$11,$57,$83,$2 ; sol: 13
+    byte $18,$39,$76,$12,$47,$85,$3 ; sol: 13
+    byte $14,$59,$53,$86,$42,$67,$3 ; sol: 13
+    byte $18,$39,$46,$62,$37,$85,$5 ; sol: 14
+    byte $59,$82,$91,$36,$75,$49,$4 ; sol: 13
+    byte $39,$95,$61,$24,$75,$59,$4 ; sol: 14
+    byte $18,$39,$46,$62,$27,$85,$7 ; sol: 13
+    byte $18,$39,$46,$52,$27,$85,$1 ; sol: 14
 
- 
-     ORG $FC00
+    ORG $FD00
 
 MAZES_8
 
-    byte $87,$82,$53,$17,$68,$97,$14,$9
-    byte $28,$15,$86,$86,$43,$69,$78,$5
-    byte $28,$39,$86,$84,$24,$67,$14,$5
-    byte $68,$29,$43,$57,$34,$65,$18,$4
-    byte $28,$47,$86,$56,$53,$69,$78,$1
-    byte $58,$39,$26,$64,$64,$67,$48,$1
-    byte $58,$39,$86,$24,$54,$67,$68,$1
-    byte $19,$25,$39,$76,$32,$47,$58,$3
-    byte $49,$58,$26,$97,$74,$49,$16,$3
-    byte $49,$21,$83,$59,$76,$71,$34,$8
-    byte $69,$83,$49,$76,$32,$97,$58,$1
-    byte $59,$51,$58,$72,$46,$83,$83,$3
-    byte $28,$15,$86,$76,$63,$69,$78,$5
-    byte $78,$39,$26,$64,$54,$67,$48,$1
-    byte $49,$58,$28,$28,$73,$29,$96,$1
+    byte $42,$69,$18,$84,$82,$37,$35,$8 ; sol: 13
+    byte $52,$19,$83,$73,$65,$62,$69,$4 ; sol: 15
+    byte $52,$69,$81,$79,$83,$62,$68,$4 ; sol: 15
+    byte $82,$19,$83,$79,$35,$62,$61,$4 ; sol: 15
+    byte $36,$86,$52,$91,$86,$27,$43,$2 ; sol: 14
+    byte $87,$82,$53,$17,$68,$97,$14,$9 ; sol: 14
+    byte $82,$93,$57,$61,$57,$84,$74,$4 ; sol: 14
+    byte $74,$69,$48,$28,$36,$15,$59,$7 ; sol: 15
+    byte $14,$69,$48,$28,$35,$35,$39,$7 ; sol: 16
+    byte $36,$19,$48,$72,$78,$25,$67,$4 ; sol: 13
+    byte $37,$96,$91,$25,$95,$75,$34,$8 ; sol: 13
+    byte $28,$39,$86,$84,$24,$67,$14,$5 ; sol: 14
+    byte $28,$47,$86,$56,$53,$69,$78,$1 ; sol: 15
+    byte $73,$65,$59,$42,$86,$64,$13,$6 ; sol: 15
+    byte $17,$98,$84,$25,$95,$96,$73,$9 ; sol: 13
+    byte $35,$81,$41,$57,$93,$35,$62,$8 ; sol: 13
+    byte $78,$39,$26,$64,$54,$67,$48,$1 ; sol: 14
+    byte $49,$58,$21,$28,$74,$49,$86,$3 ; sol: 13
+    byte $49,$58,$26,$97,$74,$49,$16,$3 ; sol: 14
+    byte $69,$83,$49,$76,$32,$97,$58,$1 ; sol: 15
+    byte $49,$58,$28,$28,$73,$29,$96,$1 ; sol: 15
+    byte $28,$15,$86,$86,$43,$69,$78,$5 ; sol: 13
+    byte $59,$51,$58,$72,$46,$83,$83,$3 ; sol: 15
+    byte $28,$15,$86,$76,$63,$69,$78,$5 ; sol: 15
+    byte $58,$39,$26,$64,$64,$67,$48,$1 ; sol: 13
+    byte $49,$21,$83,$59,$76,$71,$34,$8 ; sol: 15
+    byte $68,$29,$43,$57,$34,$65,$18,$4 ; sol: 13
+    byte $76,$92,$23,$53,$96,$65,$81,$4 ; sol: 14
+    byte $16,$49,$48,$72,$78,$85,$37,$4 ; sol: 13
+    byte $19,$25,$39,$76,$32,$47,$58,$3 ; sol: 14
+    byte $58,$39,$86,$24,$54,$67,$68,$1 ; sol: 14
+    byte $56,$49,$48,$62,$79,$84,$37,$1 ; sol: 14
 
 
 ; ----------------------------------
