@@ -1,9 +1,17 @@
 import random
 import math
 import heapq
+from itertools import islice
+
+def batched(iterable, n):
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while batch := tuple(islice(it, n)):
+        yield batch
 
 r = random.Random(17)
-
 
 # generate maze of length n, arbitrary distance
 # picks a random ordering of all nodes
@@ -315,19 +323,23 @@ def topk(k, series, limit=-1):
             break
     return pq
 
+def byteify(m):
+    for l, h in batched(m, 2):
+        yield '$' + hex((h << 4) + l)[2:]
 
-
-for n, d in [(5, 3), (6, 4), (7, 4), (8, 5), (9, 5), (10, 6)]:
+for n, d in [(6, 4), (8, 5), (10, 6)]:
     print(f'Maze {n} X {d}')
-    for w, m, s in topk(10, solutions((m for m, _ in generate_solutions(n, d)), d, n)):
-       print(m, s)
+    for w, m, s in topk(16, solutions((m for m, _ in generate_solutions(n, d)), d, n)):
+       #print(m, s)
+       print('byte ' + ','.join((byteify(m))))
     print()
 
 
-for n, d in [(12, 7), (16, 9)]:
+for n, d in [(12, 7), (14, 9), (16, 9)]:
     print(f'Maze {n} X {d}')
-    for w, m, s in topk(10, solutions((m for m, _ in scramble_solutions(n, d, 100000, 100)), d, n)):
-       print(m, s)
+    for w, m, s in topk(16, solutions((m for m, _ in scramble_solutions(n, d, 100000, 100)), d, n)):
+       #print(m, s)
+       print('byte ' + ','.join((byteify(m))))
     print()
 
 

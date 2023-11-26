@@ -104,12 +104,14 @@ BETA
      - self hosted javatari page
        - allow load/save of programs
        - display and editing of programs as text
-       - allow joystick and keyboard controller
-     - some way to do unit tests?
+       - allow keyboard controller
+     - gitlab deployment
+     - some way to do unit tests (stellerator debugger?)
   - game modes 2
       - music game (simon?)
         - changes color with different beeps
         - stable framerate both repl and eval
+        - be able to handle DSS generative examples as demos
       - ball game
         - draw paddles
         - move paddles
@@ -141,8 +143,10 @@ BETA
       - extend to all commands
       - can only see numbers in number mode
       - optimize for context
+      - keyboard controller support
+        - use color switch to turn keyboard on/off
   - eval mode
-     - be able to interrupt eval with a switch
+     - be able to interrupt eval with switch (reset? select?)
      - minimum eval display time 1 second
      - transition from repl to eval..?
      - song that plays during eval?
@@ -178,7 +182,6 @@ SPRINKLES
   - help / attract mode 1 
       - occasional blinkyness of controls
   - virtual keyboard 4
-      - keyboard controller support
       - empty at first
       - blinky cursor when in repl
       - no cell boxes on numbers 

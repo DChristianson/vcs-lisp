@@ -22,6 +22,8 @@ for line in sys.stdin:
             matched_label = n.group(1)
             if matched_label.upper() in reserved_labels:
                 continue
+            if matched_label.startswith('MAC_'):
+                continue
             current_label = matched_label
             if current_label in addresses:
                 raise Exception(f'saw {current_label} twice')

@@ -305,7 +305,8 @@ if __name__ == "__main__":
     parser.add_argument('--mirror', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--bits', type=int, choices=[1] + list(range(8, 8 * 32 + 1, 8)), default=8)
-    parser.add_argument('--tile', type=int, default=-1)
+    parser.add_argument('--tile_y', type=int, default=-1)
+    parser.add_argument('--tile_x', type=int, default=-1)
     parser.add_argument('--symfile', type=str, default=None)
     parser.add_argument('filenames', nargs='*')
 
@@ -331,20 +332,30 @@ if __name__ == "__main__":
             with Image.open(filename, 'r') as base_image:
                 width, height = base_image.size
                 images = []
-                if args.tile > 0:
-                    byteswide = int(width / 8)
-                    for r in range(0, height, args.tile):
-                        box = (0,r,width,r + args.tile)
-                        i = base_image.crop(box)
-                        images.append((i, symbols[0:byteswide]))
-                        symbols = symbols[byteswide:]
+                if args.tile_x > 0 or args.tile_y > 0:
+                    if args.tile_x <= 0:
+                        args.tile_x = width
+                    if args.tile_y <= 0:
+                        args.tile_y = height
+                    byteswide = int(max(8, args.tile_x) / 8)
+                    for r in range(0, height, args.tile_y):
+                        for s in range(0, width, args.tile_x):
+                            box = (s,r,s + args.tile_x,r + args.tile_y)
+                            print(box, byteswide, len(symbols))
+                            i = base_image.crop(box)
+                            if args.tile_x < 8:
+                                args.bits = 8
+                                i_x = Image.new('RGBA', (8, args.tile_y), (0, 0, 0, 0))
+                                i_x.paste(i, (8 - args.tile_x, 0))
+                                i = i_x
+                            print(i.size, symbols[0:byteswide])
+                            images.append((i, symbols[0:byteswide]))
+                            symbols = symbols[byteswide:]
                 else:
                     images.append((base_image, symbols))
                 for image, symbols in images:
-                    if args.bits > 8:
+                    if args.bits >= 8:
                         emit_spriteMulti(varname, image, out, bits=args.bits, fmt=fmt, symbols=symbols)
-                    elif width == 8:
-                        emit_spriteMulti(varname, image, out, bits=8, fmt=fmt)
                     elif args.bits == 1:
                         emit_varmissile(varname, image, out, reverse=args.reverse, mirror=args.mirror, fmt=fmt, debug=args.debug)
                     else:
