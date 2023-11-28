@@ -32,6 +32,7 @@ SCANLINES = 262
 
 CLOCK_HZ = 60
 STAIRS_MARGIN = 2
+NUM_AUDIO_CHANNELS = 2
 
 CHAR_HEIGHT = 8
 DRAW_TABLE_SIZE = 19
@@ -59,13 +60,17 @@ GAME_STATE_WIN     = 6
 frame              ds 1
 game_state         ds 1
 
+; game audio
+audio_timer        ds 2
+audio_tracker      ds 2
+
 ; combined player input
 ; bits: f...rldu
 player_input       ds 2
 ; debounced p0 input
 player_input_latch ds 1
 player_step        ds 1 ; step the player is at
-player_jump        ds 1 ; number of squares to jump
+player_jump        ds 1 ; jump counter
 player_inc         ds 1 ; direction of movement
 player_goal        ds 1 ; next goal
 player_score       ds 1 ; decimal score
@@ -127,22 +132,25 @@ maze_ptr           ds 2
 ;   - final success
 ;  - gameplay 1
 ;   - no fall penalty from start step
+;   - difficulty select
 ;  - visual 2
-;   - color stairs
-;   - contrasting background
-;   - PF gutters
+;   - title 
 ; TODO
+;  - sounds 2
+;   - fugueify sounds
 ;  - visual 3
 ;   - climb animation 
 ;   - fall tumble animation
 ;   - varied color background
 ;   - stair outlines
 ;   - animated jumps + targeting
+;   - color stairs
+;   - contrasting background
+;   - PF gutters
 ;  - gameplay 2
-;   - more maze variety (generate)
+;   - tweak scoring
+;   - maze variety? (generate)
 ;  - gameplay 3
-;   - title intro
-;   - difficulty select
 ;   - time limit (lava?)
 ; NODO
 ;  - second player
@@ -214,6 +222,52 @@ _end_switches
 
             inc frame
 
+ax_update   
+            ldx #NUM_AUDIO_CHANNELS - 1
+_ax_loop 
+            lda audio_tracker,x
+            beq _ax_next
+            ldy audio_timer,x
+            beq _ax_next_note
+            dey
+            sty audio_timer,x
+            jmp _ax_next
+_ax_next_note
+            tay
+            lda AUDIO_TRACKS,y
+            beq _ax_pause
+            cmp #255
+            beq _ax_stop
+            sta AUDC0,x
+            iny
+            lda AUDIO_TRACKS,y
+            sta AUDF0,x
+            iny
+            lda AUDIO_TRACKS,y
+            sta AUDV0,x
+            jmp _ax_next_timer
+_ax_pause
+            lda #$0
+            sta AUDC0,x
+            sta AUDV0,x
+_ax_next_timer
+            iny
+            lda AUDIO_TRACKS,y
+            sta audio_timer,x
+            iny
+            sty audio_tracker,x
+            jmp _ax_next
+_ax_stop ; got a 255
+            iny 
+            lda AUDIO_TRACKS,y ; store next track #
+            sta audio_tracker,x 
+            bne _ax_next_note ; if not zero loop back 
+            sta AUDV0,x
+            sta audio_timer,x
+_ax_next
+            dex
+            bpl _ax_loop
+
             ; update player input
 jx_update
             ldx #1
@@ -276,6 +330,8 @@ gx_jump
 gx_init
             ; bootstrap steps
             jsr sub_steps_blank
+            lda #TRACK_TITLE
+            sta audio_tracker
             lda #GAME_STATE_START
             sta game_state
 gx_start    
@@ -286,6 +342,8 @@ gx_start
             jmp gx_continue
 _start_game
             jsr sub_steps_init
+            lda #TRACK_START_GAME
+            sta audio_tracker
             lda #GAME_STATE_CLIMB
             sta game_state
             jmp gx_continue
@@ -647,6 +705,8 @@ _sub_steps_advance_save
             jmp sub_steps_refresh ; redraw steps (will rts from there)
 
 sub_steps_win
+            lda #TRACK_WIN_GAME
+            sta audio_tracker
             lda #GAME_STATE_WIN
             sta game_state
             rts
@@ -870,9 +930,13 @@ sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/ma
             rts            
 
 gx_go_up
+            lda #TRACK_BOUNCE_UP
+            sta audio_tracker
             lda #1
             jmp _gx_go_add_step
 gx_go_down
+            lda #TRACK_BOUNCE_DOWN
+            sta audio_tracker
             lda #-1
 _gx_go_add_step
             sty player_jump
@@ -903,6 +967,8 @@ _gx_process_jump_arrive
             cmp player_goal
             bne _gx_go_redraw_player
             ; advance
+            lda #TRACK_LANDING
+            sta audio_tracker
             ldy player_flight
             sed
             lda FLIGHTS,y
@@ -929,6 +995,8 @@ _gx_go_fall_up
             lda #-1
             sta player_inc
 _gx_go_fall
+            lda #TRACK_FALLING
+            sta audio_tracker
             ; fall and recover
             ldx #GAME_STATE_FALL
             stx game_state
@@ -1287,6 +1355,26 @@ MAX_FLIGHTS = . - FLIGHTS
 MARGINS = . - 3
     byte 12,14,16,16,17,18
 
+AUDIO_TRACKS ; AUDCx,AUDFx,AUDVx,T
+    byte 0,
+TRACK_TITLE = . - AUDIO_TRACKS
+     byte 3,31,15,64,3,31,7,16,3,31,3,8,3,31,1,16,255,0;
+TRACK_START_GAME = . - AUDIO_TRACKS
+     byte 3,31,15,64,3,31,7,16,3,31,3,8,3,31,1,16,255,0;
+TRACK_BOUNCE_UP = . - AUDIO_TRACKS
+     byte $06,$18,$0a,$08,$06,$08,$0a,$08,$00,$01,$00,$08
+     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,$01,$00,$08
+     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,255,0
+TRACK_BOUNCE_DOWN = . - AUDIO_TRACKS
+     byte $06,$18,$0a,$08,$06,$08,$0a,$08,$00,$01,$00,$08
+     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,$01,$00,$08
+     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,255,0
+TRACK_FALLING = . - AUDIO_TRACKS
+     byte $06,$2,$0a,$0f,255,0
+TRACK_LANDING = . - AUDIO_TRACKS
+     byte $06,$2,$0a,$0f,255,0
+TRACK_WIN_GAME = . - AUDIO_TRACKS
+     byte $06,$2,$0a,$0f,255,0
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
