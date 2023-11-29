@@ -930,13 +930,9 @@ sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/ma
             rts            
 
 gx_go_up
-            lda #TRACK_BOUNCE_UP
-            sta audio_tracker
             lda #1
             jmp _gx_go_add_step
 gx_go_down
-            lda #TRACK_BOUNCE_DOWN
-            sta audio_tracker
             lda #-1
 _gx_go_add_step
             sty player_jump
@@ -956,10 +952,21 @@ gx_process_jump
             bcc _gx_process_dec_jump
             bne _gx_go_fall_up
 _gx_process_dec_jump
+            tax
+            asl
+            asl
+            asl
+            clc 
+            adc #TRACK_STEP_IDX
+            sta audio_tracker
+            txa
             dec player_jump
             beq _gx_process_jump_arrive
             ; continue movement
+_gx_process_step_loop
             jsr _gx_go_redraw_player ; will continue back
+            lda audio_tracker
+            bne _gx_process_step_loop
             jmp gx_process_jump
 _gx_process_jump_arrive
             ldx #GAME_STATE_CLIMB
@@ -995,8 +1002,6 @@ _gx_go_fall_up
             lda #-1
             sta player_inc
 _gx_go_fall
-            lda #TRACK_FALLING
-            sta audio_tracker
             ; fall and recover
             ldx #GAME_STATE_FALL
             stx game_state
@@ -1361,14 +1366,23 @@ TRACK_TITLE = . - AUDIO_TRACKS
      byte 3,31,15,64,3,31,7,16,3,31,3,8,3,31,1,16,255,0;
 TRACK_START_GAME = . - AUDIO_TRACKS
      byte 3,31,15,64,3,31,7,16,3,31,3,8,3,31,1,16,255,0;
-TRACK_BOUNCE_UP = . - AUDIO_TRACKS
-     byte $06,$18,$0a,$08,$06,$08,$0a,$08,$00,$01,$00,$08
-     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,$01,$00,$08
-     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,255,0
-TRACK_BOUNCE_DOWN = . - AUDIO_TRACKS
-     byte $06,$18,$0a,$08,$06,$08,$0a,$08,$00,$01,$00,$08
-     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,$01,$00,$08
-     byte $06,$18,$05,$08,$06,$08,$05,$08,$00,255,0
+TRACK_STEP_IDX = . - AUDIO_TRACKS
+     byte $06,$0f,$0a,$08,255,0,0,0
+     byte $06,$0e,$0a,$08,255,0,0,0
+     byte $06,$0d,$0a,$08,255,0,0,0
+     byte $06,$0c,$0a,$08,255,0,0,0
+     byte $06,$0b,$0a,$08,255,0,0,0
+     byte $06,$0a,$0a,$08,255,0,0,0
+     byte $06,$09,$0a,$08,255,0,0,0
+     byte $06,$08,$0a,$08,255,0,0,0
+     byte $06,$07,$0a,$08,255,0,0,0
+     byte $06,$06,$0a,$08,255,0,0,0
+     byte $06,$05,$0a,$08,255,0,0,0
+     byte $06,$04,$0a,$08,255,0,0,0
+     byte $06,$03,$0a,$08,255,0,0,0
+     byte $06,$02,$0a,$08,255,0,0,0
+     byte $06,$01,$0a,$08,255,0,0,0
+     byte $06,$00,$0a,$08,255,0,0,0
 TRACK_FALLING = . - AUDIO_TRACKS
      byte $06,$2,$0a,$0f,255,0
 TRACK_LANDING = . - AUDIO_TRACKS
