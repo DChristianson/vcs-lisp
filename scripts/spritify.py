@@ -5,6 +5,7 @@
 # by also manipulating control and hmov registers
 #
 
+import hashlib
 import sys
 import subprocess
 import os
@@ -326,9 +327,9 @@ if __name__ == "__main__":
 
     fmt = formats[args.format]
     out = sys.stdout
+    seen = {}
     for spritename, files in sprites.items():
         for i, filename in enumerate(files):
-            varname = f'{spritename}_{i}'
             with Image.open(filename, 'r') as base_image:
                 width, height = base_image.size
                 images = []
@@ -340,7 +341,7 @@ if __name__ == "__main__":
                     byteswide = int(max(8, args.tile_x) / 8)
                     for r in range(0, height, args.tile_y):
                         for s in range(0, width, args.tile_x):
-                            box = (s,r,s + args.tile_x,r + args.tile_y)
+                            box = (s, r, s + args.tile_x, r + args.tile_y)
                             print(box, byteswide, len(symbols))
                             i = base_image.crop(box)
                             if args.tile_x < 8:
@@ -354,6 +355,17 @@ if __name__ == "__main__":
                 else:
                     images.append((base_image, symbols))
                 for image, symbols in images:
+                    varname = f'{spritename}_{i}'
+                    if len(symbols) == 1:
+                        varname = symbols[0]
+                        symbols = None
+                    md5 = hashlib.md5(image.tobytes())
+                    digest = md5.hexdigest()
+                    if digest not in seen.keys():
+                        seen[digest] = varname
+                    else:
+                        out.write(f'{varname} = {seen[digest]}\n')
+                        continue
                     if args.bits >= 8:
                         emit_spriteMulti(varname, image, out, bits=args.bits, fmt=fmt, symbols=symbols)
                     elif args.bits == 1:
