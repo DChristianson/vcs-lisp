@@ -149,7 +149,10 @@ draw_t1_p4_addr    ds 2
 draw_t1_jump_addr  ds 2
 draw_t1_data_addr  ds 2
 
-temp_stack ds 1
+temp_y  ds 1
+temp_p4 ds 1
+
+
 ; DONE
 ;  - basic step display
 ;  - static sprite moves according to rules
@@ -1449,7 +1452,7 @@ TITLE_ROW_5_DATA
     byte <TITLE_ROW_6_DATA
 
 TITLE_ROW_6_DATA
-    byte <COL_A6_PF2
+    byte $01;<COL_A6_PF2
     byte <COL_A6_PF3
     byte <COL_A6_PF4
     byte <COL_A6_PF5
@@ -1476,7 +1479,7 @@ TITLE_ROW_8_DATA
     byte <TITLE_ROW_9_DATA
 
 TITLE_ROW_9_DATA
-    byte <COL_A8_PF4
+    byte $82; <COL_A9_PF4
     byte <COL_A9_PF5
     byte <COL_B9_PF0
     byte <COL_B9_PF1
@@ -1503,7 +1506,7 @@ TITLE_ROW_B_DATA
     byte <TITLE_ROW_C_DATA
 
 TITLE_ROW_C_DATA
-    byte <COL_BC_PF0
+    byte $82;<COL_BC_PF0
     byte <COL_BC_PF1
     byte <COL_BC_PF2
     byte <COL_BC_PF3
@@ -1605,33 +1608,33 @@ _gx_title_setup_loop
             sta HMP0
             sta HMP1
 
-            tsx            ; CODESIZE: may not need to save stack
-            stx temp_stack
-
-            lda (draw_t0_p0_addr),y      ;5   7
-            sta WSYNC
             ldy #7                       ;2   2
+            lda (draw_t0_p0_addr),y      ;5   7
+            sta GRP0                     ;3  10
+            sta WSYNC
             jmp _gx_title_0_loop_1       ;3   3
 
 gx_title_0            
             ldy #7                       ;2   
 _gx_title_0_loop_0
             lda (draw_t0_p0_addr),y      ;5   
-_gx_title_0_loop_1
             sta GRP0                     ;3   6
+_gx_title_0_loop_1
             lda (draw_t0_p1_addr),y      ;5  11
             sta GRP1                     ;3  14
             lda (draw_t0_p2_addr),y      ;5  19
             sta GRP0                     ;3  22
             lax (draw_t0_p3_addr),y      ;5  27
             lda (draw_t0_p4_addr),y      ;5  32
-            stx GRP1                   ;4  36
-            ldx #0                       ;2  38
-            sta GRP0                     ;3  41
-            stx GRP1                     ;3  44
-            stx GRP0                     ;3  47
-            dey                          ;2  49
-            SLEEP 8                      ;7  56
+            sty temp_y                   ;3  35
+            ldy #0                       ;2  37
+            stx GRP1                     ;3  30
+            sta GRP0                     ;3  43
+            sty GRP1                     ;3  46
+            sty GRP0                     ;3  49
+            ldy temp_y                   ;3  52
+            SLEEP 2                      ;2  54
+            dey                          ;2  56
             bmi _gx_title_loop_0_jmp     ;2  58
             ldx TITLE_WRITE_OFFSET,y     ;4  62
             lda (draw_t0_data_addr),y    ;5  67
@@ -1641,95 +1644,103 @@ _gx_title_loop_0_jmp
             SLEEP 2                      ;2  61
             jmp (draw_t0_jump_addr)      ;5  66
 
+draw_t1_hmove_7
+            SLEEP 6                     ;6  72
+            sta HMOVE                   ;3  75
+            ; intentional fallthrough to gx_title_1
+
 gx_title_1           
             ldy #7                       ;2   2
 _gx_title_1_loop_0
-            lda (draw_t1_p0_addr),y      ;5   7  2
-            sta GRP0                     ;3  10  5
+            lda (draw_t1_p0_addr),y      ;5   7
+            sta GRP0                     ;3  10
             lda (draw_t1_p1_addr),y      ;5  15
             sta GRP1                     ;3  18
             lda (draw_t1_p2_addr),y      ;5  23
             sta GRP0                     ;3  26
             lax (draw_t1_p3_addr),y      ;5  31
             lda (draw_t1_p4_addr),y      ;5  36
-            stx GRP1                     ;3  39
-            ldx #0                       ;2  41
-            sta GRP0                     ;3  44
-            stx GRP1                     ;3  47
-            stx GRP0                     ;3  50
-            dey                          ;2  52
-            SLEEP 8                      ;7  60
+            sty temp_y                   ;3  39
+            ldy #0                       ;2  41
+            stx GRP1                     ;3  44
+            sta GRP0                     ;3  47
+            sty GRP1                     ;3  50
+            sty GRP0                     ;3  53
+            ldy temp_y                   ;3  56
+            SLEEP 2                      ;2  58
+            dey                          ;2  60
             bmi _gx_title_loop_1_jmp     ;2  62
             ldx TITLE_WRITE_OFFSET,y     ;4  66
             lda (draw_t1_data_addr),y    ;5  71
             sta draw_t0,x                ;4  75
             jmp _gx_title_1_loop_0       ;3  --
 _gx_title_loop_1_jmp
-            SLEEP 2
-            jmp (draw_t1_jump_addr)      ;5  62
+            SLEEP 2                      ;2  65
+            jmp (draw_t1_jump_addr)      ;5  70
 
 gx_title_00       
-            ldy #7                       ;2   2
+            ldy #7                       ;2   1
 _gx_title_00_loop_0
-            lax (draw_t0_p4_addr),y      ;5   7
+            lda draw_t0_p0_addr          ;3   4
 _gx_title_00_loop_1
-            txs                          ;2  11
-            lda (draw_t0_p0_addr),y      ;5  16
-            sta GRP1                     ;3  19
-            lda (draw_t0_p1_addr),y      ;5  24
-            sta GRP0                     ;3  27
-            lax (draw_t0_p2_addr),y      ;5  32
-            lda (draw_t0_p3_addr),y      ;5  37
+            sta GRP1                     ;3   7
+            lda (draw_t0_p1_addr),y      ;5  12
+            sta GRP0                     ;3  15
+            lda COL_A0_PF2,y             ;4  19
+            sta temp_p4                  ;3  22
+            lax (draw_t0_p2_addr),y      ;5  27
+            lda COL_A0_PF1,y             ;4  31
+            sty temp_y                   ;3  34
+            ldy temp_p4                  ;3  37
             stx GRP1                     ;3  40
-            tsx                          ;2  42
-            sta GRP0                     ;3  44
-            stx GRP1                     ;3  47
-            stx GRP0                     ;3  50
-            dey                          ;2  52
-            SLEEP 4                      ;4  56
-            bmi _gx_title_loop_00_jmp    ;2  58
-            ldx TITLE_WRITE_OFFSET,y     ;4  61
-            lda (draw_t0_data_addr),y    ;5  66
-            sta draw_t1,x                ;4  70
-            ldx #0                       ; prep for next line
-            stx GRP0                     ; 
-            jmp _gx_title_00_loop_0      ;3   2
+            sta GRP0                     ;3  43
+            sty GRP1                     ;3  46
+            sty GRP0                     ;3  49
+            ldy temp_y                   ;3  52
+            dey                          ;2  54
+            bmi _gx_title_loop_00_jmp    ;2  56
+            ldx TITLE_WRITE_OFFSET,y     ;4  60
+            lda (draw_t0_data_addr),y    ;5  65
+            sta draw_t1,x                ;4  69
+            ldx #0                       ;2  71 prep for next line
+            stx GRP0                     ;3  74
+            jmp _gx_title_00_loop_0      ;3   1
 _gx_title_loop_00_jmp
-            SLEEP 7
-            jmp (draw_t0_jump_addr)      ;5  63
+            SLEEP 4                      ;3  61
+            jmp (draw_t0_jump_addr)      ;5  66
 
 gx_title_11       
             ldy #7                       ;2   2
-_gx_title_loop_11
-            lax (draw_t1_p4_addr),y      ;5   7
-            txs                          ;2  11
-            lda (draw_t1_p0_addr),y      ;5  16
-            sta GRP1                     ;3  19
-            lda (draw_t1_p1_addr),y      ;5  24
-            sta GRP0                     ;3  27
-            lax (draw_t1_p2_addr),y      ;5  32
-            lda (draw_t1_p3_addr),y      ;5  37
-            stx GRP1                     ;3  42
-            tsx                          ;2  44
-            sta GRP0                     ;3  47
-            stx GRP1                     ;3  50
-            stx GRP0                     ;3  53
+_gx_title_11_loop_0
+            lda draw_t1_p0_addr          ;3   5
+_gx_title_11_loop_1
+            sta GRP1                     ;3   8
+            lda (draw_t1_p1_addr),y      ;5  13
+            sta GRP0                     ;3  16
+            lda COL_A0_PF2,y             ;4  20
+            sta temp_p4                  ;3  23
+            lax (draw_t1_p2_addr),y      ;5  28
+            lda COL_A0_PF1,y             ;4  32
+            sty temp_y                   ;3  35
+            ldy temp_p4                  ;3  38
+            stx GRP1                     ;3  41
+            sta GRP0                     ;3  44
+            sty GRP1                     ;3  47
+            sty GRP0                     ;3  50
+            ldy temp_y                   ;3  53
             dey                          ;2  55
-            SLEEP 4
             bmi _gx_title_loop_11_jmp    ;2  57
             ldx TITLE_WRITE_OFFSET,y     ;4  61
             lda (draw_t1_data_addr),y    ;5  66
             sta draw_t0,x                ;4  70
-            ldx #0                      ; prep for next line
-            stx GRP0                    ; 
-            jmp _gx_title_loop_11        ;3   2
+            ldx #0                       ;2  72 prep for next line
+            stx GRP0                     ;3  75
+            jmp _gx_title_11_loop_0      ;3   2
 _gx_title_loop_11_jmp
-            SLEEP 7
-            jmp (draw_t1_jump_addr)      ;5  63
+            SLEEP 4                      ;3  61
+            jmp (draw_t1_jump_addr)      ;5  66
 
 draw_tx_end
-            ldx temp_stack
-            txs
             jmp gx_overscan
 
 draw_t0_hmove_7
@@ -1740,25 +1751,20 @@ draw_t0_delay_0
             SLEEP 3                    ;11  73
             jmp gx_title_0             ;3   --
 
-draw_t1_hmove_7
-            SLEEP 3                    ;11  73
-            ldy #7                       ;2   2
-            sta HMOVE
-            jmp _gx_title_1_loop_0
              
 draw_t1_delay_0
             SLEEP 3                    ;11  73
             jmp gx_title_1              ;3   --
 
 draw_t00_hmove_7
-            SLEEP 2                    ;11  73
-            ldy #7                       ;2   2
-            lda (draw_t0_p4_addr),y      ;5   7
+            SLEEP 6                    ;11  72
+            ldy #7                     ;2   2
+            lda draw_t0_p0_addr        ;3   5
             sta HMOVE
-            jmp _gx_title_00_loop_1
+            jmp _gx_title_00_loop_1    ; arrive at sc 4
         
 draw_t11_hmove_7
-            SLEEP 2                    ;11  73
+            SLEEP 5                    ;11  73
             sta HMOVE
             jmp gx_title_11      
 
