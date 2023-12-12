@@ -59,6 +59,9 @@ DRAW_TABLE_BYTES = DRAW_TABLE_SIZE
 JUMP_TABLE_SIZE = 16
 JUMP_TABLE_BYTES = JUMP_TABLE_SIZE / 2
 
+FLIGHTS_TABLE_SIZE = 32
+FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
+
 GAME_STATE_TITLE   = 0
 GAME_STATE_SELECT  = 1
 GAME_STATE_START   = 2
@@ -102,12 +105,16 @@ player_flight      ds 1 ; current flight
 player_clock       ds 1 ; for player timer
 player_timer       ds 2 ; game timer
 
-
 ; game state
 jump_table           ds JUMP_TABLE_BYTES 
 jump_table_end_byte  ds 1 ; last byte of jump table
 jump_table_offset    ds 1 ; where to locate jump table for drawing
 jump_table_size      ds 1 ; number of entries in jump table
+
+; flights
+difficulty_level     ds 1
+flights              ds FLIGHTS_TABLE_BYTES
+flights_total        ds 1
 
 draw_registers_start
 
@@ -149,9 +156,10 @@ draw_t1_p4_addr    ds 2
 draw_t1_jump_addr  ds 2
 draw_t1_data_addr  ds 2
 
+temp_level_ptr
 temp_y  ds 1
+temp_stack
 temp_p4 ds 1
-
 
 ; DONE
 ;  - basic step display
@@ -405,11 +413,16 @@ _skip_title_audio
 _start_select
             lda #GAME_STATE_SELECT
             sta game_state
+            jsr sub_difficulty_increment
             jmp gx_show_title
 
 gx_select
-            bit player_input_latch
-            bpl _start_start
+            lda player_input_latch
+            eor #$8f
+            bmi _start_start
+            beq _start_skip_select
+            jsr sub_difficulty_increment
+_start_skip_select
             jmp gx_show_select
 _start_start
             ; bootstrap steps
@@ -630,17 +643,6 @@ gx_overscan
             jsr sub_wsync_loop
             jmp newFrame
 
-;--------------------
-; Select Screen
-
-gx_show_select
-            jsr sub_vblank_loop
-
-            ldx #128
-            jsr sub_wsync_loop
-
-            jmp gx_overscan
-
 ;
 ; game control subroutines
 ;
@@ -731,7 +733,7 @@ sub_steps_flights
 _steps_draw_flights
             sta draw_bugbug_margin
             clc
-            adc FLIGHTS,y
+            adc flights,y
             cmp draw_bugbug_margin
             beq _steps_draw_last_flight
             cmp #DRAW_TABLE_SIZE
@@ -792,10 +794,56 @@ sub_background
 _sub_background_end
             rts
 
+sub_difficulty_increment
+            lda difficulty_level
+            clc
+            adc #1
+            and #$03
+            sta difficulty_level
+            asl
+            adc difficulty_level
+            asl
+            tay
+            sty temp_level_ptr
+            ldx #5
+            lda #0
+            clc
+_sub_difficulty_total_flights_loop
+            adc LEVELS,y
+            iny
+            dex 
+            bpl _sub_difficulty_total_flights_loop
+            sta flights_total
+            adc #flights
+            tsx
+            stx temp_stack
+            tax
+            txs
+            lda #0
+            pha
+            dey
+            lda #16
+_sub_difficulty_next_flight
+            ldx LEVELS,y
+            beq _sub_difficulty_skip_flight
+_sub_difficulty_flight_loop
+            pha
+            dex
+            bne _sub_difficulty_flight_loop
+_sub_difficulty_skip_flight
+            sec
+            sbc #2
+            dey
+            cpy temp_level_ptr
+            bpl _sub_difficulty_next_flight
+            ldx temp_stack
+            txs
+            rts
+
 sub_steps_advance
             ; move jump table "up" to next flight
             ldy player_flight
-            lda FLIGHTS,y
+            lda flights,y
             beq sub_steps_win
             lsr
             tax
@@ -808,7 +856,7 @@ sub_steps_advance
             adc jump_table_offset
             tax 
             clc 
-            adc FLIGHTS,y
+            adc flights,y
             sec
             sbc draw_bugbug_margin
             bmi _sub_steps_advance_save
@@ -821,7 +869,7 @@ _sub_steps_advance_save
             ldy player_flight
             lda #0
             sta player_step
-            lda FLIGHTS,y
+            lda flights,y
             jsr sub_gen_steps
             lda #GAME_STATE_CLIMB
             sta game_state
@@ -857,7 +905,7 @@ _sub_scroll_lr_calc
             sta draw_base_lr
             lda draw_step_offset
             clc
-            adc FLIGHTS,y
+            adc flights,y
             sec
             sbc #1
             bne _sub_scroll_update
@@ -1104,7 +1152,7 @@ _gx_process_jump_arrive
             sta audio_tracker
             ldy player_flight
             sed
-            lda FLIGHTS,y
+            lda flights,y
             lsr
             lsr
             clc
@@ -1422,9 +1470,6 @@ TITLE_WRITE_OFFSET
 gx_show_title
             jsr sub_vblank_loop
 
-            ldx #17
-            jsr sub_wsync_loop
-
             lda #33 ; BUGBUG: magic number
             ldy #$ff
             jsr sub_steps_respxx
@@ -1595,7 +1640,7 @@ _gx_title_loop_11_jmp
 
 draw_tx_end
 
-            ldx #8
+            ldx #4
             jsr sub_wsync_loop
             sta VDELP0
             sta VDELP1
@@ -1609,10 +1654,17 @@ _draw_tx_end_loop
             sta GRP0                     
             sta GRP1   
             dey                 
-            bne _draw_tx_end_loop    
+            bpl _draw_tx_end_loop    
+            ldy #0
             sty GRP0
             sty GRP1   
             sty GRP0
+
+            ldx #12
+            jsr sub_wsync_loop
+
+            ldy #0
+            sty COLUBK
 
             ldx #8
             jsr sub_wsync_loop
@@ -1650,6 +1702,61 @@ draw_t11_hmove_7
             SLEEP 5                    ;11  73
             sta HMOVE
             jmp gx_title_11      
+
+;--------------------
+; Select Screen
+
+gx_show_select
+            jsr sub_vblank_loop
+
+            ; BUGBUG: shim
+            lda #80 ; BUGBUG: magic number
+            ldy #$ff
+            jsr sub_steps_respxx
+            lda #$e0     
+            sta draw_hmove_a 
+            sta HMP0
+            lda #$20         
+            sta draw_hmove_b   
+
+            ldy flights_total
+            dey
+            bpl _gx_show_select_flights_loop
+            ldy #31
+_gx_show_select_flights_loop
+            lda flights,y
+            lsr
+            tax
+_gx_show_select_stairs_loop
+            sta WSYNC
+            sta HMOVE
+            lda #$18
+            sta GRP0
+            sta WSYNC
+            lda #$08
+            sta GRP0
+            dex                
+            bpl _gx_show_select_stairs_loop  ;2   7
+            lda draw_steps_dir
+            eor #$ff
+            sta draw_steps_dir
+            sta REFP0
+            lda draw_hmove_a                 ;3  10
+            ldx draw_hmove_b                 ;3  12
+            sta draw_hmove_b                 ;3  15
+            stx draw_hmove_a                 ;3  18
+            stx HMP0                         ;3  21
+            tya
+            beq _gx_show_select_flights_end
+            lsr
+            tay
+            jmp _gx_show_select_flights_loop
+_gx_show_select_flights_end
+
+            ldx #30
+            jsr sub_wsync_loop
+
+            jmp gx_overscan
 
 ; ----------------------------------
 ; maze data 
@@ -1962,6 +2069,7 @@ MAZES_6
     byte $24,$17,$63,$64,$31,$5 ; sol: 10
     byte $65,$72,$41,$51,$43,$2 ; sol: 10
 
+
     ORG $FC00
 
 MAZES_7
@@ -1998,6 +2106,12 @@ MAZES_7
     byte $39,$95,$61,$24,$75,$59,$4 ; sol: 14
     byte $18,$39,$46,$62,$27,$85,$7 ; sol: 13
     byte $18,$39,$46,$52,$27,$85,$1 ; sol: 14
+
+LEVELS
+    byte 8,4,4,2,0,0   ; EASY
+    byte 4,4,4,4,4,4   ; MED
+    byte 0,0,8,8,8,8   ; HARD
+    byte 0,0,0,0,0,32  ; EXTRA
 
     ORG $FD00
 
@@ -2097,11 +2211,7 @@ MAZE_PTR_HI = . - 2
     byte >MAZES_6
     byte >MAZES_7
     byte >MAZES_8
-
-FLIGHTS
-    byte 6,6,6,6,8,8,8,8,10,10,10,12,12,12,16,16,16,16,16,0
-    ;10,12,12,12,12,14,14,14,14,16,16,16,16,16,16
-MAX_FLIGHTS = . - FLIGHTS
+    
 MARGINS = . - 3
     byte 12,14,16,16,17,18
 
