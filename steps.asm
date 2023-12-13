@@ -113,7 +113,7 @@ jump_table_size      ds 1 ; number of entries in jump table
 
 ; flights
 difficulty_level     ds 1
-flights              ds FLIGHTS_TABLE_BYTES
+flights              ds FLIGHTS_TABLE_BYTES + 1
 flights_total        ds 1
 
 draw_registers_start
@@ -123,11 +123,11 @@ draw_bugbug_margin ds 1
 draw_steps_respx   ds 1
 draw_steps_dir     ds 1 ; top of steps direction
 draw_steps_wsync   ds 1 ; amount to shim steps up/down
+draw_hmove_a       ds 1 ; initial HMOVE
+draw_hmove_b       ds 1 ; reverse HMOVE
 draw_base_dir      ds 1 ; base of steps direction
 draw_base_lr       ds 1 ; base of steps lr position
 draw_player_dir    ds 1 ; player direction
-draw_hmove_a       ds 1 ; initial HMOVE
-draw_hmove_b       ds 1 ; reverse HMOVE
 draw_flight_offset ds 1 ; flight to start at
 draw_step_offset   ds 1 ; what step do we start drawing at
 draw_table         ds DRAW_TABLE_BYTES
@@ -178,6 +178,7 @@ temp_p4 ds 1
 ;   - climb step by step 
 ;   - time based randomization
 ;   - fall step by step
+;   - difficulty select
 ;  - sounds 1
 ;   - bounce up/down notes
 ;   - landing song
@@ -186,25 +187,27 @@ temp_p4 ds 1
 ;   - time display have :
 ;   - PF gutters
 ;   - title 
-; MVP
 ;  - glitches
 ;   - jacked up select
-;   - stabilize stair display
-;   - stabilize framerate
-;  - gameplay 1
-;   - difficulty select
-;   - no fall penalty from start step
+; MVP
 ;  - visual 2
 ;   - goal step has a graphic of some sort
 ;   - player points in direction of travel
-;   - climb animation 
+;   - simple climb animation 
 ;   - stair outlines
-;   - contrasting background
 ;   - fall tumble animation
 ;   - color stairs
+;   - select screen instructions
+;   - tweak background color
 ;  - sounds 1
 ;   - fall down notes
 ;   - jingles
+;  - glitches
+;   - stair display horizontal align
+;   - stabilize stair display
+;   - stabilize frames
+;  - gameplay 1
+;   - no fall penalty from start step
 ; TODO
 ;  - sounds 2
 ;   - fugueify sounds
@@ -212,15 +215,15 @@ temp_p4 ds 1
 ;   - solution theme
 ;  - sprinkles 1
 ;   - varied color background
-;   - starting animation
+;   - transitional animations
 ;   - animated jumps + targeting
 ;   - animated logo
 ;  - gameplay 2
 ;   - tweak scoring
-;   - maze variety?
+;   - maze tweaks
 ;  - gameplay 3
-;   - dark mode
-;   - time limit (lava?)
+;   - lava (time attack) mode
+;   - echo (dark) mode
 ; NODO
 ;  - second player
 
@@ -414,7 +417,7 @@ _start_select
             lda #GAME_STATE_SELECT
             sta game_state
             jsr sub_difficulty_increment
-            jmp gx_show_title
+            jmp gx_show_select
 
 gx_select
             lda player_input_latch
@@ -550,44 +553,34 @@ gx_steps_resp
             jsr sub_steps_respxx
 
 gx_step_draw
-
-            ; last stair will shim
-            sta WSYNC
-            sta HMOVE
+            ; first stair will shim
             lda draw_table + DRAW_TABLE_SIZE - 1
-            MAC_WRITE_STAIR ; BUGBUG: sets a with PF value
+            jsr sub_write_stair
             ldy draw_steps_wsync
 _gx_draw_shim_hi
-            MAC_DRAW_STAIR
-            lda #SKY_BLUE
+            jsr sub_draw_stair
             dey 
             bpl _gx_draw_shim_hi
 
             ; mid stairs (shift up)
             ldx #DRAW_TABLE_SIZE - 3
 _gx_step_draw_loop
-            sta WSYNC
-            sta HMOVE
             lda draw_table + 1,x
-            MAC_WRITE_STAIR 
+            jsr sub_write_stair
             ldy #CHAR_HEIGHT - 1
 _gx_draw_loop
-            MAC_DRAW_STAIR
-            lda #SKY_BLUE
+            jsr sub_draw_stair
             dey 
             bpl _gx_draw_loop
             dex 
             bpl _gx_step_draw_loop
 
             ; last stair will shim
-            sta WSYNC
-            sta HMOVE
             lda draw_table
-            MAC_WRITE_STAIR ; BUGBUG: sets a with PF value
+            jsr sub_write_stair
             ldy #CHAR_HEIGHT - 1
 _gx_draw_shim_lo
-            MAC_DRAW_STAIR
-            lda #SKY_BLUE
+            jsr sub_draw_stair
             dey 
             cpy draw_steps_wsync
             bpl _gx_draw_shim_lo
@@ -716,7 +709,7 @@ sub_steps_init
             ; jump init
             lda #$ff
             sta draw_base_dir
-            lda #6
+            lda flights
             jsr sub_gen_steps
 sub_steps_refresh
             ; clear draw table
@@ -800,11 +793,15 @@ sub_difficulty_increment
             adc #1
             and #$03
             sta difficulty_level
-            asl
-            adc difficulty_level
-            asl
+            asl ; x 8
+            asl ; 
+            asl ; 
             tay
             sty temp_level_ptr
+            lda LEVELS + 6,y ; BUGBUG: magic number
+            sta draw_steps_respx
+            lda LEVELS + 7,y ; BUGBUG: magic number
+            sta draw_steps_wsync
             ldx #5
             lda #0
             clc
@@ -1008,7 +1005,6 @@ _calc_respx_end
             sty draw_steps_dir
             rts
 
-
 sub_step_getx
             txa ; x has step number
             lsr ; div by 2
@@ -1062,18 +1058,6 @@ _sub_gen_steps_loop
             dex
             stx player_goal
             rts
-            
-; test code - generate maze of all 1's
-;             tax
-;             lda #$01
-;             sta jump_table,x
-;             dex
-;             lda #$11
-; _sub_gen_steps_loop
-;             sta jump_table,x
-;             dex
-;             bpl _sub_gen_steps_loop
-
 
 sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/master
             lda seed+1
@@ -1203,9 +1187,11 @@ sub_draw_player_step
             sta draw_table+1,x
             rts
 
-    MAC MAC_WRITE_STAIR
+sub_write_stair
             ; read graphics from a
             ; phg.ssss
+            sta WSYNC
+            sta HMOVE
             ; get player graphic
             ldy #<SYMBOL_GRAPHICS_S12_BLANK
             asl 
@@ -1234,16 +1220,17 @@ sub_draw_player_step
             bcc ._gx_draw_set_pf
             lda #WHITE
 ._gx_draw_set_pf
-    ENDM
+            rts
 
-    MAC MAC_DRAW_STAIR
+sub_draw_stair
             sta WSYNC
             sta COLUBK
             lda (draw_s0_addr),y
             sta GRP0
             lda (draw_s1_addr),y
             sta GRP1
-    ENDM
+            lda #SKY_BLUE
+            rts
 
 ; ----------------------------------
 ; TITLE
@@ -1461,11 +1448,20 @@ COL_BH_PF4 = COL_A0_PF0
 
    ORG $F700
     
+;--------------------
+; Title Screen Kernel
+
 TITLE_WRITE_OFFSET
     byte 0,2,4,6,8,10,12
 
-;--------------------
-; Title Screen
+TITLE_ROW_HI
+    byte >COL_A0_PF0
+    byte >COL_A0_PF1
+    byte >COL_A0_PF2
+    byte >COL_A0_PF3
+    byte >COL_A0_PF4
+    byte >gx_title_1_delay_0
+    byte >TITLE_ROW_1_DATA
 
 gx_show_title
             jsr sub_vblank_loop
@@ -1484,27 +1480,17 @@ gx_show_title
             sta NUSIZ1
             sta NUSIZ0
 
-            lda #>TITLE_ROW_0_DATA
-            sta draw_t0_data_addr + 1
-            sta draw_t1_data_addr + 1
-            lda #<TITLE_ROW_1_DATA
-            sta draw_t0_data_addr
-            lda #>draw_t1_delay_0
-            sta draw_t0_jump_addr + 1
-            sta draw_t1_jump_addr + 1
-            lda #<draw_t1_delay_0
-            sta draw_t0_jump_addr
-            ldx #9
-            ldy #4
+            ldx #13
+            ldy #6
 _gx_title_setup_loop
-            lda #>COL_A0_PF0
+            lda TITLE_ROW_HI,y
             sta draw_t0,x
             sta draw_t1,x
             dex
             lda TITLE_ROW_0_DATA,y     
             sta draw_t0,x
-            dey
             dex 
+            dey
             bpl _gx_title_setup_loop
             lda #$80
             sta HMP0
@@ -1638,10 +1624,11 @@ _gx_title_loop_11_jmp
             SLEEP 4                      ;3  61
             jmp (draw_t1_jump_addr)      ;5  66
 
-draw_tx_end
+gx_title_end
 
             ldx #4
             jsr sub_wsync_loop
+            lda #0
             sta VDELP0
             sta VDELP1
             lda #46 ; BUGBUG: magic number
@@ -1671,34 +1658,34 @@ _draw_tx_end_loop
 
             jmp gx_overscan
 
-draw_t0_hmove_7
+gx_title_0_hmove_7
             SLEEP 3                     ;11  73
             sta HMOVE
             jmp gx_title_0   
 
-draw_t0_delay_0
+gx_title_0_delay_0
             SLEEP 3                    ;11  73
             jmp gx_title_0             ;3   --
 
-draw_t1_hmove_7
+gx_title_1_hmove_7
             ldy #7                       ;2   2
             lda (draw_t1_p0_addr),y      ;5  73
             sta HMOVE                    ;3  --
             SLEEP 3                      ;3   3
             jmp _gx_title_1_loop_1       ;3   6
 
-draw_t1_delay_0
+gx_title_1_delay_0
             SLEEP 3                    ;11  73
             jmp gx_title_1              ;3   --
 
-draw_t00_hmove_7
+gx_title_00_hmove_7
             SLEEP 6                    ;11  72
             ldy #7                     ;2   2
             lda draw_t0_p0_addr        ;3   5
             sta HMOVE
             jmp _gx_title_00_loop_1    ; arrive at sc 4
         
-draw_t11_hmove_7
+gx_title_11_hmove_7
             SLEEP 5                    ;11  73
             sta HMOVE
             jmp gx_title_11      
@@ -1709,10 +1696,15 @@ draw_t11_hmove_7
 gx_show_select
             jsr sub_vblank_loop
 
-            ; BUGBUG: shim
-            lda #80 ; BUGBUG: magic number
-            ldy #$ff
+            ldx draw_steps_wsync
+            jsr sub_wsync_loop
+
+            lda draw_steps_respx
+            ldy #$00
+            sty draw_steps_dir
+            sty REFP0
             jsr sub_steps_respxx
+
             lda #$e0     
             sta draw_hmove_a 
             sta HMP0
@@ -1721,12 +1713,11 @@ gx_show_select
 
             ldy flights_total
             dey
-            bpl _gx_show_select_flights_loop
-            ldy #31
 _gx_show_select_flights_loop
             lda flights,y
             lsr
             tax
+            dex
 _gx_show_select_stairs_loop
             sta WSYNC
             sta HMOVE
@@ -1752,11 +1743,16 @@ _gx_show_select_stairs_loop
             tay
             jmp _gx_show_select_flights_loop
 _gx_show_select_flights_end
+            lda #0
+            sta GRP0
+            lda #3
+            sta NUSIZ0
+            sta NUSIZ1
 
-            ldx #30
+            ldx #12
             jsr sub_wsync_loop
 
-            jmp gx_overscan
+            jmp gx_title_end
 
 ; ----------------------------------
 ; maze data 
@@ -1769,7 +1765,7 @@ TITLE_ROW_0_DATA
     byte <COL_A0_PF2
     byte <COL_A0_PF3
     byte <COL_A0_PF4
-    byte <draw_t1_delay_0
+    byte <gx_title_1_delay_0
     byte <TITLE_ROW_1_DATA
 
 TITLE_ROW_1_DATA
@@ -1778,7 +1774,7 @@ TITLE_ROW_1_DATA
     byte <COL_A1_PF2
     byte <COL_A1_PF3
     byte <COL_A1_PF4
-    byte <draw_t0_delay_0
+    byte <gx_title_0_delay_0
     byte <TITLE_ROW_2_DATA
 
 TITLE_ROW_2_DATA
@@ -1787,7 +1783,7 @@ TITLE_ROW_2_DATA
     byte <COL_A2_PF2
     byte <COL_A2_PF3
     byte <COL_A2_PF4
-    byte <draw_t1_delay_0
+    byte <gx_title_1_delay_0
     byte <TITLE_ROW_3_DATA
 
 TITLE_ROW_3_DATA
@@ -1796,7 +1792,7 @@ TITLE_ROW_3_DATA
     byte <COL_A3_PF2
     byte <COL_A3_PF3
     byte <COL_A3_PF4
-    byte <draw_t0_delay_0
+    byte <gx_title_0_delay_0
     byte <TITLE_ROW_4_DATA
 
 TITLE_ROW_4_DATA
@@ -1805,7 +1801,7 @@ TITLE_ROW_4_DATA
     byte <COL_A4_PF2
     byte <COL_A4_PF3
     byte <COL_A4_PF4
-    byte <draw_t1_delay_0
+    byte <gx_title_1_delay_0
     byte <TITLE_ROW_5_DATA
 
 TITLE_ROW_5_DATA
@@ -1814,7 +1810,7 @@ TITLE_ROW_5_DATA
     byte <COL_A5_PF2
     byte <COL_A5_PF3
     byte <COL_A5_PF4
-    byte <draw_t00_hmove_7
+    byte <gx_title_00_hmove_7
     byte <TITLE_ROW_6_DATA
 
 TITLE_ROW_6_DATA
@@ -1823,7 +1819,7 @@ TITLE_ROW_6_DATA
     byte <COL_A6_PF4
     byte <COL_A6_PF5
     byte <COL_B6_PF0
-    byte <draw_t1_hmove_7
+    byte <gx_title_1_hmove_7
     byte <TITLE_ROW_7_DATA
 
 TITLE_ROW_7_DATA
@@ -1832,7 +1828,7 @@ TITLE_ROW_7_DATA
     byte <COL_A7_PF4
     byte <COL_A7_PF5
     byte <COL_B7_PF0
-    byte <draw_t0_delay_0
+    byte <gx_title_0_delay_0
     byte <TITLE_ROW_8_DATA
 
 TITLE_ROW_8_DATA
@@ -1841,7 +1837,7 @@ TITLE_ROW_8_DATA
     byte <COL_A8_PF4
     byte <COL_A8_PF5
     byte <COL_B8_PF0
-    byte <draw_t11_hmove_7
+    byte <gx_title_11_hmove_7
     byte <TITLE_ROW_9_DATA
 
 TITLE_ROW_9_DATA
@@ -1850,7 +1846,7 @@ TITLE_ROW_9_DATA
     byte <COL_B9_PF0
     byte <COL_B9_PF1
     byte <COL_B9_PF2
-    byte <draw_t0_hmove_7
+    byte <gx_title_0_hmove_7
     byte <TITLE_ROW_A_DATA
 
 TITLE_ROW_A_DATA
@@ -1859,7 +1855,7 @@ TITLE_ROW_A_DATA
     byte <COL_BA_PF0
     byte <COL_BA_PF1
     byte <COL_BA_PF2
-    byte <draw_t1_delay_0
+    byte <gx_title_1_delay_0
     byte <TITLE_ROW_B_DATA
 
 TITLE_ROW_B_DATA
@@ -1868,7 +1864,7 @@ TITLE_ROW_B_DATA
     byte <COL_BB_PF0
     byte <COL_BB_PF1
     byte <COL_BB_PF2
-    byte <draw_t00_hmove_7
+    byte <gx_title_00_hmove_7
     byte <TITLE_ROW_C_DATA
 
 TITLE_ROW_C_DATA
@@ -1877,7 +1873,7 @@ TITLE_ROW_C_DATA
     byte <COL_BC_PF2
     byte <COL_BC_PF3
     byte <COL_BC_PF4
-    byte <draw_t1_hmove_7
+    byte <gx_title_1_hmove_7
     byte <TITLE_ROW_D_DATA
 
 TITLE_ROW_D_DATA
@@ -1886,7 +1882,7 @@ TITLE_ROW_D_DATA
     byte <COL_BD_PF2
     byte <COL_BD_PF3
     byte <COL_BD_PF4
-    byte <draw_t0_delay_0
+    byte <gx_title_0_delay_0
     byte <TITLE_ROW_E_DATA
 
 TITLE_ROW_E_DATA
@@ -1895,7 +1891,7 @@ TITLE_ROW_E_DATA
     byte <COL_BE_PF2
     byte <COL_BE_PF3
     byte <COL_BE_PF4
-    byte <draw_t1_delay_0
+    byte <gx_title_1_delay_0
     byte <TITLE_ROW_F_DATA
 
 TITLE_ROW_F_DATA
@@ -1904,7 +1900,7 @@ TITLE_ROW_F_DATA
     byte <COL_BF_PF2
     byte <COL_BF_PF3
     byte <COL_BF_PF4
-    byte <draw_t0_delay_0
+    byte <gx_title_0_delay_0
     byte <TITLE_ROW_G_DATA
 
 TITLE_ROW_G_DATA
@@ -1913,7 +1909,7 @@ TITLE_ROW_G_DATA
     byte <COL_BG_PF2
     byte <COL_BG_PF3
     byte <COL_BG_PF4
-    byte <draw_t1_delay_0
+    byte <gx_title_1_delay_0
     byte <TITLE_ROW_H_DATA
 
 TITLE_ROW_H_DATA
@@ -1922,7 +1918,7 @@ TITLE_ROW_H_DATA
     byte <COL_BH_PF2
     byte <COL_BH_PF3
     byte <COL_BH_PF4
-    byte <draw_tx_end
+    byte <gx_title_end
     byte <TITLE_ROW_H_DATA
 
 MAZES_4
@@ -2108,10 +2104,10 @@ MAZES_7
     byte $18,$39,$46,$52,$27,$85,$1 ; sol: 14
 
 LEVELS
-    byte 8,4,4,2,0,0   ; EASY
-    byte 4,4,4,4,4,4   ; MED
-    byte 0,0,8,8,8,8   ; HARD
-    byte 0,0,0,0,0,32  ; EXTRA
+    byte 4,4,4,0,0,0,52,102   ; EASY
+    byte 4,4,4,4,4,4,48,86   ; MED
+    byte 0,0,8,8,8,8,48,70   ; HARD
+    byte 0,0,0,0,0,32,48,42  ; EXTRA
 
     ORG $FD00
 
