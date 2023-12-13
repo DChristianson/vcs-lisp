@@ -691,15 +691,15 @@ _steps_blank_zero_loop
             sta draw_s1_addr + 1
             sta draw_s2_addr + 1
             sta draw_s3_addr + 1
-            lda #$40 + ((SYMBOL_GRAPHICS_S12_BLANK - SYMBOL_GRAPHICS) / 8)
+            lda #$40 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
             ldx #(DRAW_TABLE_SIZE - 3)
 _steps_blanks_loop
             sta draw_table + 2,x
             dex
             bpl _steps_blanks_loop
-            lda #$80 + ((SYMBOL_GRAPHICS_S12_BLANK - SYMBOL_GRAPHICS) / 8)
+            lda #$80 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
             sta draw_table + 1
-            lda #$20 + ((SYMBOL_GRAPHICS_S12_BLANK - SYMBOL_GRAPHICS) / 8)
+            lda #$20 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
             sta draw_table
             rts
 
@@ -740,7 +740,7 @@ _steps_draw_flights
             jmp _steps_draw_flights 
 _steps_draw_last_flight
             tax
-            lda #$40 + ((SYMBOL_GRAPHICS_S12_BLANK - SYMBOL_GRAPHICS) / 8)
+            lda #$40 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
             jmp _steps_draw_blanks_start
 _steps_draw_blanks_loop
             sta draw_table,x
@@ -1193,10 +1193,10 @@ sub_write_stair
             sta WSYNC
             sta HMOVE
             ; get player graphic
-            ldy #<SYMBOL_GRAPHICS_S12_BLANK
+            ldy #<SYMBOL_GRAPHICS_BLANK
             asl 
             bcc ._gx_draw_set_p0
-            ldy #<SYMBOL_GRAPHICS_S11_NUTS
+            ldy #<SYMBOL_GRAPHICS_ZARA
 ._gx_draw_set_p0
             sty draw_s0_addr
             ; swap directions
@@ -1637,7 +1637,7 @@ gx_title_end
             ldy #7                       
 _draw_tx_end_loop
             sta WSYNC
-            lda SYMBOL_GRAPHICS_S11_NUTS,y   
+            lda SYMBOL_GRAPHICS_ZARA,y   
             sta GRP0                     
             sta GRP1   
             dey                 
@@ -2153,32 +2153,70 @@ MAZES_8
     ORG $FE00
     
 SYMBOL_GRAPHICS
-SYMBOL_GRAPHICS_S00_ZERO
-    byte $0,$70,$88,$88,$88,$70,$0,$0; 8
-SYMBOL_GRAPHICS_S01_ONE
-    byte $0,$70,$20,$20,$20,$60,$0,$0; 8 
-SYMBOL_GRAPHICS_S02_TWO
-    byte $0,$f8,$80,$f8,$8,$f8,$0,$0; 8 
-SYMBOL_GRAPHICS_S03_THREE
-    byte $0,$f8,$8,$f8,$8,$f8,$0,$0; 8 
-SYMBOL_GRAPHICS_S04_FOUR
-    byte $0,$8,$8,$f8,$88,$88,$0,$0; 8 
-SYMBOL_GRAPHICS_S05_FIVE
-    byte $0,$f8,$8,$f8,$80,$f8,$0,$0; 8 
-SYMBOL_GRAPHICS_S06_SIX
-    byte $0,$f8,$88,$f8,$80,$f8,$0,$0; 8 
-SYMBOL_GRAPHICS_S07_SEVEN
-    byte $0,$8,$8,$8,$8,$f8,$0,$0; 8 
-SYMBOL_GRAPHICS_S08_EIGHT
-    byte $0,$f8,$88,$f8,$88,$f8,$0,$0; 8 
-SYMBOL_GRAPHICS_S09_NINE
-    byte $0,$8,$8,$f8,$88,$f8,$0,$0; 8 
-SYMBOL_GRAPHICS_S10_FLAG
-    byte $0,$c0,$c0,$ff,$ff,$ff,$0,$fe; 8 
-SYMBOL_GRAPHICS_S11_NUTS
-    byte $0,$1c,$3c,$3e,$6c,$6c,$46,$6; 8
-SYMBOL_GRAPHICS_S12_BLANK
+SYMBOL_GRAPHICS_ZERO
+    byte $0,$70,$88,$88,$88,$88,$88,$70; 8
+SYMBOL_GRAPHICS_ONE
+    byte $0,$70,$20,$20,$20,$20,$20,$60; 8
+SYMBOL_GRAPHICS_TWO
+    byte $0,$f8,$80,$80,$f8,$8,$8,$f8; 8
+SYMBOL_GRAPHICS_THREE
+    byte $0,$f8,$8,$8,$f8,$8,$8,$f8; 8
+SYMBOL_GRAPHICS_FOUR
+    byte $0,$8,$8,$8,$f8,$88,$88,$88; 8
+SYMBOL_GRAPHICS_FIVE
+    byte $0,$f8,$8,$8,$f8,$80,$80,$f8; 8
+SYMBOL_GRAPHICS_SIX
+    byte $0,$f8,$88,$88,$f8,$80,$80,$f8; 8
+SYMBOL_GRAPHICS_SEVEN
+    byte $0,$8,$8,$8,$8,$8,$8,$f8; 8
+SYMBOL_GRAPHICS_EIGHT
+    byte $0,$f8,$88,$88,$f8,$88,$88,$f8; 8
+SYMBOL_GRAPHICS_NINE
+    byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
+SYMBOL_GRAPHICS_ZARA
+    byte $0,$38,$78,$7c,$d8,$d8,$8c,$c; 8
+SYMBOL_GRAPHICS_FLAG
+    byte $0,$80,$80,$80,$88,$f8,$f8,$f0; 8
+SYMBOL_GRAPHICS_ACORN
+    byte $0,$20,$70,$f8,$f8,$0,$f8,$70; 8
+SYMBOL_GRAPHICS_CROWN
+    byte $0,$f8,$f8,$0,$f8,$f8,$a8,$a8; 8
+SYMBOL_GRAPHICS_CROSS
+    byte $0,$88,$d8,$70,$20,$70,$d8,$88; 8
+SYMBOL_GRAPHICS_BLANK
     byte $0,$0,$0,$0,$0,$0,$0,$0; 8
+SYMBOL_GRAPHICS_EZPZ_0
+    byte $0,$8e,$ec,$ee,$0,$ea,$ce,$ee; 8
+SYMBOL_GRAPHICS_EZPZ_1
+    byte $0,$64,$4e,$ca,$0,$64,$4e,$ca; 8
+SYMBOL_GRAPHICS_NORM_0
+    byte $0,$ee,$8a,$ee,$0,$ae,$aa,$ee; 8
+SYMBOL_GRAPHICS_NORM_1
+    byte $0,$8e,$8c,$ee,$0,$8a,$8e,$ee; 8
+SYMBOL_GRAPHICS_HARD_0
+    byte $0,$ee,$8a,$ee,$0,$aa,$ee,$ae; 8
+SYMBOL_GRAPHICS_HARD_1
+    byte $0,$8e,$8c,$ee,$0,$8c,$8a,$ee; 8
+SYMBOL_GRAPHICS_MEGA_0
+    byte $0,$ea,$ee,$aa,$0,$32,$13,$1b; 8
+SYMBOL_GRAPHICS_MEGA_1
+    byte $0,$a4,$e4,$ee,$0,$90,$b8,$a8; 8
+SYMBOL_GRAPHICS_LETSGO_0
+    byte $0,$d,$19,$1d,$0,$ee,$8c,$8e; 8
+SYMBOL_GRAPHICS_LETSGO_1
+    byte $0,$d0,$48,$c8,$0,$4c,$44,$e6; 8
+SYMBOL_GRAPHICS_GOODJOB_0
+    byte $0,$ce,$4a,$ee,$0,$6e,$ca,$ee; 8
+SYMBOL_GRAPHICS_GOODJOB_1
+    byte $0,$e8,$e4,$84,$0,$ec,$aa,$ee; 8
+SYMBOL_GRAPHICS_STEPS_0
+    byte $0,$80,$c4,$64,$ec,$cc,$66,$22; 8
+SYMBOL_GRAPHICS_STEPS_1
+    byte $0,$80,$c8,$a8,$cc,$ee,$66,$22; 8
+SYMBOL_GRAPHICS_STEPS_2
+    byte $0,$84,$c0,$64,$e4,$c4,$64,$20; 8
+SYMBOL_GRAPHICS_STEPS_3
+    byte $0,$e2,$6,$ee,$0,$ce,$a8,$ee; 8
 
     ORG $FF00
 
