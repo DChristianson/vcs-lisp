@@ -190,12 +190,12 @@ temp_p4 ds 1
 ;   - PF gutters
 ;   - title 
 ;   - goal step has a graphic of some sort
+;   - stair outlines
+;   - color stairs
 ;  - glitches
 ;   - jacked up select
 ; MVP
 ;  - visual 2
-;   - stair outlines
-;   - color stairs
 ;   - player points in direction of travel
 ;   - simple climb animation 
 ;   - fall tumble animation
@@ -204,10 +204,16 @@ temp_p4 ds 1
 ;   - fall down notes
 ;   - jingles on transition moments
 ;  - glitches
-;   - stair display horizontal align
+;   - top of steps should be invisible
+;   - colors don't have enough contrast
+;   - acorn needs to be shifted based on direction
+;   - player needs to be shifted based on direction
+;   - player is floating 2 above bottom of stair
+;   - stair display horizontal align is bad for 16 across
 ;   - stabilize stair display
 ;   - stabilize frames
 ;  - gameplay 1
+;   - do we need a score at all?
 ;   - way to end game when no time limit?
 ;   - no fall penalty from start step
 ;   - improved game start
