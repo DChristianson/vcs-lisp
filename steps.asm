@@ -53,7 +53,7 @@ STAIRS_MARGIN = 2
 NUM_AUDIO_CHANNELS = 2
 
 CHAR_HEIGHT = 8
-DRAW_TABLE_SIZE = 19
+DRAW_TABLE_SIZE = 18
 DRAW_TABLE_BYTES = DRAW_TABLE_SIZE
 
 JUMP_TABLE_SIZE = 16
@@ -122,9 +122,11 @@ draw_registers_start
 draw_bugbug_margin ds 1
 draw_steps_respx   ds 1
 draw_steps_dir     ds 1 ; top of steps direction
+draw_steps_mask    ds 1
 draw_steps_wsync   ds 1 ; amount to shim steps up/down
 draw_hmove_a       ds 1 ; initial HMOVE
 draw_hmove_b       ds 1 ; reverse HMOVE
+draw_hmove_next    ds 1 ;
 draw_base_dir      ds 1 ; base of steps direction
 draw_base_lr       ds 1 ; base of steps lr position
 draw_player_dir    ds 1 ; player direction
@@ -555,10 +557,10 @@ gx_steps_resp
             ldy draw_steps_dir
             jsr sub_steps_respxx
 
-gx_step_draw
+gx_step_draw            
             ; first stair will shim
-            lda draw_table + DRAW_TABLE_SIZE - 1
-            jsr sub_write_stair
+            ldx #(DRAW_TABLE_SIZE - 1)
+            jsr sub_write_stair_b
             ldy draw_steps_wsync
 _gx_draw_shim_hi
             jsr sub_draw_stair
@@ -566,27 +568,30 @@ _gx_draw_shim_hi
             bpl _gx_draw_shim_hi
 
             ; mid stairs (shift up)
-            ldx #DRAW_TABLE_SIZE - 3
+            dex
 _gx_step_draw_loop
-            lda draw_table + 1,x
-            jsr sub_write_stair
+            jsr sub_write_stair_a
+            ldy #$ff
+            sty GRP1
             ldy #CHAR_HEIGHT - 1
 _gx_draw_loop
             jsr sub_draw_stair
             dey 
             bpl _gx_draw_loop
             dex 
-            bpl _gx_step_draw_loop
+            bne _gx_step_draw_loop
 
             ; last stair will shim
-            lda draw_table
-            jsr sub_write_stair
+            jsr sub_write_stair_a
+            ldy #$ff
+            sty GRP1
             ldy #CHAR_HEIGHT - 1
 _gx_draw_shim_lo
             jsr sub_draw_stair
             dey 
             cpy draw_steps_wsync
             bpl _gx_draw_shim_lo
+            sta WSYNC
 
 gx_timer
             lda #0
@@ -607,27 +612,30 @@ gx_timer
             ; set low digits
             lda player_timer + 1
             ldx #0
-            stx RESMP0 ; CODESIZE: "borrow" 0
             jsr sub_write_digit
-            lda #$40
+            lda #$30
             sta HMP1
             sta WSYNC
             sta HMOVE
             lda #0
             sta COLUBK
+            lda #WHITE
+            sta COLUP0
+            sta COLUP1
             ldy #(CHAR_HEIGHT - 1)
 _gx_timer_loop
             lda (draw_s0_addr),y   ;5  -5
-            sta WSYNC
             sta GRP0               ;3   3
-            lda TIMER_MASK,y       ;4   7
-            ora (draw_s1_addr),y   ;5  12
-            sta GRP1               ;3  15
-            lda (draw_s2_addr),y   ;5  20
-            sta GRP0               ;2  22
-            lda (draw_s3_addr),y   ;5  27
-            sta GRP1               ;3  30
-            sta GRP0
+            sta WSYNC
+            lda (draw_s1_addr),y   ;5   8
+            asl                    ;2  10
+            ora TIMER_MASK,y       ;4  14
+            sta GRP1               ;3  17
+            lda (draw_s2_addr),y   ;5  22
+            sta GRP0               ;2  24
+            lda (draw_s3_addr),y   ;5  29
+            sta GRP1               ;3  32
+            sta GRP0               ;3  35
             dey
             bpl _gx_timer_loop
 
@@ -923,49 +931,6 @@ _sub_scroll_cont
             sta game_state
             jmp gx_continue ; will continue later
 
-sub_steps_respxx
-            ; a is respx, y is direction
-            sec
-            sta WSYNC               ; --
-_respxx_loop
-            sbc #15                 ;2    2
-            sbcs _respxx_loop       ;2/3  4
-            tax                     ;2    6
-            lda LOOKUP_STD_HMOVE,x  ;5   11
-            sta HMP0                ;3   14
-            sta HMP1                ;3   17
-            tya                     ;2   19
-            bpl _respxx_swap        ;2   21
-            sta.w RESP0             ;4   25
-            sta RESP1               ;3   28
-            sta WSYNC               ;
-            sta HMOVE               ;3    3
-            lda #$70                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$90                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$20                ;2   15
-            sta HMP0                ;3   21
-            lda #$30
-            sta HMP1                ;3   24
-            rts                     ;6   30
-_respxx_swap            
-            sta RESP1               ;3   25
-            sta RESP0               ;3   28
-            sta WSYNC
-            sta HMOVE
-            lda #$90                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$70                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$40                ;3   21
-            sta HMP0                ;3   24
-            lda #$10                ;3   27
-            sta HMP1                ;3   30
-            rts                     ;6   36
-
 sub_calc_respx
             ldx #0
             ldy draw_base_lr
@@ -1006,7 +971,55 @@ _calc_respx_end
             adc #STAIRS_MARGIN
             sta draw_steps_respx
             sty draw_steps_dir
+            iny
+            bne _calc_respx_mask
+            ldy #$80
+_calc_respx_mask
+            sty draw_steps_mask
             rts
+
+sub_steps_respxx
+            ; a is respx, y is direction
+            sec
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop       ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            tya                     ;2   19
+            bpl _respxx_swap        ;2   21
+            sta.w RESP0             ;4   25
+            sta RESP1               ;3   28
+            sta WSYNC               ;
+            sta HMOVE               ;3    3
+            lda #$70                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$90                ;2   10
+            sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
+            lda #$20                ;2   
+            sta HMP0                ;3   
+            lda #$30
+            sta HMP1                ;3   
+            rts                     ;6   
+_respxx_swap            
+            sta RESP1               ;3   25
+            sta RESP0               ;3   28
+            sta WSYNC
+            sta HMOVE
+            lda #$90                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$70                ;2   10
+            sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
+            lda #$40                ;3   
+            sta HMP0                ;3   
+            lda #$10                ;3   
+            sta HMP1                ;3   
+            rts                     ;6   
 
 sub_step_getx
             txa ; x has step number
@@ -1190,49 +1203,72 @@ sub_draw_player_step
             sta draw_table+1,x
             rts
 
-sub_write_stair
+            sty HMP0                          ;3  70
+
+
+sub_write_stair_a
+            ; x is stair #
+            ; first process if we're going to flip
+            lda draw_steps_mask               ;3   3
+            ldy draw_hmove_next               ;3   6
+            sty HMP0                          ;3   9
+            cpy draw_hmove_a                  ;3  12
+            sta WSYNC
+            beq ._gx_draw_skip_flip           ;2   2
+            lda draw_steps_mask               ;3   5
+            eor #$81                          ;2   7
+            sta draw_steps_mask               ;3  10
+            lda draw_hmove_a                  ;3  13
+            sty draw_hmove_a                  ;3  16
+            tay                               ;2  18
+            sty draw_hmove_b                  ;3  21
+            lda #0 ; BUGBUG: kludge           ;2  23
+._gx_draw_skip_flip
+            sta GRP1                          ;3  26
+            sty HMP1                          ;3  29
+sub_write_stair_b
             ; read graphics from a
             ; phg.ssss
-            sta WSYNC
-            sta HMOVE
-            ; get player graphic
-            ldy #<SYMBOL_GRAPHICS_BLANK
-            asl 
-            bcc ._gx_draw_set_p0
-            ldy #<SYMBOL_GRAPHICS_ZARA
+            lda draw_table,x                  ;4  33
+            ; get player graphic 
+            ldy #<SYMBOL_GRAPHICS_BLANK       ;2  35
+            asl                               ;2  37
+            bcc ._gx_draw_set_p0              ;2  39
+            ldy #<SYMBOL_GRAPHICS_ZARA        ;2  41
 ._gx_draw_set_p0
-            sty draw_s0_addr
+            sty draw_s0_addr                  ;3  44
             ; swap directions
-            asl
-            pha
-            lda draw_hmove_a
-            sta HMP0
-            sta HMP1
-            bcc ._gx_draw_end_swap_direction
-            ldy draw_hmove_b
-            sty HMP0
-            sty draw_hmove_a
-            sta draw_hmove_b
+            asl                               ;2  47
+            ldy draw_hmove_a                  ;3  50
+            bcc ._gx_draw_end_swap_direction  ;2  52
+            ldy draw_hmove_b                  ;3  55
 ._gx_draw_end_swap_direction
-            pla
+            sty draw_hmove_next               ;3  58
             ; get step graphic
-            asl
-            sta draw_s1_addr
-            ; check ground bit
-            lda #SKY_BLUE
-            bcc ._gx_draw_set_pf
-            lda #WHITE
-._gx_draw_set_pf
-            rts
+            asl                               ;2  60
+            ; TODO: check ground bit
+            clc                               ;2  62
+            adc #1                            ;2  64
+            sta draw_s1_addr                  ;3  67
+            sta WSYNC                         ;3  --
+            sta HMOVE                         ;3   3
+            sta COLUP1                        ;3   6
+            rts                               ;6  12
+
+            ; BUGBUG: adjust colors?
+            ; lda draw_table,x                  ;4  22
+            ; and #$0f                          ;2  24
+            ; tay                               ;2  26
+            ; lda STEP_COLOR,y                  ;4  30
+            ; sta COLUP1                        ;3  33            
 
 sub_draw_stair
             sta WSYNC
-            sta COLUBK
             lda (draw_s0_addr),y
             sta GRP0
             lda (draw_s1_addr),y
+            ora draw_steps_mask
             sta GRP1
-            lda #SKY_BLUE
             rts
 
 ; ----------------------------------
@@ -2157,33 +2193,33 @@ MAZES_8
     
 SYMBOL_GRAPHICS
 SYMBOL_GRAPHICS_ZERO
-    byte $0,$70,$88,$88,$88,$88,$88,$70; 8
+    byte $0,$18,$24,$24,$24,$24,$24,$18; 8
 SYMBOL_GRAPHICS_ONE
-    byte $0,$70,$20,$20,$20,$20,$20,$60; 8
+    byte $0,$1c,$8,$8,$8,$8,$8,$18; 8
 SYMBOL_GRAPHICS_TWO
-    byte $0,$f8,$80,$80,$f8,$8,$8,$f8; 8
+    byte $0,$3c,$20,$20,$3c,$4,$4,$3c; 8
 SYMBOL_GRAPHICS_THREE
-    byte $0,$f8,$8,$8,$f8,$8,$8,$f8; 8
+    byte $0,$3c,$4,$4,$3c,$4,$4,$3c; 8
 SYMBOL_GRAPHICS_FOUR
-    byte $0,$8,$8,$8,$f8,$88,$88,$88; 8
+    byte $0,$4,$4,$4,$3c,$24,$24,$24; 8
 SYMBOL_GRAPHICS_FIVE
-    byte $0,$f8,$8,$8,$f8,$80,$80,$f8; 8
+    byte $0,$3c,$4,$4,$3c,$20,$20,$3c; 8
 SYMBOL_GRAPHICS_SIX
-    byte $0,$f8,$88,$88,$f8,$80,$80,$f8; 8
+    byte $0,$3c,$24,$24,$3c,$20,$20,$3c; 8
 SYMBOL_GRAPHICS_SEVEN
-    byte $0,$8,$8,$8,$8,$8,$8,$f8; 8
+    byte $0,$4,$4,$4,$4,$4,$4,$3c; 8
 SYMBOL_GRAPHICS_EIGHT
-    byte $0,$f8,$88,$88,$f8,$88,$88,$f8; 8
+    byte $0,$3c,$24,$24,$3c,$24,$24,$3c; 8
 SYMBOL_GRAPHICS_NINE
-    byte $0,$8,$8,$8,$f8,$88,$88,$f8; 8
+    byte $0,$4,$4,$4,$3c,$24,$24,$3c; 8
 SYMBOL_GRAPHICS_ZARA
-    byte $0,$38,$78,$7c,$d8,$d8,$8c,$c; 8
+    byte $0,$1c,$3c,$3e,$6c,$6c,$46,$6; 8
 SYMBOL_GRAPHICS_FLAG
     byte $0,$80,$80,$80,$88,$f8,$f8,$f0; 8
 SYMBOL_GRAPHICS_ACORN
-    byte $0,$20,$70,$f8,$f8,$0,$f8,$70; 8
+    byte $0,$10,$38,$7c,$7c,$0,$7c,$38; 8
 SYMBOL_GRAPHICS_CROWN
-    byte $0,$f8,$f8,$0,$f8,$f8,$a8,$a8; 8
+    byte $0,$7c,$7c,$0,$7c,$7c,$54,$54; 8
 SYMBOL_GRAPHICS_CROSS
     byte $0,$88,$d8,$70,$20,$70,$d8,$88; 8
 SYMBOL_GRAPHICS_BLANK
@@ -2230,7 +2266,7 @@ STD_HMOVE_END
 LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
     
 TIMER_MASK
-    byte $00,$00,$02,$00,$02,$00,$00,$00
+    byte $00,$00,$00,$01,$00,$01,$00,$00
 
     ; maze data LUT
 MAZE_PTR_LO 
