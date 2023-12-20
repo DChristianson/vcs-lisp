@@ -192,6 +192,10 @@ temp_p4 ds 1
 ;   - goal step has a graphic of some sort
 ;   - stair outlines
 ;   - color stairs
+;   - tune colors
+;   - colors don't have enough contrast
+;  - gameplay 2
+;   - tweak scoring
 ;  - glitches
 ;   - jacked up select
 ; MVP
@@ -199,13 +203,12 @@ temp_p4 ds 1
 ;   - player points in direction of travel
 ;   - simple climb animation 
 ;   - fall tumble animation
-;   - tune colors
 ;  - sounds 1
 ;   - fall down notes
 ;   - jingles on transition moments
 ;  - glitches
+;   - no zeros
 ;   - top of steps should be invisible
-;   - colors don't have enough contrast
 ;   - acorn needs to be shifted based on direction
 ;   - player needs to be shifted based on direction
 ;   - player is floating 2 above bottom of stair
@@ -230,7 +233,6 @@ temp_p4 ds 1
 ;   - color flashes in dr
 ;   - flag at goal step?
 ;  - gameplay 2
-;   - tweak scoring
 ;   - maze tweaks
 ;  - gameplay 3
 ;   - lava (time attack) mode
@@ -423,6 +425,7 @@ gx_title
 _skip_title_audio
             bit player_input_latch
             bpl _start_select
+            jsr sub_galois ; cycle randomization
             jmp gx_show_title
 _start_select
             lda #GAME_STATE_SELECT
@@ -437,10 +440,11 @@ gx_select
             beq _start_skip_select
             jsr sub_difficulty_increment
 _start_skip_select
+            jsr sub_galois ; cycle randomization
             jmp gx_show_select
 _start_start
             ; bootstrap steps
-            jsr sub_steps_blank
+            jsr sub_steps_init
             lda #GAME_STATE_START
             sta game_state
             jmp gx_show_select
@@ -449,10 +453,8 @@ gx_start
             ; start of climb
             bit player_input_latch
             bpl _start_game
-            jsr sub_galois ; cycle randomization
             jmp gx_continue
 _start_game
-            jsr sub_steps_init
             lda #TRACK_START_GAME
             sta audio_tracker
             lda #GAME_STATE_CLIMB
@@ -695,7 +697,7 @@ sub_write_digit
             sta draw_s0_addr,x
             rts
 
-sub_steps_blank
+sub_steps_init
             lda #0
             ldx #(draw_table - draw_registers_start - 1)
 _steps_blank_zero_loop
@@ -708,20 +710,11 @@ _steps_blank_zero_loop
             sta draw_s1_addr + 1
             sta draw_s2_addr + 1
             sta draw_s3_addr + 1
-            lda #$40 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
-            ldx #(DRAW_TABLE_SIZE - 3)
-_steps_blanks_loop
-            sta draw_table + 2,x
-            dex
-            bpl _steps_blanks_loop
-            lda #$80 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
-            sta draw_table + 1
-            lda #$20 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
-            sta draw_table
-            rts
-
-sub_steps_init
-            lda #5 ; BUGBUG magic number
+            ; get horizontal offset
+            lda #20
+            sec
+            sbc flights
+            lsr
             sta draw_base_lr
             ; jump init
             lda #$ff
@@ -1156,17 +1149,13 @@ _gx_process_jump_arrive
             ; advance
             lda #TRACK_LANDING
             sta audio_tracker
-            ldy player_flight
             sed
-            lda flights,y
-            lsr
-            lsr
+            lda player_score
             clc
-            adc player_score
+            adc #1
             sta player_score
             cld
-            iny
-            sty player_flight
+            inc player_flight
             jsr sub_steps_advance
             jmp _gx_go_redraw_player
 _gx_go_fall_down
@@ -1258,15 +1247,9 @@ sub_write_stair_b
             sta draw_s1_addr                  ;3  67
             sta WSYNC                         ;3  --
             sta HMOVE                         ;3   3
-            sta COLUP1                        ;3   6
-            rts                               ;6  12
-
-            ; BUGBUG: adjust colors?
-            ; lda draw_table,x                  ;4  22
-            ; and #$0f                          ;2  24
-            ; tay                               ;2  26
-            ; lda STEP_COLOR,y                  ;4  30
-            ; sta COLUP1                        ;3  33            
+            lda STEP_COLOR,x                  ;4   7
+            sta COLUP1                        ;3  10
+            rts                               ;6  16          
 
 sub_draw_stair
             sta WSYNC
@@ -2110,6 +2093,10 @@ MAZES_6
     byte $24,$17,$63,$64,$31,$c5 ; sol: 10
     byte $65,$72,$41,$51,$43,$c2 ; sol: 10
 
+STEP_COLOR
+    byte $0f,$1f,$2f,$3f,$4f,$5f,$6f,$7f
+    byte $8f,$9f,$af,$bf,$cf,$df,$ef,$ff
+    byte $0f,$1f
 
     ORG $FC00
 
