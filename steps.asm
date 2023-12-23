@@ -137,6 +137,8 @@ draw_s0_addr       ds 2
 draw_s1_addr       ds 2
 draw_s2_addr       ds 2
 draw_s3_addr       ds 2
+draw_s4_addr       ds 2
+draw_s5_addr       ds 2
 
    ORG draw_registers_start
 
@@ -194,11 +196,21 @@ temp_p4 ds 1
 ;   - color stairs
 ;   - tune colors
 ;   - colors don't have enough contrast
+;   - no zeros on stairs
 ;  - gameplay 2
 ;   - tweak scoring
 ;  - glitches
 ;   - jacked up select
 ; MVP
+;  - glitches
+;   - stabilize frames
+;   - stabilize stair display horizontally
+;   - steps at top of screen should be invisible
+;   - steps at last flight should be invisible
+;   - acorn needs to be shifted based on direction
+;   - player needs to be shifted based on direction
+;   - player is floating 2 above bottom of stair
+;   - stair display horizontal align is bad for 16 across
 ;  - visual 2
 ;   - player points in direction of travel
 ;   - simple climb animation 
@@ -206,15 +218,6 @@ temp_p4 ds 1
 ;  - sounds 1
 ;   - fall down notes
 ;   - jingles on transition moments
-;  - glitches
-;   - no zeros
-;   - top of steps should be invisible
-;   - acorn needs to be shifted based on direction
-;   - player needs to be shifted based on direction
-;   - player is floating 2 above bottom of stair
-;   - stair display horizontal align is bad for 16 across
-;   - stabilize stair display
-;   - stabilize frames
 ;  - gameplay 1
 ;   - do we need a score at all?
 ;   - way to end game when no time limit?
@@ -527,36 +530,20 @@ _clock_save
 
 gx_continue
             jsr sub_calc_respx
-            ; prep some gx
-            lda player_score
-            ldx #0
-            jsr sub_write_digit
+
+            ; prep timer gx
             lda player_timer
             ldx #4
             jsr sub_write_digit
+            lda player_score
+            ldx #8
+            jsr sub_write_digit
+
 
 ;---------------------
 ; climb screen
 
             jsr sub_vblank_loop
-
-gx_score
-            lda #128 ; BUGBUG: magic number
-            ldy #$ff
-            jsr sub_steps_respxx
-            sta WSYNC
-            lda #$50
-            sta HMP1
-            sta HMOVE
-            ldy #(CHAR_HEIGHT - 1)
-_gx_score_loop
-            sta WSYNC
-            lda (draw_s0_addr),y
-            sta GRP0
-            lda (draw_s1_addr),y
-            sta GRP1
-            dey
-            bpl _gx_score_loop
 
 gx_steps_resp
             lda draw_player_dir
@@ -599,59 +586,71 @@ _gx_draw_shim_lo
             dey 
             cpy draw_steps_wsync
             bpl _gx_draw_shim_lo
-            sta WSYNC
 
 gx_timer
+            sta WSYNC
             lda #0
             sta GRP0
             sta GRP1
             sta GRP0
             sta REFP0
             ; place digits
-            lda #12 ; BUGBUG: magic number
+            lda #90 ; BUGBUG: magic number
             ldy #$ff
             jsr sub_steps_respxx
+            sta WSYNC ; shim
+            ; set hi digits for timer
+            ldx #0
+            stx COLUBK
+            lda player_timer + 1
+            jsr sub_write_digit
             ; set up for 32px display
-            lda #1
+            lda #3
             sta NUSIZ0
             sta NUSIZ1
             sta VDELP0
             sta VDELP1
-            ; set low digits
-            lda player_timer + 1
-            ldx #0
-            jsr sub_write_digit
+
+            tsx
+            stx draw_bugbug_margin
             lda #$30
             sta HMP1
+            sta WSYNC ; shim
             sta WSYNC
             sta HMOVE
-            lda #0
-            sta COLUBK
             lda #WHITE
             sta COLUP0
             sta COLUP1
             ldy #(CHAR_HEIGHT - 1)
 _gx_timer_loop
+            sta WSYNC
             lda (draw_s0_addr),y   ;5  -5
             sta GRP0               ;3   3
-            sta WSYNC
             lda (draw_s1_addr),y   ;5   8
             asl                    ;2  10
             ora TIMER_MASK,y       ;4  14
             sta GRP1               ;3  17
             lda (draw_s2_addr),y   ;5  22
             sta GRP0               ;2  24
-            lda (draw_s3_addr),y   ;5  29
-            sta GRP1               ;3  32
+            lax (draw_s5_addr),y   ;5  29
+            txs
+            lax (draw_s3_addr),Y
+            lda (draw_s4_addr),y
+            lsr
+            ora STAIR_MASK,y
+            stx GRP1               ;3  32
+            tsx
+            sta GRP0               ;3  35
+            stx GRP1               ;3  35
             sta GRP0               ;3  35
             dey
             bpl _gx_timer_loop
+            ldx draw_bugbug_margin
+            txs
 
 gx_overscan
             sta WSYNC
-            lda #BLACK
-            sta COLUBK
-            ldx #30
+            ldx #32
             jsr sub_wsync_loop
             jmp newFrame
 
@@ -706,10 +705,12 @@ _steps_blank_zero_loop
             bpl _steps_blank_zero_loop
             sta draw_steps_wsync
             lda #>SYMBOL_GRAPHICS
-            sta draw_s0_addr + 1
-            sta draw_s1_addr + 1
-            sta draw_s2_addr + 1
-            sta draw_s3_addr + 1
+            ldx #10
+_steps_addr_loop
+            sta draw_s0_addr + 1,x
+            dex
+            dex
+            bpl _steps_addr_loop
             ; get horizontal offset
             lda #20
             sec
@@ -750,7 +751,7 @@ _steps_draw_flights
             jmp _steps_draw_flights 
 _steps_draw_last_flight
             tax
-            lda #$40 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
+            lda #$40 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8) ; force blank stair
             jmp _steps_draw_blanks_start
 _steps_draw_blanks_loop
             sta draw_table,x
@@ -1242,9 +1243,12 @@ sub_write_stair_b
             ; get step graphic
             asl                               ;2  60
             ; TODO: check ground bit
-            clc                               ;2  62
-            adc #1                            ;2  64
-            sta draw_s1_addr                  ;3  67
+            bne ._gx_draw_skip_blank          ;2  62
+            lda #<SYMBOL_GRAPHICS_BLANK       ;2  64
+._gx_draw_skip_blank
+            clc                               ;2  66
+            adc #1                            ;2  68
+            sta draw_s1_addr                  ;3  71
             sta WSYNC                         ;3  --
             sta HMOVE                         ;3   3
             lda STEP_COLOR,x                  ;4   7
@@ -1494,6 +1498,7 @@ TITLE_ROW_HI
 gx_show_title
             jsr sub_vblank_loop
 
+            sta WSYNC
             lda #33 ; BUGBUG: magic number
             ldy #$ff
             jsr sub_steps_respxx
@@ -1675,13 +1680,13 @@ _draw_tx_end_loop
             sty GRP1   
             sty GRP0
 
-            ldx #12
+            ldx #11
             jsr sub_wsync_loop
 
             ldy #0
             sty COLUBK
 
-            ldx #8
+            ldx #10
             jsr sub_wsync_loop
 
             jmp gx_overscan
@@ -1777,7 +1782,7 @@ _gx_show_select_flights_end
             sta NUSIZ0
             sta NUSIZ1
 
-            ldx #12
+            ldx #10
             jsr sub_wsync_loop
 
             jmp gx_title_end
@@ -2260,6 +2265,8 @@ LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
     
 TIMER_MASK
     byte $00,$00,$00,$01,$00,$01,$00,$00
+STAIR_MASK
+    byte $00,$80,$80,$80,$80,$80,$80,$80
 
     ; maze data LUT
 MAZE_PTR_LO 
