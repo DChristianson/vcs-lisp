@@ -450,7 +450,7 @@ _start_start
             jsr sub_steps_init
             lda #GAME_STATE_START
             sta game_state
-            jmp gx_show_select
+            jmp gx_continue
 
 gx_start    
             ; start of climb
