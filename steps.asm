@@ -22,6 +22,7 @@ SUN_RED = $30
 CLOUD_ORANGE = $22
 GREY_SCALE = $02 
 WHITE_WATER = $0A
+EARTH_BROWN = $F1
 GREEN = $B3
 RED = $43
 YELLOW = $1f
@@ -39,6 +40,7 @@ SUN_RED = $42
 CLOUD_ORANGE = $44
 GREY_SCALE = $02 
 WHITE_WATER = $0A
+EARTH_BROWN = $21
 GREEN = $72
 RED = $65
 YELLOW = $2E
@@ -47,6 +49,9 @@ BLACK = 0
 BROWN = $21
 SCANLINES = 262
 #endif
+
+ZARA_COLOR = WHITE_WATER
+GROUND_COLOR = GREEN
 
 CLOCK_HZ = 60
 STAIRS_MARGIN = 2
@@ -116,29 +121,33 @@ difficulty_level     ds 1
 flights              ds FLIGHTS_TABLE_BYTES + 1
 flights_total        ds 1
 
+draw_colubk          ds 1
 draw_registers_start
 
 ; steps drawing registers
-draw_bugbug_margin ds 1
-draw_steps_respx   ds 1
-draw_steps_dir     ds 1 ; top of steps direction
-draw_steps_mask    ds 1
-draw_steps_wsync   ds 1 ; amount to shim steps up/down
-draw_hmove_a       ds 1 ; initial HMOVE
-draw_hmove_b       ds 1 ; reverse HMOVE
-draw_hmove_next    ds 1 ;
-draw_base_dir      ds 1 ; base of steps direction
-draw_base_lr       ds 1 ; base of steps lr position
-draw_player_dir    ds 1 ; player direction
-draw_flight_offset ds 1 ; flight to start at
-draw_step_offset   ds 1 ; what step do we start drawing at
-draw_table         ds DRAW_TABLE_BYTES
-draw_s0_addr       ds 2
-draw_s1_addr       ds 2
-draw_s2_addr       ds 2
-draw_s3_addr       ds 2
-draw_s4_addr       ds 2
-draw_s5_addr       ds 2
+draw_bugbug_margin  ds 1 ; temp var
+draw_bugbug_margin_2 ds 1 ; temp var
+draw_steps_respx    ds 1
+draw_steps_dir      ds 1 ; top of steps direction
+draw_steps_mask     ds 1
+draw_steps_wsync    ds 1 ; amount to shim steps up/down
+draw_hmove_a        ds 1 ; initial HMOVE
+draw_hmove_b        ds 1 ; reverse HMOVE
+draw_hmove_next     ds 1 ; next queued HMOVE
+draw_base_dir       ds 1 ; base of steps direction
+draw_base_lr        ds 1 ; base of steps lr position
+draw_player_dir     ds 1 ; player travel direction
+draw_flight_offset  ds 1 ; flight to start at
+draw_step_offset    ds 1 ; what step do we start drawing at
+draw_ground_counter ds 1 ; how far to ground counter
+draw_lava_counter   ds 1 ; how far to lava counter
+draw_table          ds DRAW_TABLE_BYTES
+draw_s0_addr        ds 2
+draw_s1_addr        ds 2
+draw_s2_addr        ds 2
+draw_s3_addr        ds 2
+draw_s4_addr        ds 2
+draw_s5_addr        ds 2
 
    ORG draw_registers_start
 
@@ -183,6 +192,7 @@ temp_p4 ds 1
 ;   - time based randomization
 ;   - fall step by step
 ;   - difficulty select
+;   - do we need a score at all? no - just flights count
 ;  - sounds 1
 ;   - bounce up/down notes
 ;   - landing song
@@ -197,46 +207,52 @@ temp_p4 ds 1
 ;   - tune colors
 ;   - colors don't have enough contrast
 ;   - no zeros on stairs
+;   - highest step has crown
+;   - player points in direction of travel
 ;  - gameplay 2
 ;   - tweak scoring
 ;  - glitches
 ;   - jacked up select
-; MVP
-;  - glitches
 ;   - stabilize frames
 ;   - stabilize stair display horizontally
+;   - when the player wins on a 16, can't see 
 ;   - steps at top of screen should be invisible
+;   - stair display horizontal align is bad for 16 across
 ;   - steps at last flight should be invisible
 ;   - acorn needs to be shifted based on direction
 ;   - player needs to be shifted based on direction
 ;   - player is floating 2 above bottom of stair
-;   - stair display horizontal align is bad for 16 across
+;   - need the ground to appear properly
+; MVP
+;  - glitches
+;   - should be no step edge in ground
+;   - steps at bottom glitch out should be invisible
 ;  - visual 2
-;   - player points in direction of travel
 ;   - simple climb animation 
 ;   - fall tumble animation
 ;  - sounds 1
 ;   - fall down notes
 ;   - jingles on transition moments
 ;  - gameplay 1
-;   - do we need a score at all?
+;   - drop mazes 10 and 14
+;   - improved game start (no press button, countdown start?)
+;   - improved win no end early (scroll up win? double press)
+;   - improved select screen (directions l/r, extra graphics?)
 ;   - way to end game when no time limit?
 ;   - no fall penalty from start step
-;   - improved game start
 ; TODO
 ;  - sounds 2
 ;   - fugueify sounds
 ;  - sounds 3
 ;   - echo solution theme
 ;  - sprinkles 1
-;   - highest step has crown
 ;   - select screen design
 ;   - animated squirrels in logo
 ;   - gradient sky background
 ;   - color flashes in dr
 ;   - flag at goal step?
 ;  - gameplay 2
-;   - maze tweaks
+;   - maze tweaks?
 ;  - gameplay 3
 ;   - lava (time attack) mode
 ;   - echo (dark) mode
@@ -253,10 +269,6 @@ Reset
 CleanStart
     ; do the clean start macro
             CLEAN_START
-
-            lda #WHITE
-            sta COLUP0
-            sta COLUP1
 
             ; PF and background
             lda #0
@@ -310,6 +322,8 @@ _end_switches
 
 
             inc frame
+            lda #SKY_BLUE
+            sta draw_colubk
 
 ax_update   
             ldx #NUM_AUDIO_CHANNELS - 1
@@ -539,6 +553,21 @@ gx_continue
             ldx #8
             jsr sub_write_digit
 
+            ; colors
+            lda #ZARA_COLOR
+            sta COLUP0
+
+            ; altitude
+            lda draw_flight_offset
+            ora draw_step_offset
+            bne _gx_continue_ground_calc
+            lda #0
+            byte #$2c ; skip next 2 bytes
+_gx_continue_ground_calc
+            lda #$ff
+            sta draw_ground_counter
+            lda #90
+            sta draw_lava_counter
 
 ;---------------------
 ; climb screen
@@ -547,45 +576,136 @@ gx_continue
 
 gx_steps_resp
             lda draw_player_dir
+            bit player_inc
+            bpl _gx_steps_resp_skip_invert
+            eor #$ff
+_gx_steps_resp_skip_invert
             sta REFP0
             lda draw_steps_respx
             ldy draw_steps_dir
             jsr sub_steps_respxx
 
-gx_step_draw            
-            ; first stair will shim
-            ldx #(DRAW_TABLE_SIZE - 1)
-            jsr sub_write_stair_b
+gx_step_draw           
             ldy draw_steps_wsync
-_gx_draw_shim_hi
-            jsr sub_draw_stair
-            dey 
-            bpl _gx_draw_shim_hi
-
-            ; mid stairs (shift up)
-            dex
+            sty draw_bugbug_margin
+            ldy #$ff
+            sty draw_bugbug_margin_2
+            ldx #(DRAW_TABLE_SIZE - 1)
+            sta WSYNC
+            jmp sub_write_stair_b
 _gx_step_draw_loop
-            jsr sub_write_stair_a
-            ldy #$ff
-            sty GRP1
-            ldy #CHAR_HEIGHT - 1
-_gx_draw_loop
-            jsr sub_draw_stair
-            dey 
-            bpl _gx_draw_loop
-            dex 
-            bne _gx_step_draw_loop
 
-            ; last stair will shim
-            jsr sub_write_stair_a
-            ldy #$ff
-            sty GRP1
+sub_write_stair_a
+            ; x is stair #
+            ; first process if we're going to flip
+            lda draw_steps_mask               ;3   3
+            ldy draw_hmove_next               ;3   6
+            sty HMP0                          ;3   9
+            cpy draw_hmove_a                  ;3  12
+            sta WSYNC
+            beq ._gx_draw_skip_flip           ;2   2
+            eor #$81                          ;2   4
+            sta draw_steps_mask               ;3   7
+            lda draw_hmove_a                  ;3  10
+            sty draw_hmove_a                  ;3  13
+            tay                               ;2  15
+            sty draw_hmove_b                  ;3  18
+            lda #0 ; BUGBUG: kludge           ;2  20
+._gx_draw_skip_flip
+            sta GRP1                          ;3  23
+            lda #0                            ;2  25
+            sta GRP0                          ;3  28
+            sty HMP1                          ;3  31
+sub_write_stair_b
+            ; read graphics from a
+            ; phg.ssss
+            lda draw_table,x                  ;4  35
+            ; get player graphic 
+            ldy #(<SYMBOL_GRAPHICS_BLANK) + 1 ;2  37
+            asl                               ;2  39
+            bcc ._gx_draw_set_p0              ;2  41
+            ldy #(<SYMBOL_GRAPHICS_ZARA) + 1  ;2  43
+._gx_draw_set_p0
+            sty draw_s0_addr                  ;3  46
+            ; swap directions
+            asl                               ;2  48
+            ldy draw_hmove_a                  ;3  51
+            bcc ._gx_draw_end_swap_direction  ;2  53 
+            ldy draw_hmove_b                  ;3  56
+._gx_draw_end_swap_direction
+            sty draw_hmove_next               ;3  59
+            ; shift ground bit, check later
+            asl                               ;2  61
+            ; get step graphic
+            bne ._gx_draw_skip_blank          ;2  63
+            lda #<SYMBOL_GRAPHICS_BLANK       ;2  65
+._gx_draw_skip_blank
+            ldy STEP_COLOR,x                  ;4  69
+            bcc ._gx_draw_alt_color           ;2  71
+            ldy #SKY_BLUE                     ;2  73 ; NOTE: very tight timing
+._gx_draw_alt_color
+            sta WSYNC
+            sta HMOVE                         ;3   3
+            sty COLUP1                        ;3   6
+            clc                               ;2   8
+            adc #1                            ;2   9 ; shift up one
+            sta draw_s1_addr                  ;3  10
+
+            cpx draw_ground_counter
+            bne ._gx_draw_skip_ground
+            lda #GROUND_COLOR
+            sta COLUBK
+            sta draw_colubk
+._gx_draw_skip_ground
+
+            ldy draw_bugbug_margin
+            cpy draw_bugbug_margin_2
+            beq ._gx_draw_skip_stair
+            cpx  #(DRAW_TABLE_SIZE - 1)
+            beq _gx_draw_loop
+            lda #$ff
+            sta GRP1
+
+_gx_draw_loop
+
+sub_draw_stair
+;             dec draw_lava_counter
+;             beq ._gx_draw_skip_lava
+;             lda #RED
+;             sta draw_colubk
+; ._gx_draw_skip_lava
+            lda (draw_s0_addr),y
+            bit player_inc
+            bmi ._gx_draw_player_r
+            asl
+            byte $80 ; skip one byte
+._gx_draw_player_r
+            lsr
+            sta WSYNC
+            sta GRP0
+            lda (draw_s1_addr),y
+            bit draw_steps_mask
+            bpl ._gx_draw_stair_l
+            lsr
+._gx_draw_stair_l
+            ora draw_steps_mask
+            sta GRP1
+            lda draw_colubk
+            sta COLUBK
+            dey
+            cpy draw_bugbug_margin_2
+            bne _gx_draw_loop
+._gx_draw_skip_stair
+            dex 
+            bmi gx_timer
+            bne ._gx_draw_skip_stop
+            ldy draw_steps_wsync
+            dey
+._gx_draw_skip_stop
+            sty draw_bugbug_margin_2
             ldy #CHAR_HEIGHT - 1
-_gx_draw_shim_lo
-            jsr sub_draw_stair
-            dey 
-            cpy draw_steps_wsync
-            bpl _gx_draw_shim_lo
+            sty draw_bugbug_margin
+            jmp _gx_step_draw_loop
 
 gx_timer
             sta WSYNC
@@ -595,7 +715,7 @@ gx_timer
             sta GRP0
             sta REFP0
             ; place digits
-            lda #90 ; BUGBUG: magic number
+            lda #94 ; BUGBUG: magic number
             ldy #$ff
             jsr sub_steps_respxx
             sta WSYNC ; shim
@@ -613,42 +733,44 @@ gx_timer
 
             tsx
             stx draw_bugbug_margin
-            lda #$30
-            sta HMP1
-            sta WSYNC ; shim
             sta WSYNC
             sta HMOVE
             lda #WHITE
             sta COLUP0
             sta COLUP1
-            ldy #(CHAR_HEIGHT - 1)
+            ldy #(CHAR_HEIGHT) ; go one higher
 _gx_timer_loop
             sta WSYNC
-            lda (draw_s0_addr),y   ;5  -5
-            sta GRP0               ;3   3
-            lda (draw_s1_addr),y   ;5   8
-            asl                    ;2  10
-            ora TIMER_MASK,y       ;4  14
-            sta GRP1               ;3  17
-            lda (draw_s2_addr),y   ;5  22
-            sta GRP0               ;2  24
-            lax (draw_s5_addr),y   ;5  29
-            txs
-            lax (draw_s3_addr),Y
-            lda (draw_s4_addr),y
-            lsr
-            ora STAIR_MASK,y
-            stx GRP1               ;3  32
-            tsx
-            sta GRP0               ;3  35
-            stx GRP1               ;3  35
-            sta GRP0               ;3  35
-            dey
-            bpl _gx_timer_loop
+            SLEEP 3; shim
+            lda (draw_s0_addr),y   ;5   5
+            sta GRP0               ;3   8
+            lda (draw_s1_addr),y   ;5  13
+            ora TIMER_MASK,y       ;4  17
+            sta GRP1               ;3  20
+            lda (draw_s2_addr),y   ;5  25
+            sta GRP0               ;2  27
+            lda (draw_s5_addr),y   ;5  32
+            eor #$ff               ;2  34
+            tax                    ;2  36
+            txs                    ;2  38
+            lax (draw_s3_addr),Y   ;5  43
+            lda (draw_s4_addr),y   ;5  48
+            eor #$ff               ;2  50
+            stx GRP1               ;3  53
+            tsx                    ;3  56
+            sta GRP0               ;3  59
+            stx GRP1               ;3  62
+            sta GRP0               ;3  65
+            dey                    ;2  67
+            bpl _gx_timer_loop     ;3  70
             ldx draw_bugbug_margin
             txs
 
 gx_overscan
+            lda #0
+            sta GRP0
+            sta GRP1
+            sta GRP0
             sta WSYNC
             ldx #32
             jsr sub_wsync_loop
@@ -671,7 +793,7 @@ _end_vblank_loop
             stx VBLANK
             ; end
             sta WSYNC ; SL 35
-            lda #SKY_BLUE
+            lda draw_colubk
             sta COLUBK
             rts
 
@@ -712,7 +834,7 @@ _steps_addr_loop
             dex
             bpl _steps_addr_loop
             ; get horizontal offset
-            lda #20
+            lda #22
             sec
             sbc flights
             lsr
@@ -751,12 +873,11 @@ _steps_draw_flights
             jmp _steps_draw_flights 
 _steps_draw_last_flight
             tax
-            lda #$40 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8) ; force blank stair
-            jmp _steps_draw_blanks_start
+            lda #$00 + ((SYMBOL_GRAPHICS_CROWN - SYMBOL_GRAPHICS) / 8) ; force crown stair (NOTE: should be $0f)
 _steps_draw_blanks_loop
             sta draw_table,x
-_steps_draw_blanks_start
             inx
+            lda #$60 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8) ; force blank stair
             cpx #DRAW_TABLE_SIZE
             bmi _steps_draw_blanks_loop            
 _steps_draw_flights_end
@@ -773,6 +894,9 @@ _steps_draw_jumps
             lsr
             lsr
             lsr
+            bne _steps_draw_goal_skip
+            lda #((SYMBOL_GRAPHICS_ACORN - SYMBOL_GRAPHICS) / 8) ; acorn stair (NOTE: should be $0e)
+_steps_draw_goal_skip
             ora draw_table,y
             sta draw_table,y
             dey
@@ -787,15 +911,6 @@ _steps_draw_jumps
             bpl _steps_draw_jumps
 _steps_end_jumps
             jsr sub_draw_player_step
-sub_background
-            ; draw ground and sky
-            lda draw_flight_offset
-            ora draw_step_offset
-            bne _sub_background_end
-            lda draw_table
-            ora #$20
-            sta draw_table
-_sub_background_end
             rts
 
 sub_difficulty_increment
@@ -882,7 +997,7 @@ _sub_steps_advance_save
             lda #GAME_STATE_CLIMB
             sta game_state
             lda draw_player_dir
-            eor #$88 ; invert player dir between 8 and 0
+            eor #$ff ; invert player dir between 8 and 0
             sta draw_player_dir
             jmp sub_steps_refresh ; redraw steps (will rts from there)
 
@@ -1000,7 +1115,7 @@ _respxx_loop
             lda #$90                ;2   10
             sta draw_hmove_b        ;3   13
             SLEEP 10 ; BUGBUG: kludge
-            lda #$20                ;2   
+            lda #$10                ;2   
             sta HMP0                ;3   
             lda #$30
             sta HMP1                ;3   
@@ -1015,7 +1130,7 @@ _respxx_swap
             lda #$70                ;2   10
             sta draw_hmove_b        ;3   13
             SLEEP 10 ; BUGBUG: kludge
-            lda #$40                ;3   
+            lda #$30                ;3   
             sta HMP0                ;3   
             lda #$10                ;3   
             sta HMP1                ;3   
@@ -1066,7 +1181,7 @@ _sub_gen_steps_selected
             adc MAZE_PTR_LO,y
             sta maze_ptr
 _sub_gen_steps_loop
-            lda (maze_ptr),y
+            lda (maze_ptr),y ; #$11; use to force maze of 1's
             sta jump_table,y
             dey
             bpl _sub_gen_steps_loop
@@ -1199,70 +1314,6 @@ sub_draw_player_step
             sta draw_table+1,x
             rts
 
-            sty HMP0                          ;3  70
-
-
-sub_write_stair_a
-            ; x is stair #
-            ; first process if we're going to flip
-            lda draw_steps_mask               ;3   3
-            ldy draw_hmove_next               ;3   6
-            sty HMP0                          ;3   9
-            cpy draw_hmove_a                  ;3  12
-            sta WSYNC
-            beq ._gx_draw_skip_flip           ;2   2
-            lda draw_steps_mask               ;3   5
-            eor #$81                          ;2   7
-            sta draw_steps_mask               ;3  10
-            lda draw_hmove_a                  ;3  13
-            sty draw_hmove_a                  ;3  16
-            tay                               ;2  18
-            sty draw_hmove_b                  ;3  21
-            lda #0 ; BUGBUG: kludge           ;2  23
-._gx_draw_skip_flip
-            sta GRP1                          ;3  26
-            sty HMP1                          ;3  29
-sub_write_stair_b
-            ; read graphics from a
-            ; phg.ssss
-            lda draw_table,x                  ;4  33
-            ; get player graphic 
-            ldy #<SYMBOL_GRAPHICS_BLANK       ;2  35
-            asl                               ;2  37
-            bcc ._gx_draw_set_p0              ;2  39
-            ldy #<SYMBOL_GRAPHICS_ZARA        ;2  41
-._gx_draw_set_p0
-            sty draw_s0_addr                  ;3  44
-            ; swap directions
-            asl                               ;2  47
-            ldy draw_hmove_a                  ;3  50
-            bcc ._gx_draw_end_swap_direction  ;2  52
-            ldy draw_hmove_b                  ;3  55
-._gx_draw_end_swap_direction
-            sty draw_hmove_next               ;3  58
-            ; get step graphic
-            asl                               ;2  60
-            ; TODO: check ground bit
-            bne ._gx_draw_skip_blank          ;2  62
-            lda #<SYMBOL_GRAPHICS_BLANK       ;2  64
-._gx_draw_skip_blank
-            clc                               ;2  66
-            adc #1                            ;2  68
-            sta draw_s1_addr                  ;3  71
-            sta WSYNC                         ;3  --
-            sta HMOVE                         ;3   3
-            lda STEP_COLOR,x                  ;4   7
-            sta COLUP1                        ;3  10
-            rts                               ;6  16          
-
-sub_draw_stair
-            sta WSYNC
-            lda (draw_s0_addr),y
-            sta GRP0
-            lda (draw_s1_addr),y
-            ora draw_steps_mask
-            sta GRP1
-            rts
 
 ; ----------------------------------
 ; TITLE
@@ -1496,14 +1547,17 @@ TITLE_ROW_HI
     byte >TITLE_ROW_1_DATA
 
 gx_show_title
+            lda #WHITE
+            sta COLUP0
+            sta COLUP1
             jsr sub_vblank_loop
 
             sta WSYNC
-            lda #33 ; BUGBUG: magic number
+            lda #32 ; BUGBUG: magic number
             ldy #$ff
             jsr sub_steps_respxx
             sta WSYNC
-            lda #$50
+            lda #$20
             sta HMP1
             sta HMOVE
             lda #1
@@ -1659,6 +1713,8 @@ _gx_title_loop_11_jmp
 
 gx_title_end
 
+            lda #ZARA_COLOR
+            sta COLUP0
             ldx #4
             jsr sub_wsync_loop
             lda #0
@@ -1675,16 +1731,14 @@ _draw_tx_end_loop
             sta GRP1   
             dey                 
             bpl _draw_tx_end_loop    
-            ldy #0
-            sty GRP0
-            sty GRP1   
-            sty GRP0
+            lda #GROUND_COLOR
+            sta COLUBK
 
             ldx #11
             jsr sub_wsync_loop
 
-            ldy #0
-            sty COLUBK
+            inx ; cheat and bump x up 1
+            stx COLUBK
 
             ldx #10
             jsr sub_wsync_loop
@@ -1782,7 +1836,7 @@ _gx_show_select_flights_end
             sta NUSIZ0
             sta NUSIZ1
 
-            ldx #10
+            ldx #30
             jsr sub_wsync_loop
 
             jmp gx_title_end
@@ -1956,147 +2010,113 @@ TITLE_ROW_H_DATA
 
 MAZES_4
 
-    byte $15,$32,$31,$c1 ; sol: 7
-    byte $15,$14,$43,$c3 ; sol: 8
-    byte $15,$42,$41,$c2 ; sol: 7
-    byte $43,$14,$24,$c5 ; sol: 7
-    byte $25,$35,$42,$c2 ; sol: 8
-    byte $22,$24,$13,$c5 ; sol: 8
-    byte $25,$15,$14,$c5 ; sol: 7
-    byte $25,$14,$33,$c5 ; sol: 8
-    byte $35,$41,$42,$c4 ; sol: 7
-    byte $15,$24,$33,$c2 ; sol: 6
-    byte $55,$42,$41,$c4 ; sol: 8
-    byte $35,$42,$31,$c3 ; sol: 6
-    byte $42,$54,$13,$c5 ; sol: 7
-    byte $43,$32,$13,$c5 ; sol: 7
-    byte $35,$44,$31,$c2 ; sol: 7
-    byte $51,$23,$13,$c4 ; sol: 7
-    byte $15,$42,$42,$c3 ; sol: 8
-    byte $35,$42,$41,$c5 ; sol: 6
-    byte $52,$43,$41,$c2 ; sol: 8
-    byte $25,$31,$43,$c2 ; sol: 7
-    byte $15,$32,$41,$c1 ; sol: 8
-    byte $52,$13,$43,$c3 ; sol: 8
-    byte $43,$35,$12,$c5 ; sol: 8
-    byte $43,$35,$31,$c2 ; sol: 7
-    byte $13,$35,$41,$c2 ; sol: 8
-    byte $25,$44,$31,$c5 ; sol: 7
-    byte $35,$32,$41,$c1 ; sol: 7
-    byte $15,$24,$43,$c2 ; sol: 7
-    byte $35,$35,$41,$c4 ; sol: 8
-    byte $35,$44,$31,$c5 ; sol: 8
-    byte $51,$21,$13,$c4 ; sol: 8
-    byte $52,$24,$13,$c3 ; sol: 7
+    byte $15,$32,$31,$01 ; sol: 7
+    byte $15,$14,$43,$03 ; sol: 8
+    byte $15,$42,$41,$02 ; sol: 7
+    byte $43,$14,$24,$05 ; sol: 7
+    byte $25,$35,$42,$02 ; sol: 8
+    byte $22,$24,$13,$05 ; sol: 8
+    byte $25,$15,$14,$05 ; sol: 7
+    byte $25,$14,$33,$05 ; sol: 8
+    byte $35,$41,$42,$04 ; sol: 7
+    byte $15,$24,$33,$02 ; sol: 6
+    byte $55,$42,$41,$04 ; sol: 8
+    byte $35,$42,$31,$03 ; sol: 6
+    byte $42,$54,$13,$05 ; sol: 7
+    byte $43,$32,$13,$05 ; sol: 7
+    byte $35,$44,$31,$02 ; sol: 7
+    byte $51,$23,$13,$04 ; sol: 7
+    byte $15,$42,$42,$03 ; sol: 8
+    byte $35,$42,$41,$05 ; sol: 6
+    byte $52,$43,$41,$02 ; sol: 8
+    byte $25,$31,$43,$02 ; sol: 7
+    byte $15,$32,$41,$01 ; sol: 8
+    byte $52,$13,$43,$03 ; sol: 8
+    byte $43,$35,$12,$05 ; sol: 8
+    byte $43,$35,$31,$02 ; sol: 7
+    byte $13,$35,$41,$02 ; sol: 8
+    byte $25,$44,$31,$05 ; sol: 7
+    byte $35,$32,$41,$01 ; sol: 7
+    byte $15,$24,$43,$02 ; sol: 7
+    byte $35,$35,$41,$04 ; sol: 8
+    byte $35,$44,$31,$05 ; sol: 8
+    byte $51,$21,$13,$04 ; sol: 8
+    byte $52,$24,$13,$03 ; sol: 7
 
     ORG $FA00
 
 MAZES_3
 
-    byte $22,$22,$c3 ; w: 0.13333333333333333 sol: 6
-    byte $31,$21,$c2 ; w: 0.4 sol: 6
-    byte $14,$21,$c2 ; w: 0.3 sol: 5
-    byte $43,$11,$c4 ; w: 0.4 sol: 5
-    byte $21,$13,$c3 ; w: 0.5 sol: 5
-    byte $44,$11,$c2 ; w: 0.3 sol: 5
-    byte $32,$31,$c1 ; w: 0.5 sol: 5
-    byte $43,$14,$c3 ; w: 0.4 sol: 5
-    byte $44,$13,$c3 ; w: 0.4 sol: 4
-    byte $31,$43,$c2 ; w: 0.5333333333333334 sol: 5
-    byte $24,$23,$c3 ; w: 0.5 sol: 5
-    byte $24,$13,$c3 ; w: 1.3333333333333333 sol: 6
-    byte $42,$12,$c3 ; w: 0.6666666666666667 sol: 5
-    byte $42,$31,$c3 ; w: 0.5333333333333334 sol: 4
-    byte $14,$21,$c3 ; w: 0.5333333333333333 sol: 6
-    byte $14,$13,$c3 ; w: 0.5 sol: 5
-    byte $34,$43,$c2 ; w: 0.4 sol: 4
-    byte $43,$11,$c4 ; w: 0.4 sol: 5
-    byte $21,$13,$c3 ; w: 0.5 sol: 5
-    byte $44,$11,$c2 ; w: 0.3 sol: 5
-    byte $32,$31,$c1 ; w: 0.5 sol: 5
-    byte $43,$14,$c3 ; w: 0.4 sol: 5
-    byte $44,$13,$c3 ; w: 0.4 sol: 4
-    byte $31,$43,$c2 ; w: 0.5333333333333334 sol: 5
-    byte $24,$23,$c3 ; w: 0.5 sol: 5
-    byte $24,$13,$c3 ; w: 1.3333333333333333 sol: 6
-    byte $42,$12,$c3 ; w: 0.6666666666666667 sol: 5
-    byte $42,$31,$c3 ; w: 0.5333333333333334 sol: 4
-    byte $14,$21,$c3 ; w: 0.5333333333333333 sol: 6
-    byte $14,$13,$c3 ; w: 0.5 sol: 5
-    byte $34,$43,$c2 ; w: 0.4 sol: 4
-    byte $43,$11,$c4 ; w: 0.4 sol: 5
+    byte $22,$22,$03 ; w: 0.13333333333333333 sol: 6
+    byte $31,$21,$02 ; w: 0.4 sol: 6
+    byte $14,$21,$02 ; w: 0.3 sol: 5
+    byte $43,$11,$04 ; w: 0.4 sol: 5
+    byte $21,$13,$03 ; w: 0.5 sol: 5
+    byte $44,$11,$02 ; w: 0.3 sol: 5
+    byte $32,$31,$01 ; w: 0.5 sol: 5
+    byte $43,$14,$03 ; w: 0.4 sol: 5
+    byte $44,$13,$03 ; w: 0.4 sol: 4
+    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
+    byte $24,$23,$03 ; w: 0.5 sol: 5
+    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
+    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
+    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
+    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
+    byte $14,$13,$03 ; w: 0.5 sol: 5
+    byte $34,$43,$02 ; w: 0.4 sol: 4
+    byte $43,$11,$04 ; w: 0.4 sol: 5
+    byte $21,$13,$03 ; w: 0.5 sol: 5
+    byte $44,$11,$02 ; w: 0.3 sol: 5
+    byte $32,$31,$01 ; w: 0.5 sol: 5
+    byte $43,$14,$03 ; w: 0.4 sol: 5
+    byte $44,$13,$03 ; w: 0.4 sol: 4
+    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
+    byte $24,$23,$03 ; w: 0.5 sol: 5
+    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
+    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
+    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
+    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
+    byte $14,$13,$03 ; w: 0.5 sol: 5
+    byte $34,$43,$02 ; w: 0.4 sol: 4
+    byte $43,$11,$04 ; w: 0.4 sol: 5
 
-MAZES_5
-
-    byte $52,$16,$43,$61,$c5 ; sol: 9
-    byte $43,$46,$42,$51,$c4 ; sol: 9
-    byte $52,$46,$43,$31,$c5 ; sol: 10
-    byte $53,$52,$43,$41,$c6 ; sol: 9
-    byte $53,$26,$65,$51,$c4 ; sol: 9
-    byte $16,$26,$25,$34,$c5 ; sol: 9
-    byte $62,$62,$14,$45,$c3 ; sol: 10
-    byte $63,$51,$42,$31,$c6 ; sol: 10
-    byte $26,$43,$15,$15,$c6 ; sol: 10
-    byte $24,$54,$43,$41,$c6 ; sol: 9
-    byte $24,$54,$43,$41,$c6 ; sol: 9
-    byte $46,$52,$23,$54,$c1 ; sol: 9
-    byte $26,$15,$46,$15,$c3 ; sol: 9
-    byte $23,$46,$42,$51,$c4 ; sol: 9
-    byte $63,$54,$31,$25,$c4 ; sol: 10
-    byte $16,$25,$15,$45,$c3 ; sol: 9
-    byte $14,$53,$23,$63,$c2 ; sol: 9
-    byte $36,$46,$12,$25,$c5 ; sol: 9
-    byte $36,$26,$13,$24,$c5 ; sol: 9
-    byte $46,$65,$31,$45,$c2 ; sol: 8
-    byte $36,$41,$42,$15,$c3 ; sol: 10
-    byte $35,$64,$31,$61,$c2 ; sol: 9
-    byte $24,$65,$14,$64,$c3 ; sol: 10
-    byte $46,$65,$23,$14,$c4 ; sol: 10
-    byte $36,$26,$15,$64,$c5 ; sol: 8
-    byte $46,$42,$31,$25,$c6 ; sol: 9
-    byte $24,$16,$43,$65,$c3 ; sol: 8
-    byte $16,$52,$43,$45,$c3 ; sol: 10
-    byte $43,$35,$14,$25,$c6 ; sol: 10
-    byte $36,$51,$42,$45,$c3 ; sol: 9
-    byte $46,$62,$31,$15,$c2 ; sol: 8
-    byte $36,$65,$42,$45,$c1 ; sol: 8
 
     ORG $FB00
 
 MAZES_6
 
-    byte $36,$76,$42,$43,$31,$c5 ; sol: 11
-    byte $27,$14,$65,$31,$17,$c3 ; sol: 11
-    byte $46,$65,$27,$14,$57,$c3 ; sol: 11
-    byte $27,$57,$31,$64,$34,$c1 ; sol: 12
-    byte $37,$64,$31,$54,$27,$c5 ; sol: 12
-    byte $27,$16,$45,$35,$42,$c6 ; sol: 11
-    byte $27,$57,$31,$65,$14,$c4 ; sol: 12
-    byte $57,$42,$63,$54,$41,$c2 ; sol: 11
-    byte $57,$52,$63,$54,$41,$c7 ; sol: 12
-    byte $57,$31,$46,$51,$53,$c2 ; sol: 11
-    byte $37,$26,$17,$54,$31,$c7 ; sol: 11
-    byte $27,$57,$31,$65,$34,$c7 ; sol: 11
-    byte $37,$72,$42,$51,$63,$c2 ; sol: 11
-    byte $57,$63,$14,$64,$25,$c3 ; sol: 11
-    byte $57,$53,$27,$64,$51,$c3 ; sol: 11
-    byte $73,$25,$75,$15,$74,$c6 ; sol: 10
-    byte $27,$17,$74,$35,$37,$c6 ; sol: 10
-    byte $57,$62,$73,$54,$13,$c7 ; sol: 11
-    byte $57,$13,$25,$64,$13,$c3 ; sol: 11
-    byte $57,$63,$27,$64,$14,$c4 ; sol: 11
-    byte $47,$62,$31,$65,$37,$c4 ; sol: 10
-    byte $57,$72,$35,$61,$64,$c1 ; sol: 11
-    byte $25,$47,$36,$15,$56,$c7 ; sol: 10
-    byte $57,$62,$23,$54,$13,$c7 ; sol: 11
-    byte $57,$62,$23,$54,$13,$c5 ; sol: 12
-    byte $47,$17,$24,$35,$37,$c6 ; sol: 11
-    byte $47,$62,$52,$51,$13,$c7 ; sol: 11
-    byte $24,$17,$53,$67,$43,$c2 ; sol: 10
-    byte $56,$72,$41,$61,$73,$c2 ; sol: 10
-    byte $57,$63,$21,$64,$13,$c4 ; sol: 10
-    byte $24,$17,$63,$64,$31,$c5 ; sol: 10
-    byte $65,$72,$41,$51,$43,$c2 ; sol: 10
+    byte $36,$76,$42,$43,$31,$05 ; sol: 11
+    byte $27,$14,$65,$31,$17,$03 ; sol: 11
+    byte $46,$65,$27,$14,$57,$03 ; sol: 11
+    byte $27,$57,$31,$64,$34,$01 ; sol: 12
+    byte $37,$64,$31,$54,$27,$05 ; sol: 12
+    byte $27,$16,$45,$35,$42,$06 ; sol: 11
+    byte $27,$57,$31,$65,$14,$04 ; sol: 12
+    byte $57,$42,$63,$54,$41,$02 ; sol: 11
+    byte $57,$52,$63,$54,$41,$07 ; sol: 12
+    byte $57,$31,$46,$51,$53,$02 ; sol: 11
+    byte $37,$26,$17,$54,$31,$07 ; sol: 11
+    byte $27,$57,$31,$65,$34,$07 ; sol: 11
+    byte $37,$72,$42,$51,$63,$02 ; sol: 11
+    byte $57,$63,$14,$64,$25,$03 ; sol: 11
+    byte $57,$53,$27,$64,$51,$03 ; sol: 11
+    byte $73,$25,$75,$15,$74,$06 ; sol: 10
+    byte $27,$17,$74,$35,$37,$06 ; sol: 10
+    byte $57,$62,$73,$54,$13,$07 ; sol: 11
+    byte $57,$13,$25,$64,$13,$03 ; sol: 11
+    byte $57,$63,$27,$64,$14,$04 ; sol: 11
+    byte $47,$62,$31,$65,$37,$04 ; sol: 10
+    byte $57,$72,$35,$61,$64,$01 ; sol: 11
+    byte $25,$47,$36,$15,$56,$07 ; sol: 10
+    byte $57,$62,$23,$54,$13,$07 ; sol: 11
+    byte $57,$62,$23,$54,$13,$05 ; sol: 12
+    byte $47,$17,$24,$35,$37,$06 ; sol: 11
+    byte $47,$62,$52,$51,$13,$07 ; sol: 11
+    byte $24,$17,$53,$67,$43,$02 ; sol: 10
+    byte $56,$72,$41,$61,$73,$02 ; sol: 10
+    byte $57,$63,$21,$64,$13,$04 ; sol: 10
+    byte $24,$17,$63,$64,$31,$05 ; sol: 10
+    byte $65,$72,$41,$51,$43,$02 ; sol: 10
 
 STEP_COLOR
     byte $0f,$1f,$2f,$3f,$4f,$5f,$6f,$7f
@@ -2105,83 +2125,49 @@ STEP_COLOR
 
     ORG $FC00
 
-MAZES_7
-
-    byte $79,$35,$87,$51,$74,$89,$c2 ; sol: 14
-    byte $79,$85,$82,$53,$74,$69,$c2 ; sol: 14
-    byte $18,$93,$15,$65,$62,$94,$c5 ; sol: 12
-    byte $79,$28,$41,$46,$51,$94,$c1 ; sol: 13
-    byte $86,$92,$41,$71,$73,$13,$c4 ; sol: 12
-    byte $81,$75,$39,$26,$73,$84,$c8 ; sol: 14
-    byte $19,$75,$68,$24,$75,$56,$c4 ; sol: 12
-    byte $94,$87,$13,$74,$15,$67,$c7 ; sol: 12
-    byte $81,$95,$39,$24,$73,$86,$c6 ; sol: 14
-    byte $29,$15,$68,$24,$75,$56,$c4 ; sol: 12
-    byte $87,$54,$68,$35,$15,$96,$c7 ; sol: 12
-    byte $91,$97,$83,$25,$36,$77,$c4 ; sol: 14
-    byte $81,$95,$36,$27,$73,$84,$c8 ; sol: 14
-    byte $62,$53,$69,$14,$37,$81,$c8 ; sol: 14
-    byte $15,$79,$24,$86,$47,$56,$c3 ; sol: 13
-    byte $79,$29,$41,$37,$51,$58,$c9 ; sol: 12
-    byte $87,$24,$68,$35,$15,$96,$c7 ; sol: 12
-    byte $39,$98,$62,$19,$85,$47,$c7 ; sol: 13
-    byte $79,$28,$41,$46,$51,$53,$c2 ; sol: 12
-    byte $99,$85,$74,$23,$86,$74,$c1 ; sol: 14
-    byte $72,$99,$26,$17,$84,$85,$c3 ; sol: 14
-    byte $79,$29,$41,$36,$51,$58,$c1 ; sol: 13
-    byte $27,$64,$68,$35,$15,$96,$c7 ; sol: 13
-    byte $18,$39,$76,$22,$47,$85,$c5 ; sol: 14
-    byte $52,$69,$74,$11,$57,$83,$c2 ; sol: 13
-    byte $18,$39,$76,$12,$47,$85,$c3 ; sol: 13
-    byte $14,$59,$53,$86,$42,$67,$c3 ; sol: 13
-    byte $18,$39,$46,$62,$37,$85,$c5 ; sol: 14
-    byte $59,$82,$91,$36,$75,$49,$c4 ; sol: 13
-    byte $39,$95,$61,$24,$75,$59,$c4 ; sol: 14
-    byte $18,$39,$46,$62,$27,$85,$c7 ; sol: 13
-    byte $18,$39,$46,$52,$27,$85,$c1 ; sol: 14
 
 LEVELS
-    byte 4,4,4,0,0,0,52,102  ; EASY
-    byte 4,4,4,4,4,4,48,86   ; MED
-    byte 0,0,8,8,8,8,48,70   ; HARD
-    byte 0,0,0,0,0,32,48,42  ; EXTRA
+    byte 2,2,0,2,0,0,52,88   ; EASY
+    byte 2,3,0,3,0,2,48,66   ; MED
+    byte 0,5,0,7,0,4,48,50   ; HARD
+    byte 0,0,0,0,0,32,48,22  ; EXTRA
 
     ORG $FD00
 
 MAZES_8
 
-    byte $42,$69,$18,$84,$82,$37,$35,$c8 ; sol: 13
-    byte $52,$19,$83,$73,$65,$62,$69,$c4 ; sol: 15
-    byte $52,$69,$81,$79,$83,$62,$68,$c4 ; sol: 15
-    byte $82,$19,$83,$79,$35,$62,$61,$c4 ; sol: 15
-    byte $36,$86,$52,$91,$86,$27,$43,$c2 ; sol: 14
-    byte $87,$82,$53,$17,$68,$97,$14,$c9 ; sol: 14
-    byte $82,$93,$57,$61,$57,$84,$74,$c4 ; sol: 14
-    byte $74,$69,$48,$28,$36,$15,$59,$c7 ; sol: 15
-    byte $14,$69,$48,$28,$35,$35,$39,$c7 ; sol: 16
-    byte $36,$19,$48,$72,$78,$25,$67,$c4 ; sol: 13
-    byte $37,$96,$91,$25,$95,$75,$34,$c8 ; sol: 13
-    byte $28,$39,$86,$84,$24,$67,$14,$c5 ; sol: 14
-    byte $28,$47,$86,$56,$53,$69,$78,$c1 ; sol: 15
-    byte $73,$65,$59,$42,$86,$64,$13,$c6 ; sol: 15
-    byte $17,$98,$84,$25,$95,$96,$73,$c9 ; sol: 13
-    byte $35,$81,$41,$57,$93,$35,$62,$c8 ; sol: 13
-    byte $78,$39,$26,$64,$54,$67,$48,$c1 ; sol: 14
-    byte $49,$58,$21,$28,$74,$49,$86,$c3 ; sol: 13
-    byte $49,$58,$26,$97,$74,$49,$16,$c3 ; sol: 14
-    byte $69,$83,$49,$76,$32,$97,$58,$c1 ; sol: 15
-    byte $49,$58,$28,$28,$73,$29,$96,$c1 ; sol: 15
-    byte $28,$15,$86,$86,$43,$69,$78,$c5 ; sol: 13
-    byte $59,$51,$58,$72,$46,$83,$83,$c3 ; sol: 15
-    byte $28,$15,$86,$76,$63,$69,$78,$c5 ; sol: 15
-    byte $58,$39,$26,$64,$64,$67,$48,$c1 ; sol: 13
-    byte $49,$21,$83,$59,$76,$71,$34,$c8 ; sol: 15
-    byte $68,$29,$43,$57,$34,$65,$18,$c4 ; sol: 13
-    byte $76,$92,$23,$53,$96,$65,$81,$c4 ; sol: 14
-    byte $16,$49,$48,$72,$78,$85,$37,$c4 ; sol: 13
-    byte $19,$25,$39,$76,$32,$47,$58,$c3 ; sol: 14
-    byte $58,$39,$86,$24,$54,$67,$68,$c1 ; sol: 14
-    byte $56,$49,$48,$62,$79,$84,$37,$c1 ; sol: 14
+    byte $42,$69,$18,$84,$82,$37,$35,$08 ; sol: 13
+    byte $52,$19,$83,$73,$65,$62,$69,$04 ; sol: 15
+    byte $52,$69,$81,$79,$83,$62,$68,$04 ; sol: 15
+    byte $82,$19,$83,$79,$35,$62,$61,$04 ; sol: 15
+    byte $36,$86,$52,$91,$86,$27,$43,$02 ; sol: 14
+    byte $87,$82,$53,$17,$68,$97,$14,$09 ; sol: 14
+    byte $82,$93,$57,$61,$57,$84,$74,$04 ; sol: 14
+    byte $74,$69,$48,$28,$36,$15,$59,$07 ; sol: 15
+    byte $14,$69,$48,$28,$35,$35,$39,$07 ; sol: 16
+    byte $36,$19,$48,$72,$78,$25,$67,$04 ; sol: 13
+    byte $37,$96,$91,$25,$95,$75,$34,$08 ; sol: 13
+    byte $28,$39,$86,$84,$24,$67,$14,$05 ; sol: 14
+    byte $28,$47,$86,$56,$53,$69,$78,$01 ; sol: 15
+    byte $73,$65,$59,$42,$86,$64,$13,$06 ; sol: 15
+    byte $17,$98,$84,$25,$95,$96,$73,$09 ; sol: 13
+    byte $35,$81,$41,$57,$93,$35,$62,$08 ; sol: 13
+    byte $78,$39,$26,$64,$54,$67,$48,$01 ; sol: 14
+    byte $49,$58,$21,$28,$74,$49,$86,$03 ; sol: 13
+    byte $49,$58,$26,$97,$74,$49,$16,$03 ; sol: 14
+    byte $69,$83,$49,$76,$32,$97,$58,$01 ; sol: 15
+    byte $49,$58,$28,$28,$73,$29,$96,$01 ; sol: 15
+    byte $28,$15,$86,$86,$43,$69,$78,$05 ; sol: 13
+    byte $59,$51,$58,$72,$46,$83,$83,$03 ; sol: 15
+    byte $28,$15,$86,$76,$63,$69,$78,$05 ; sol: 15
+    byte $58,$39,$26,$64,$64,$67,$48,$01 ; sol: 13
+    byte $49,$21,$83,$59,$76,$71,$34,$08 ; sol: 15
+    byte $68,$29,$43,$57,$34,$65,$18,$04 ; sol: 13
+    byte $76,$92,$23,$53,$96,$65,$81,$04 ; sol: 14
+    byte $16,$49,$48,$72,$78,$85,$37,$04 ; sol: 13
+    byte $19,$25,$39,$76,$32,$47,$58,$03 ; sol: 14
+    byte $58,$39,$86,$24,$54,$67,$68,$01 ; sol: 14
+    byte $56,$49,$48,$62,$79,$84,$37,$01 ; sol: 14
 
 
 ; ----------------------------------
@@ -2191,37 +2177,37 @@ MAZES_8
     
 SYMBOL_GRAPHICS
 SYMBOL_GRAPHICS_ZERO
-    byte $0,$18,$24,$24,$24,$24,$24,$18; 8
+    byte $0,$38,$44,$44,$44,$44,$44,$38; 8
 SYMBOL_GRAPHICS_ONE
-    byte $0,$1c,$8,$8,$8,$8,$8,$18; 8
+    byte $0,$38,$10,$10,$10,$10,$10,$30; 8
 SYMBOL_GRAPHICS_TWO
-    byte $0,$3c,$20,$20,$3c,$4,$4,$3c; 8
+    byte $0,$3c,$40,$40,$78,$4,$4,$7c; 8
 SYMBOL_GRAPHICS_THREE
-    byte $0,$3c,$4,$4,$3c,$4,$4,$3c; 8
+    byte $0,$78,$4,$4,$3c,$4,$4,$78; 8
 SYMBOL_GRAPHICS_FOUR
-    byte $0,$4,$4,$4,$3c,$24,$24,$24; 8
+    byte $0,$4,$4,$4,$3c,$44,$44,$44; 8
 SYMBOL_GRAPHICS_FIVE
-    byte $0,$3c,$4,$4,$3c,$20,$20,$3c; 8
+    byte $0,$78,$4,$4,$3c,$40,$40,$7c; 8
 SYMBOL_GRAPHICS_SIX
-    byte $0,$3c,$24,$24,$3c,$20,$20,$3c; 8
+    byte $0,$38,$44,$44,$78,$40,$40,$38; 8
 SYMBOL_GRAPHICS_SEVEN
-    byte $0,$4,$4,$4,$4,$4,$4,$3c; 8
+    byte $0,$10,$10,$10,$18,$c,$4,$7c; 8
 SYMBOL_GRAPHICS_EIGHT
-    byte $0,$3c,$24,$24,$3c,$24,$24,$3c; 8
+    byte $0,$38,$44,$44,$7c,$44,$44,$38; 8
 SYMBOL_GRAPHICS_NINE
-    byte $0,$4,$4,$4,$3c,$24,$24,$3c; 8
+    byte $0,$38,$4,$4,$3c,$44,$44,$38; 8
 SYMBOL_GRAPHICS_ZARA
     byte $0,$1c,$3c,$3e,$6c,$6c,$46,$6; 8
-SYMBOL_GRAPHICS_FLAG
-    byte $0,$80,$80,$80,$88,$f8,$f8,$f0; 8
+SYMBOL_GRAPHICS_TUMBLE_0
+    byte $0,$38,$1c,$e,$3e,$7e,$7e,$68; 8
+SYMBOL_GRAPHICS_TUMBLE_1
+    byte $0,$c,$8c,$d8,$d8,$7c,$78,$38; 8
+SYMBOL_GRAPHICS_BLANK
+    byte $0,$0,$0,$0,$0,$0,$0,$0; 8
 SYMBOL_GRAPHICS_ACORN
     byte $0,$10,$38,$7c,$7c,$0,$7c,$38; 8
 SYMBOL_GRAPHICS_CROWN
     byte $0,$7c,$7c,$0,$7c,$7c,$54,$54; 8
-SYMBOL_GRAPHICS_CROSS
-    byte $0,$88,$d8,$70,$20,$70,$d8,$88; 8
-SYMBOL_GRAPHICS_BLANK
-    byte $0,$0,$0,$0,$0,$0,$0,$0; 8
 SYMBOL_GRAPHICS_EZPZ_0
     byte $0,$8e,$ec,$ee,$0,$ea,$ce,$ee; 8
 SYMBOL_GRAPHICS_EZPZ_1
@@ -2265,28 +2251,26 @@ LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
     
 TIMER_MASK
     byte $00,$00,$00,$01,$00,$01,$00,$00
-STAIR_MASK
-    byte $00,$80,$80,$80,$80,$80,$80,$80
 
     ; maze data LUT
 MAZE_PTR_LO 
     byte 0,0
     byte <MAZES_3
     byte <MAZES_4
-    byte <MAZES_5
+    byte 0
     byte <MAZES_6
-    byte <MAZES_7
+    byte 0
     byte <MAZES_8
 MAZE_PTR_HI = . - 2
     byte >MAZES_3
     byte >MAZES_4
-    byte >MAZES_5
+    byte 0
     byte >MAZES_6
-    byte >MAZES_7
+    byte 0
     byte >MAZES_8
     
 MARGINS = . - 3
-    byte 12,14,16,16,17,18
+    byte 12,14,16,16,17,17
 
 AUDIO_TRACKS ; AUDCx,AUDFx,AUDVx,T
      byte 0
