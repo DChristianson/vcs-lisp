@@ -211,6 +211,8 @@ temp_p4 ds 1
 ;   - player points in direction of travel
 ;  - gameplay 2
 ;   - tweak scoring
+;   - drop mazes 10 and 14
+;   - improved select screen (directions l/r)
 ;  - glitches
 ;   - jacked up select
 ;   - stabilize frames
@@ -223,39 +225,40 @@ temp_p4 ds 1
 ;   - player needs to be shifted based on direction
 ;   - player is floating 2 above bottom of stair
 ;   - need the ground to appear properly
+;   - select screen towers should start on left
 ; MVP
 ;  - glitches
+;   - missing step edges on left of screen (GRP1 timing)
 ;   - should be no step edge in ground
-;   - steps at bottom glitch out should be invisible
+;   - steps at bottom glitch out slightly
 ;  - visual 2
-;   - simple climb animation 
 ;   - fall tumble animation
 ;  - sounds 1
 ;   - fall down notes
 ;   - jingles on transition moments
-;  - gameplay 1
-;   - drop mazes 10 and 14
+;  - gameplay 2
 ;   - improved game start (no press button, countdown start?)
 ;   - improved win no end early (scroll up win? double press)
-;   - improved select screen (directions l/r, extra graphics?)
 ;   - way to end game when no time limit?
-;   - no fall penalty from start step
+;   - no fall penalty from start step?
 ; TODO
 ;  - sounds 2
 ;   - fugueify sounds
 ;  - sounds 3
 ;   - echo solution theme
 ;  - sprinkles 1
+;   - simple climb animation 
 ;   - select screen design
 ;   - animated squirrels in logo
 ;   - gradient sky background
 ;   - color flashes in dr
 ;   - flag at goal step?
-;  - gameplay 2
-;   - maze tweaks?
 ;  - gameplay 3
 ;   - lava (time attack) mode
 ;   - echo (dark) mode
+;  - code size
+;   - fewer size 6 mazes
+;   - algorithmic maze gen in game?
 ; NODO
 ;  - second player
 
@@ -447,19 +450,30 @@ _skip_title_audio
 _start_select
             lda #GAME_STATE_SELECT
             sta game_state
-            jsr sub_difficulty_increment
-            jmp gx_show_select
+            jmp gx_difficulty_up
 
 gx_select
             lda player_input_latch
-            eor #$8f
-            bmi _start_start
-            beq _start_skip_select
-            jsr sub_difficulty_increment
-_start_skip_select
+            bpl _gx_select_start
+            ror
+            bcs _gx_select_check_down
+            jmp gx_difficulty_up
+_gx_select_check_down
+            ror
+            bcs _gx_select_check_left
+            jmp gx_difficulty_down
+_gx_select_check_left
+            ror
+            bcs _gx_select_check_right
+            jmp gx_difficulty_down
+_gx_select_check_right
+            ror
+            bcs _gx_select_continue
+            jmp gx_difficulty_up
+_gx_select_continue
             jsr sub_galois ; cycle randomization
             jmp gx_show_select
-_start_start
+_gx_select_start
             ; bootstrap steps
             jsr sub_steps_init
             lda #GAME_STATE_START
@@ -913,13 +927,16 @@ _steps_end_jumps
             jsr sub_draw_player_step
             rts
 
-sub_difficulty_increment
-            lda difficulty_level
+gx_difficulty_up
+            lda #1
+            byte #$2c ; skip next 2 bytes
+gx_difficulty_down
+            lda #-1
             clc
-            adc #1
+            adc difficulty_level
             and #$03
             sta difficulty_level
-            asl ; x 8
+            asl ; x 8 for width of levels array
             asl ; 
             asl ; 
             tay
@@ -961,7 +978,7 @@ _sub_difficulty_skip_flight
             bpl _sub_difficulty_next_flight
             ldx temp_stack
             txs
-            rts
+            jmp gx_show_select
 
 sub_steps_advance
             ; move jump table "up" to next flight
@@ -1792,27 +1809,33 @@ gx_show_select
             sty REFP0
             jsr sub_steps_respxx
 
-            lda #$e0     
+            lda #$f0     
             sta draw_hmove_a 
             sta HMP0
-            lda #$20         
+            lda #$10         
             sta draw_hmove_b   
 
-            ldy flights_total
-            dey
+            lda flights_total
+            cmp #16
+            bmi _gx_show_select_flights_kludge
+            lsr ; halve the big flights display 
+_gx_show_select_flights_kludge
+            tay
+            dey 
 _gx_show_select_flights_loop
             lda flights,y
             lsr
             tax
+            dex
             dex
 _gx_show_select_stairs_loop
             sta WSYNC
             sta HMOVE
             lda #$18
             sta GRP0
-            sta WSYNC
-            lda #$08
-            sta GRP0
+            ; sta WSYNC
+            ; lda #$08
+            ; sta GRP0
             dex                
             bpl _gx_show_select_stairs_loop  ;2   7
             lda draw_steps_dir
@@ -1824,11 +1847,8 @@ _gx_show_select_stairs_loop
             sta draw_hmove_b                 ;3  15
             stx draw_hmove_a                 ;3  18
             stx HMP0                         ;3  21
-            tya
-            beq _gx_show_select_flights_end
-            lsr
-            tay
-            jmp _gx_show_select_flights_loop
+            dey
+            bpl _gx_show_select_flights_loop
 _gx_show_select_flights_end
             lda #0
             sta GRP0
@@ -2127,10 +2147,10 @@ STEP_COLOR
 
 
 LEVELS
-    byte 2,2,0,2,0,0,52,88   ; EASY
-    byte 2,3,0,3,0,2,48,66   ; MED
-    byte 0,5,0,7,0,4,48,50   ; HARD
-    byte 0,0,0,0,0,32,48,22  ; EXTRA
+    byte 2,2,0,2,0,0,60,97   ; EASY
+    byte 2,3,0,3,0,2,56,75   ; MED
+    byte 0,5,0,7,0,4,56,87   ; HARD
+    byte 0,0,0,0,0,32,56,5  ; EXTRA
 
     ORG $FD00
 
