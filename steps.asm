@@ -102,17 +102,18 @@ maze_ptr           ds 2
 
 ; combined player input
 ; bits: f...rldu
-player_input       ds 2
+player_input         ds 2
 ; debounced p0 input
-player_input_latch ds 1
-player_step        ds 1 ; step the player is at
-player_jump        ds 1 ; jump counter
-player_inc         ds 1 ; direction of movement
-player_goal        ds 1 ; next goal
-player_score       ds 1 ; decimal score
-player_flight      ds 1 ; current flight
-player_clock       ds 1 ; for player timer
-player_timer       ds 2 ; game timer
+player_input_latch   ds 1
+player_special_latch ds 1 ; latch for detecting sequences
+player_step          ds 1 ; step the player is at
+player_jump          ds 1 ; jump counter
+player_inc           ds 1 ; direction of movement
+player_goal          ds 1 ; next goal
+player_score         ds 1 ; decimal score
+player_flight        ds 1 ; current flight 
+player_clock         ds 1 ; for player timer
+player_timer         ds 2 ; game timer
 
 ; game state
 jump_table           ds JUMP_TABLE_BYTES 
@@ -220,6 +221,8 @@ temp_p4 ds 1
 ;   - drop mazes 10 and 14
 ;   - improved select screen (directions l/r)
 ;   - improved game start (no press button, countdown start?)
+;   - improved win no end early (scroll up win? double press)
+;   - way to end game when no time limit?
 ;  - glitches
 ;   - jacked up select
 ;   - stabilize frames
@@ -241,31 +244,28 @@ temp_p4 ds 1
 ;   - jingles on transition moments
 ;  - glitches
 ;   - should be no step edge in ground
-;  - gameplay 2
-;   - improved win no end early (scroll up win? double press)
-;   - way to end game when no time limit?
-;   - no fall penalty from start step?
 ; TODO
+;  - gameplay 3
+;   - lava (time attack) mode
+;   - echo (dark) mode
 ;  - sounds 2
 ;   - fugueify sounds
 ;  - sounds 3
 ;   - echo solution theme
 ;  - sprinkles 1
-;   - simple climb animation 
 ;   - select screen design
+;   - some kind of celebration on win
 ;   - animated squirrels in logo
 ;   - gradient sky background
 ;   - color flashes in dr
-;  - gameplay 3
-;   - lava (time attack) mode
-;   - echo (dark) mode
+;   - simple climb animation 
 ;  - code size
 ;   - fewer size 6 mazes
 ;   - algorithmic maze gen?
 ; NODO
 ;  - second player
 ;  - flag at goal step?
-
+;   - no fall penalty from start step?
 
 ; ----------------------------------
 ; code
@@ -517,13 +517,16 @@ _start_game
 gx_win    
             lda frame
             sta COLUP0
-            sta COLUP1
-            lda player_input_latch
-            eor #$8f
-            bne _reset_game
+            ; wait for song
+            lda audio_tracker
+            bne _wait_for_reset
+            ; on button press restart
+            bit player_input_latch
+            bpl _reset_game
+_wait_for_reset
             jmp gx_continue
 _reset_game
-            jmp Reset ; BUGBUG - more smart reset?
+            jmp Reset
 
 gx_climb
             lda #<SYMBOL_GRAPHICS_ZARA
@@ -532,6 +535,9 @@ gx_update
             ldx player_step
             jsr sub_step_getx
             tay
+            lda player_input
+            bpl _gx_update_special_latch
+            sta player_special_latch
             lda player_input_latch
             ror
             bcs _gx_update_check_down
@@ -554,6 +560,12 @@ _gx_update_check_right
             bmi _gx_update_rev_right
 _gx_update_rev_left
             jmp gx_go_up
+_gx_update_special_latch
+            and player_special_latch
+            sta player_special_latch
+            bne gx_update_return
+            ; if we hit all the switches, exit
+            jmp Reset
 gx_update_return
 
             ldx #1
@@ -1031,7 +1043,6 @@ sub_steps_advance
             ; move jump table "up" to next flight
             ldy player_flight
             lda flights,y
-            beq sub_steps_win
             lsr
             tax
             lda MARGINS,x
@@ -1057,6 +1068,7 @@ _sub_steps_advance_save
             lda #0
             sta player_step
             lda flights,y
+            beq sub_steps_win
             jsr sub_gen_steps
             lda #GAME_STATE_CLIMB
             sta game_state
@@ -2196,7 +2208,7 @@ STEP_COLOR
 
 
 LEVELS
-    byte 2,2,0,2,0,0,60,97   ; EASY
+    byte 3,2,0,2,0,0,60,95   ; EASY
     byte 2,3,0,3,0,2,56,75   ; MED
     byte 0,5,0,7,0,4,56,87   ; HARD
     byte 0,0,0,0,0,32,56,5  ; EXTRA
@@ -2338,8 +2350,8 @@ MAZE_PTR_HI = . - 2
     byte 0
     byte >MAZES_8
     
-MARGINS = . - 3
-    byte 12,14,16,16,17,17
+MARGINS
+    byte 5,6,6,12,14,16,16,17,17
 
 AUDIO_TRACKS ; AUDCx,AUDFx,AUDVx,T
      byte 0
