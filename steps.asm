@@ -23,6 +23,7 @@ CLOUD_ORANGE = $22
 GREY_SCALE = $02 
 WHITE_WATER = $0A
 EARTH_BROWN = $F1
+TIMER_RED = $4f
 GREEN = $B3
 RED = $43
 YELLOW = $1f
@@ -41,6 +42,7 @@ CLOUD_ORANGE = $44
 GREY_SCALE = $02 
 WHITE_WATER = $0A
 EARTH_BROWN = $21
+TIMER_RED = $6f
 GREEN = $72
 RED = $65
 YELLOW = $2E
@@ -66,6 +68,8 @@ JUMP_TABLE_BYTES = JUMP_TABLE_SIZE / 2
 
 FLIGHTS_TABLE_SIZE = 32
 FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
+
+GAME_START_SECONDS = 5
 
 GAME_STATE_TITLE   = 0
 GAME_STATE_SELECT  = 1
@@ -139,8 +143,9 @@ draw_base_lr        ds 1 ; base of steps lr position
 draw_player_dir     ds 1 ; player travel direction
 draw_flight_offset  ds 1 ; flight to start at
 draw_step_offset    ds 1 ; what step do we start drawing at
-draw_ground_counter ds 1 ; how far to ground counter
+draw_ground_color   ds 1 ; ground color
 draw_lava_counter   ds 1 ; how far to lava counter
+draw_player_sprite  ds 1 
 draw_table          ds DRAW_TABLE_BYTES
 draw_s0_addr        ds 2
 draw_s1_addr        ds 2
@@ -209,10 +214,12 @@ temp_p4 ds 1
 ;   - no zeros on stairs
 ;   - highest step has crown
 ;   - player points in direction of travel
+;   - fall tumble animation
 ;  - gameplay 2
 ;   - tweak scoring
 ;   - drop mazes 10 and 14
 ;   - improved select screen (directions l/r)
+;   - improved game start (no press button, countdown start?)
 ;  - glitches
 ;   - jacked up select
 ;   - stabilize frames
@@ -226,18 +233,15 @@ temp_p4 ds 1
 ;   - player is floating 2 above bottom of stair
 ;   - need the ground to appear properly
 ;   - select screen towers should start on left
-; MVP
-;  - glitches
 ;   - missing step edges on left of screen (GRP1 timing)
-;   - should be no step edge in ground
-;   - steps at bottom glitch out slightly
-;  - visual 2
-;   - fall tumble animation
+;   - steps at bottom glitch out with direction change
+; MVP
 ;  - sounds 1
 ;   - fall down notes
 ;   - jingles on transition moments
+;  - glitches
+;   - should be no step edge in ground
 ;  - gameplay 2
-;   - improved game start (no press button, countdown start?)
 ;   - improved win no end early (scroll up win? double press)
 ;   - way to end game when no time limit?
 ;   - no fall penalty from start step?
@@ -252,15 +256,16 @@ temp_p4 ds 1
 ;   - animated squirrels in logo
 ;   - gradient sky background
 ;   - color flashes in dr
-;   - flag at goal step?
 ;  - gameplay 3
 ;   - lava (time attack) mode
 ;   - echo (dark) mode
 ;  - code size
 ;   - fewer size 6 mazes
-;   - algorithmic maze gen in game?
+;   - algorithmic maze gen?
 ; NODO
 ;  - second player
+;  - flag at goal step?
+
 
 ; ----------------------------------
 ; code
@@ -430,8 +435,19 @@ GX_JUMP_HI
     byte >(gx_fall-1)
     byte >(gx_win-1)
 
-gx_scroll
 gx_fall
+            lda frame
+            and #$0f
+            bne gx_jump
+            lda draw_player_sprite
+            clc
+            adc #8
+            cmp #<(SYMBOL_GRAPHICS_TUMBLE_1 + 8)
+            bne _gx_fall_save_spin
+            lda #<SYMBOL_GRAPHICS_ZARA
+_gx_fall_save_spin
+            sta draw_player_sprite
+gx_scroll
 gx_jump
             ; continue from wherever we were
             rts
@@ -478,12 +494,18 @@ _gx_select_start
             jsr sub_steps_init
             lda #GAME_STATE_START
             sta game_state
+            lda #GAME_START_SECONDS
+            sta player_timer
             jmp gx_continue
 
 gx_start    
-            ; start of climb
-            bit player_input_latch
-            bpl _start_game
+            lda #<SYMBOL_GRAPHICS_ZARA
+            sta draw_player_sprite
+            ; countdown to start climb
+            ldx #-1
+            jsr gx_player_clock
+            lda player_timer
+            beq _start_game
             jmp gx_continue
 _start_game
             lda #TRACK_START_GAME
@@ -504,6 +526,8 @@ _reset_game
             jmp Reset ; BUGBUG - more smart reset?
 
 gx_climb
+            lda #<SYMBOL_GRAPHICS_ZARA
+            sta draw_player_sprite
 gx_update
             ldx player_step
             jsr sub_step_getx
@@ -532,29 +556,8 @@ _gx_update_rev_left
             jmp gx_go_up
 gx_update_return
 
-gx_player_clock    
-            lda player_clock
-            clc
-            adc #1
-            cmp #CLOCK_HZ
-            bmi _clock_save
-            sed
-            lda player_timer
-            clc
-            adc #1
-            cmp #$60
-            bne _clock_save_sec
-            lda #0
-            sec
-_clock_save_sec
-            sta player_timer
-            lda player_timer + 1
-            adc #0
-            sta player_timer + 1
-            cld
-            lda #0
-_clock_save
-            sta player_clock 
+            ldx #1
+            jsr gx_player_clock
 
 gx_continue
             jsr sub_calc_respx
@@ -575,11 +578,11 @@ gx_continue
             lda draw_flight_offset
             ora draw_step_offset
             bne _gx_continue_ground_calc
-            lda #0
+            lda #GROUND_COLOR
             byte #$2c ; skip next 2 bytes
 _gx_continue_ground_calc
-            lda #$ff
-            sta draw_ground_counter
+            lda #SKY_BLUE
+            sta draw_ground_color
             lda #90
             sta draw_lava_counter
 
@@ -602,10 +605,11 @@ _gx_steps_resp_skip_invert
 gx_step_draw           
             ldy draw_steps_wsync
             sty draw_bugbug_margin
-            ldy #$ff
+            ldy #$0
             sty draw_bugbug_margin_2
             ldx #(DRAW_TABLE_SIZE - 1)
             sta WSYNC
+            sta WSYNC ; shim
             jmp sub_write_stair_b
 _gx_step_draw_loop
 
@@ -616,7 +620,7 @@ sub_write_stair_a
             ldy draw_hmove_next               ;3   6
             sty HMP0                          ;3   9
             cpy draw_hmove_a                  ;3  12
-            sta WSYNC
+            sta WSYNC                         ; max here is 68
             beq ._gx_draw_skip_flip           ;2   2
             eor #$81                          ;2   4
             sta draw_steps_mask               ;3   7
@@ -635,50 +639,43 @@ sub_write_stair_b
             ; phg.ssss
             lda draw_table,x                  ;4  35
             ; get player graphic 
-            ldy #(<SYMBOL_GRAPHICS_BLANK) + 1 ;2  37
+            ldy #(<SYMBOL_GRAPHICS_BLANK)     ;2  37
             asl                               ;2  39
             bcc ._gx_draw_set_p0              ;2  41
-            ldy #(<SYMBOL_GRAPHICS_ZARA) + 1  ;2  43
+            ldy draw_player_sprite            ;3  44
 ._gx_draw_set_p0
-            sty draw_s0_addr                  ;3  46
+            sty draw_s0_addr                  ;3  47
             ; swap directions
-            asl                               ;2  48
-            ldy draw_hmove_a                  ;3  51
-            bcc ._gx_draw_end_swap_direction  ;2  53 
-            ldy draw_hmove_b                  ;3  56
+            asl                               ;2  49
+            ldy draw_hmove_a                  ;3  52
+            bcc ._gx_draw_end_swap_direction  ;2  54
+            ldy draw_hmove_b                  ;3  57
 ._gx_draw_end_swap_direction
-            sty draw_hmove_next               ;3  59
+            sty draw_hmove_next               ;3  60
             ; shift ground bit, check later
-            asl                               ;2  61
+            asl                               ;2  62
             ; get step graphic
-            bne ._gx_draw_skip_blank          ;2  63
-            lda #<SYMBOL_GRAPHICS_BLANK       ;2  65
+            bne ._gx_draw_skip_blank          ;2  64
+            lda #<SYMBOL_GRAPHICS_BLANK       ;2  66
 ._gx_draw_skip_blank
-            ldy STEP_COLOR,x                  ;4  69
-            bcc ._gx_draw_alt_color           ;2  71
-            ldy #SKY_BLUE                     ;2  73 ; NOTE: very tight timing
+            sta draw_s1_addr                  ;3  69
+            ldy STEP_COLOR,x                  ;4  73 - 5
+            bcc ._gx_draw_alt_color           ;2  75 - 5
+            ldy #SKY_BLUE                     ;2  77 - 5; NOTE: very tight timing, current max 72
 ._gx_draw_alt_color
-            sta WSYNC
+            sta WSYNC                         ; 
             sta HMOVE                         ;3   3
             sty COLUP1                        ;3   6
-            clc                               ;2   8
-            adc #1                            ;2   9 ; shift up one
-            sta draw_s1_addr                  ;3  10
+            lda draw_colubk                   ;3  16
+            sta COLUBK                        ;3  19
 
-            cpx draw_ground_counter
-            bne ._gx_draw_skip_ground
-            lda #GROUND_COLOR
-            sta COLUBK
-            sta draw_colubk
-._gx_draw_skip_ground
-
-            ldy draw_bugbug_margin
-            cpy draw_bugbug_margin_2
-            beq ._gx_draw_skip_stair
-            cpx  #(DRAW_TABLE_SIZE - 1)
-            beq _gx_draw_loop
-            lda #$ff
-            sta GRP1
+            ldy draw_bugbug_margin            ;3  22
+            cpy draw_bugbug_margin_2          ;3  25
+            beq ._gx_draw_skip_stair          ;2  27
+            cpx  #(DRAW_TABLE_SIZE - 1)       ;2
+            beq _gx_draw_loop                 ;2
+            lda #$ff                          ;2
+            sta GRP1                          ;3
 
 _gx_draw_loop
 
@@ -713,11 +710,12 @@ sub_draw_stair
             dex 
             bmi gx_timer
             bne ._gx_draw_skip_stop
+            lda draw_ground_color 
+            sta draw_colubk
             ldy draw_steps_wsync
-            dey
 ._gx_draw_skip_stop
             sty draw_bugbug_margin_2
-            ldy #CHAR_HEIGHT - 1
+            ldy #CHAR_HEIGHT
             sty draw_bugbug_margin
             jmp _gx_step_draw_loop
 
@@ -750,6 +748,14 @@ gx_timer
             sta WSYNC
             sta HMOVE
             lda #WHITE
+            ldx game_state
+            cpx #GAME_STATE_START
+            bne _gx_timer_color
+            lda player_clock
+            lsr
+            lsr
+            eor #TIMER_RED
+_gx_timer_color
             sta COLUP0
             sta COLUP1
             ldy #(CHAR_HEIGHT) ; go one higher
@@ -869,6 +875,12 @@ _steps_draw_clear_loop
 sub_steps_flights
             ; add flight markers
             ldy draw_flight_offset
+            beq _steps_draw_first
+            lda draw_step_offset         
+            bne _steps_draw_first
+            lda #$40
+            sta draw_table + 1
+_steps_draw_first
             lda draw_step_offset; current step
 _steps_draw_flights
             sta draw_bugbug_margin
@@ -925,6 +937,41 @@ _steps_draw_goal_skip
             bpl _steps_draw_jumps
 _steps_end_jumps
             jsr sub_draw_player_step
+            rts
+
+gx_player_clock    
+            ; x = 1 or -1 for count up or down
+            ; does not handle counting down minutes
+            lda player_clock
+            clc
+            adc #1
+            cmp #CLOCK_HZ
+            bmi _clock_save
+            sed
+            lda player_timer
+            cpx #0
+            bpl _clock_add
+            sec
+            sbc #1
+            sta player_timer
+            jmp _clock_save_out
+_clock_add
+            clc
+            adc #1
+            cmp #$60
+            bne _clock_save_sec
+            lda #0
+            sec
+_clock_save_sec
+            sta player_timer
+            lda player_timer + 1
+            adc #0
+            sta player_timer + 1
+_clock_save_out
+            cld
+            lda #0
+_clock_save
+            sta player_clock 
             rts
 
 gx_difficulty_up
@@ -1034,6 +1081,13 @@ sub_steps_scroll
             bne _sub_scroll_cont
             dec jump_table_offset 
             ldy draw_flight_offset
+            beq _sub_scroll_landing_skip
+            lda draw_step_offset
+            bne _sub_scroll_landing_skip
+            lda draw_base_dir
+            eor #$ff
+            sta draw_base_dir
+_sub_scroll_landing_skip
             dec draw_step_offset
             lda #-1
             bit draw_base_dir
@@ -1051,9 +1105,6 @@ _sub_scroll_lr_calc
             bne _sub_scroll_update
             iny
             sty draw_flight_offset
-            lda draw_base_dir
-            eor #$ff
-            sta draw_base_dir
             lda #0
             sta draw_step_offset
 _sub_scroll_update
@@ -1062,6 +1113,49 @@ _sub_scroll_cont
             lda #GAME_STATE_SCROLL
             sta game_state
             jmp gx_continue ; will continue later
+
+sub_steps_respxx
+            ; a is respx, y is direction
+            sec
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop       ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            tya                     ;2   19
+            sbpl _respxx_swap        ;2   21
+            sta.w RESP0             ;4   25
+            sta RESP1               ;3   28
+            sta WSYNC               ;
+            sta HMOVE               ;3    3
+            lda #$70                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$90                ;2   10
+            sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
+            lda #$10                ;2   
+            sta HMP0                ;3   
+            lda #$30
+            sta HMP1                ;3   
+            rts                     ;6   
+_respxx_swap            
+            sta RESP1               ;3   25
+            sta RESP0               ;3   28
+            sta WSYNC
+            sta HMOVE
+            lda #$90                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$70                ;2   10
+            sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
+            lda #$30                ;3   
+            sta HMP0                ;3   
+            lda #$10                ;3   
+            sta HMP1                ;3   
+            rts                     ;6  
 
 sub_calc_respx
             ldx #0
@@ -1108,50 +1202,7 @@ _calc_respx_end
             ldy #$80
 _calc_respx_mask
             sty draw_steps_mask
-            rts
-
-sub_steps_respxx
-            ; a is respx, y is direction
-            sec
-            sta WSYNC               ; --
-_respxx_loop
-            sbc #15                 ;2    2
-            sbcs _respxx_loop       ;2/3  4
-            tax                     ;2    6
-            lda LOOKUP_STD_HMOVE,x  ;5   11
-            sta HMP0                ;3   14
-            sta HMP1                ;3   17
-            tya                     ;2   19
-            bpl _respxx_swap        ;2   21
-            sta.w RESP0             ;4   25
-            sta RESP1               ;3   28
-            sta WSYNC               ;
-            sta HMOVE               ;3    3
-            lda #$70                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$90                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$10                ;2   
-            sta HMP0                ;3   
-            lda #$30
-            sta HMP1                ;3   
-            rts                     ;6   
-_respxx_swap            
-            sta RESP1               ;3   25
-            sta RESP0               ;3   28
-            sta WSYNC
-            sta HMOVE
-            lda #$90                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$70                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$30                ;3   
-            sta HMP0                ;3   
-            lda #$10                ;3   
-            sta HMP1                ;3   
-            rts                     ;6   
+            rts 
 
 sub_step_getx
             txa ; x has step number
@@ -1335,7 +1386,7 @@ sub_draw_player_step
 ; ----------------------------------
 ; TITLE
 
-   ORG $F600
+   ORG $F700
 
 ;BUGBUG: P not PF
 COL_A0_PF0
@@ -1546,7 +1597,7 @@ COL_BH_PF2 = COL_A5_PF0
 COL_BH_PF3 = COL_A1_PF2
 COL_BH_PF4 = COL_A0_PF0
 
-   ORG $F700
+   ORG $F800
     
 ;--------------------
 ; Title Screen Kernel
@@ -1864,7 +1915,7 @@ _gx_show_select_flights_end
 ; ----------------------------------
 ; maze data 
 
-    ORG $F900
+    ORG $FA00
 
 TITLE_ROW_0_DATA
     byte <COL_A0_PF0
@@ -2063,7 +2114,7 @@ MAZES_4
     byte $51,$21,$13,$04 ; sol: 8
     byte $52,$24,$13,$03 ; sol: 7
 
-    ORG $FA00
+    ORG $FB00
 
 MAZES_3
 
@@ -2101,7 +2152,7 @@ MAZES_3
     byte $43,$11,$04 ; w: 0.4 sol: 5
 
 
-    ORG $FB00
+    ORG $FC00
 
 MAZES_6
 
@@ -2142,8 +2193,6 @@ STEP_COLOR
     byte $0f,$1f,$2f,$3f,$4f,$5f,$6f,$7f
     byte $8f,$9f,$af,$bf,$cf,$df,$ef,$ff
     byte $0f,$1f
-
-    ORG $FC00
 
 
 LEVELS
