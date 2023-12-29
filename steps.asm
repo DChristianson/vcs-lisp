@@ -97,7 +97,6 @@ game_state         ds 1
 audio_sequence     ds 1 ; play multiple tracks in sequence
 audio_timer        ds 2 ; time to next note
 audio_tracker      ds 2 ; which note is playing
-audio_fx           ds 1 ; frequency shift
 audio_vx           ds 1 ; volume
 
 ; random var
@@ -375,9 +374,6 @@ ax_sequencer
             lda #0
             sta audio_timer + 1 ; force sync
             inx
-            lda AUDIO_SEQUENCES,x
-            sta audio_fx
-            inx
             stx audio_sequence
             
 ax_update   
@@ -399,7 +395,6 @@ _ax_next_note
             lsr                        ; KLUDGE: unused control bit (assume 0)
             lsr                        ; KLUDGE: unused control bit (assume 1)
             clc                        
-            adc audio_fx               ; add frequency delta
             sta AUDF0,x                ; store frequency
             lda audio_vx
             sta AUDV0,x
@@ -771,6 +766,8 @@ gx_overscan
 ;
 
 gx_fall
+            lda #1 ; BUGBUG: magic number (noise voice)
+            sta AUDC0
             lda frame
             and #$0f
             bne gx_jump
@@ -1327,7 +1324,7 @@ _sub_gen_steps_selected
             adc MAZE_PTR_LO,y
             sta maze_ptr
 _sub_gen_steps_loop
-            lda  #$11;(maze_ptr),y ; #$11; use to force maze of 1's
+            lda (maze_ptr),y ; #$11; use to force maze of 1's
             sta jump_table,y
             dey
             bpl _sub_gen_steps_loop
@@ -1394,7 +1391,7 @@ _gx_process_dec_jump
             sta AUDV0
             lda #8
             sta audio_timer
-            lda #4
+            lda #4 
             sta AUDC0
             lda #TRACK_WAIT
             sta audio_tracker
@@ -2394,24 +2391,24 @@ AUDIO_SEQUENCES
     byte 0
 SEQ_WIN_GAME = . - AUDIO_SEQUENCES
 SEQ_TITLE = . - AUDIO_SEQUENCES
-    byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01,0
-    byte TRACK_TITLE_1_C00,TRACK_TITLE_1_C01,0
-    byte TRACK_TITLE_2_C00,TRACK_TITLE_2_C01,0
-    byte TRACK_TITLE_3_C00,TRACK_TITLE_3_C01,0
-    byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01,0
+    byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01
+    byte TRACK_TITLE_1_C00,TRACK_TITLE_1_C01
+    byte TRACK_TITLE_2_C00,TRACK_TITLE_2_C01
+    byte TRACK_TITLE_3_C00,TRACK_TITLE_3_C01
+    byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01
     byte 0
 SEQ_START_GAME = . - AUDIO_SEQUENCES
-    byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01,0
+    byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01
     byte 0
 SEQ_SELECT_UP = . - AUDIO_SEQUENCES
-    byte TRACK_STEP_0_C00,0,0
+    byte TRACK_STEP_0_C00,0
     byte 0
 SEQ_SELECT_DOWN = . - AUDIO_SEQUENCES
-    byte TRACK_STEP_1_C00,0,0
+    byte TRACK_STEP_1_C00,0
     byte 0
 SEQ_START_SELECT = . - AUDIO_SEQUENCES
 SEQ_LANDING = . - AUDIO_SEQUENCES
-    byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01,0
+    byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01
     byte 0
 
 TRACK_FREQ_INDEX
