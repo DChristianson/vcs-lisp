@@ -66,10 +66,10 @@ DRAW_TABLE_BYTES = DRAW_TABLE_SIZE
 JUMP_TABLE_SIZE = 16
 JUMP_TABLE_BYTES = JUMP_TABLE_SIZE / 2
 
-FLIGHTS_TABLE_SIZE = 32
+FLIGHTS_TABLE_SIZE = 16
 FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
 
-GAME_START_SECONDS = 5
+GAME_START_SECONDS = 3
 
 GAME_STATE_TITLE   = 0
 GAME_STATE_SELECT  = 1
@@ -79,6 +79,8 @@ GAME_STATE_JUMP    = 4
 GAME_STATE_SCROLL  = 5
 GAME_STATE_FALL    = 6
 GAME_STATE_WIN     = 7
+
+AUDIO_VOLUME = 8
 
 ; ----------------------------------
 ; vars
@@ -92,8 +94,11 @@ frame              ds 1
 game_state         ds 1
 
 ; game audio
-audio_timer        ds 2
-audio_tracker      ds 2
+audio_sequence     ds 1 ; play multiple tracks in sequence
+audio_timer        ds 2 ; time to next note
+audio_tracker      ds 2 ; which note is playing
+audio_fx           ds 1 ; frequency shift
+audio_vx           ds 1 ; volume
 
 ; random var
 seed
@@ -115,6 +120,11 @@ player_flight        ds 1 ; current flight
 player_clock         ds 1 ; for player timer
 player_timer         ds 2 ; game timer
 
+; lava control
+lava_speed           ds 1
+lava_clock           ds 1
+lava_height          ds 1
+
 ; game state
 jump_table           ds JUMP_TABLE_BYTES 
 jump_table_end_byte  ds 1 ; last byte of jump table
@@ -126,12 +136,11 @@ difficulty_level     ds 1
 flights              ds FLIGHTS_TABLE_BYTES + 1
 flights_total        ds 1
 
-draw_colubk          ds 1
+
 draw_registers_start
 
 ; steps drawing registers
-draw_bugbug_margin  ds 1 ; temp var
-draw_bugbug_margin_2 ds 1 ; temp var
+draw_colubk         ds 1
 draw_steps_respx    ds 1
 draw_steps_dir      ds 1 ; top of steps direction
 draw_steps_mask     ds 1
@@ -155,6 +164,18 @@ draw_s3_addr        ds 2
 draw_s4_addr        ds 2
 draw_s5_addr        ds 2
 
+; temp
+temp_step_start
+temp_step_offset
+temp_margin
+temp_level_ptr
+temp_rand
+temp_y  ds 1
+temp_step_end
+temp_stack
+temp_p4 ds 1
+
+   ; draw registers for title and select screen
    ORG draw_registers_start
 
 ; title drawing registers
@@ -175,10 +196,7 @@ draw_t1_p4_addr    ds 2
 draw_t1_jump_addr  ds 2
 draw_t1_data_addr  ds 2
 
-temp_level_ptr
-temp_y  ds 1
-temp_stack
-temp_p4 ds 1
+
 
 ; DONE
 ;  - basic step display
@@ -203,6 +221,7 @@ temp_p4 ds 1
 ;   - bounce up/down notes
 ;   - landing song
 ;   - final success
+;   - jingles on transition moments
 ;  - visual 2
 ;   - time display have :
 ;   - PF gutters
@@ -238,24 +257,28 @@ temp_p4 ds 1
 ;   - select screen towers should start on left
 ;   - missing step edges on left of screen (GRP1 timing)
 ;   - steps at bottom glitch out with direction change
+;   - timer display is jacked up
+;   - countdown timer too long
+;   - pressing select mid title forces the select music not the go tune
+;   - pressing select mid title should kill all audio
 ; MVP
 ;  - sounds 1
-;   - fall down notes
-;   - jingles on transition moments
+;   - fall down should use messed up voice/detuned scale
 ;  - glitches
-;   - should be no step edge in ground
+;   - steps scale not progressive
 ; TODO
 ;  - gameplay 3
 ;   - lava (time attack) mode
 ;   - echo (dark) mode
 ;  - sounds 2
-;   - fugueify sounds
+;   - tuneup sounds
 ;  - sounds 3
 ;   - echo solution theme
 ;  - sprinkles 1
-;   - select screen design
-;   - some kind of celebration on win
-;   - animated squirrels in logo
+;   - should be no step edge in ground?
+;   - select screen design, shows lava, etc
+;   - some kind of celebration on win (fireworks?)
+;   - animated squirrels in title and select
 ;   - gradient sky background
 ;   - color flashes in dr
 ;   - simple climb animation 
@@ -285,6 +308,10 @@ CleanStart
             sta CTRLPF
             lda #$70
             sta PF0
+
+            ; audio
+            lda #AUDIO_VOLUME
+            sta audio_vx
             
             ; init RNG
             lda #17
@@ -333,6 +360,26 @@ _end_switches
             lda #SKY_BLUE
             sta draw_colubk
 
+ax_sequencer
+            ; track sequencing
+            ldx audio_sequence
+            beq ax_update
+            lda audio_tracker
+            bne ax_update
+            lda AUDIO_SEQUENCES,x
+            beq ax_update
+            sta audio_tracker
+            inx
+            lda AUDIO_SEQUENCES,x
+            sta audio_tracker + 1
+            lda #0
+            sta audio_timer + 1 ; force sync
+            inx
+            lda AUDIO_SEQUENCES,x
+            sta audio_fx
+            inx
+            stx audio_sequence
+            
 ax_update   
             ldx #NUM_AUDIO_CHANNELS - 1
 _ax_loop 
@@ -346,35 +393,39 @@ _ax_loop
 _ax_next_note
             tay
             lda AUDIO_TRACKS,y
-            beq _ax_pause
-            cmp #255
             beq _ax_stop
-            sta AUDC0,x
-            iny
-            lda AUDIO_TRACKS,y
-            sta AUDF0,x
-            iny
-            lda AUDIO_TRACKS,y
+            lsr                        ; pull first bit
+            bcs _ax_pause              ; if set go to pause
+            lsr                        ; KLUDGE: unused control bit (assume 0)
+            lsr                        ; KLUDGE: unused control bit (assume 1)
+            clc                        
+            adc audio_fx               ; add frequency delta
+            sta AUDF0,x                ; store frequency
+            lda audio_vx
             sta AUDV0,x
-            jmp _ax_next_timer
-_ax_pause
-            lda #$0
-            sta AUDC0,x
-            sta AUDV0,x
-_ax_next_timer
             iny
             lda AUDIO_TRACKS,y
+            lsr
+            lsr
+            lsr
+            lsr
+            sta AUDC0,x
+            lda AUDIO_TRACKS,y
+            and #$1f
             sta audio_timer,x
+            jmp _ax_advance
+_ax_pause   
+            sta audio_timer,x
+            lda #0
+            sta AUDV0,x
+_ax_advance
             iny
             sty audio_tracker,x
             jmp _ax_next
-_ax_stop ; got a 255
-            iny 
-            lda AUDIO_TRACKS,y ; store next track #
-            sta audio_tracker,x 
-            bne _ax_next_note ; if not zero loop back 
+_ax_stop ; got a 0 
             sta AUDV0,x
             sta audio_timer,x
+            sta audio_tracker,x
 _ax_next
             dex
             bpl _ax_loop
@@ -434,99 +485,6 @@ GX_JUMP_HI
     byte >(gx_scroll-1)
     byte >(gx_fall-1)
     byte >(gx_win-1)
-
-gx_fall
-            lda frame
-            and #$0f
-            bne gx_jump
-            lda draw_player_sprite
-            clc
-            adc #8
-            cmp #<(SYMBOL_GRAPHICS_TUMBLE_1 + 8)
-            bne _gx_fall_save_spin
-            lda #<SYMBOL_GRAPHICS_ZARA
-_gx_fall_save_spin
-            sta draw_player_sprite
-gx_scroll
-gx_jump
-            ; continue from wherever we were
-            rts
-
-gx_title
-            ; show title
-            lda audio_tracker
-            bne _skip_title_audio
-            lda #TRACK_TITLE
-            sta audio_tracker
-_skip_title_audio
-            bit player_input_latch
-            bpl _start_select
-            jsr sub_galois ; cycle randomization
-            jmp gx_show_title
-_start_select
-            lda #GAME_STATE_SELECT
-            sta game_state
-            jmp gx_difficulty_up
-
-gx_select
-            lda player_input_latch
-            bpl _gx_select_start
-            ror
-            bcs _gx_select_check_down
-            jmp gx_difficulty_up
-_gx_select_check_down
-            ror
-            bcs _gx_select_check_left
-            jmp gx_difficulty_down
-_gx_select_check_left
-            ror
-            bcs _gx_select_check_right
-            jmp gx_difficulty_down
-_gx_select_check_right
-            ror
-            bcs _gx_select_continue
-            jmp gx_difficulty_up
-_gx_select_continue
-            jsr sub_galois ; cycle randomization
-            jmp gx_show_select
-_gx_select_start
-            ; bootstrap steps
-            jsr sub_steps_init
-            lda #GAME_STATE_START
-            sta game_state
-            lda #GAME_START_SECONDS
-            sta player_timer
-            jmp gx_continue
-
-gx_start    
-            lda #<SYMBOL_GRAPHICS_ZARA
-            sta draw_player_sprite
-            ; countdown to start climb
-            ldx #-1
-            jsr gx_player_clock
-            lda player_timer
-            beq _start_game
-            jmp gx_continue
-_start_game
-            lda #TRACK_START_GAME
-            sta audio_tracker
-            lda #GAME_STATE_CLIMB
-            sta game_state
-            jmp gx_continue
-            
-gx_win    
-            lda frame
-            sta COLUP0
-            ; wait for song
-            lda audio_tracker
-            bne _wait_for_reset
-            ; on button press restart
-            bit player_input_latch
-            bpl _reset_game
-_wait_for_reset
-            jmp gx_continue
-_reset_game
-            jmp Reset
 
 gx_climb
             lda #<SYMBOL_GRAPHICS_ZARA
@@ -595,7 +553,7 @@ gx_continue
 _gx_continue_ground_calc
             lda #SKY_BLUE
             sta draw_ground_color
-            lda #90
+            lda #255 ; BUGBUG: TODO: actual lava
             sta draw_lava_counter
 
 ;---------------------
@@ -616,9 +574,9 @@ _gx_steps_resp_skip_invert
 
 gx_step_draw           
             ldy draw_steps_wsync
-            sty draw_bugbug_margin
+            sty temp_step_start
             ldy #$0
-            sty draw_bugbug_margin_2
+            sty temp_step_end
             ldx #(DRAW_TABLE_SIZE - 1)
             sta WSYNC
             sta WSYNC ; shim
@@ -681,8 +639,8 @@ sub_write_stair_b
             lda draw_colubk                   ;3  16
             sta COLUBK                        ;3  19
 
-            ldy draw_bugbug_margin            ;3  22
-            cpy draw_bugbug_margin_2          ;3  25
+            ldy temp_step_start               ;3  22
+            cpy temp_step_end                 ;3  25
             beq ._gx_draw_skip_stair          ;2  27
             cpx  #(DRAW_TABLE_SIZE - 1)       ;2
             beq _gx_draw_loop                 ;2
@@ -692,11 +650,11 @@ sub_write_stair_b
 _gx_draw_loop
 
 sub_draw_stair
-;             dec draw_lava_counter
-;             beq ._gx_draw_skip_lava
-;             lda #RED
-;             sta draw_colubk
-; ._gx_draw_skip_lava
+            dec draw_lava_counter
+            bne ._gx_draw_skip_lava
+            lda #RED
+            sta draw_colubk
+._gx_draw_skip_lava
             lda (draw_s0_addr),y
             bit player_inc
             bmi ._gx_draw_player_r
@@ -716,7 +674,7 @@ sub_draw_stair
             lda draw_colubk
             sta COLUBK
             dey
-            cpy draw_bugbug_margin_2
+            cpy temp_step_end
             bne _gx_draw_loop
 ._gx_draw_skip_stair
             dex 
@@ -726,9 +684,9 @@ sub_draw_stair
             sta draw_colubk
             ldy draw_steps_wsync
 ._gx_draw_skip_stop
-            sty draw_bugbug_margin_2
+            sty temp_step_end
             ldy #CHAR_HEIGHT
-            sty draw_bugbug_margin
+            sty temp_step_start
             jmp _gx_step_draw_loop
 
 gx_timer
@@ -756,7 +714,7 @@ gx_timer
             sta VDELP1
 
             tsx
-            stx draw_bugbug_margin
+            stx temp_stack
             sta WSYNC
             sta HMOVE
             lda #WHITE
@@ -773,7 +731,7 @@ _gx_timer_color
             ldy #(CHAR_HEIGHT) ; go one higher
 _gx_timer_loop
             sta WSYNC
-            SLEEP 3; shim
+            SLEEP 3; 
             lda (draw_s0_addr),y   ;5   5
             sta GRP0               ;3   8
             lda (draw_s1_addr),y   ;5  13
@@ -794,8 +752,8 @@ _gx_timer_loop
             stx GRP1               ;3  62
             sta GRP0               ;3  65
             dey                    ;2  67
-            bpl _gx_timer_loop     ;3  70
-            ldx draw_bugbug_margin
+            sbpl _gx_timer_loop    ;3  70
+            ldx temp_stack
             txs
 
 gx_overscan
@@ -807,6 +765,109 @@ gx_overscan
             ldx #32
             jsr sub_wsync_loop
             jmp newFrame
+
+;
+; game states
+;
+
+gx_fall
+            lda frame
+            and #$0f
+            bne gx_jump
+            lda draw_player_sprite
+            clc
+            adc #8
+            cmp #<(SYMBOL_GRAPHICS_TUMBLE_1 + 8)
+            bne _gx_fall_save_spin
+            lda #<SYMBOL_GRAPHICS_ZARA
+_gx_fall_save_spin
+            sta draw_player_sprite
+gx_scroll
+gx_jump
+            ; continue from wherever we were
+            rts
+
+gx_title
+            ; show title
+            lda audio_sequence
+            bne _skip_title_audio
+            lda #SEQ_TITLE
+            sta audio_sequence
+_skip_title_audio
+            bit player_input_latch
+            bpl _start_select
+            jsr sub_galois ; cycle randomization
+            jmp gx_show_title
+_start_select
+            lda #0
+            sta audio_tracker ; stop tracker
+            sta audio_tracker + 1; stop tracker
+            lda #SEQ_START_SELECT
+            sta audio_sequence
+            lda #GAME_STATE_SELECT
+            sta game_state
+            lda #1 ; initial difficulty
+            jmp gx_difficulty_set
+
+gx_select
+            lda player_input_latch
+            bpl _gx_select_start
+            ror
+            bcs _gx_select_check_down
+            jmp gx_difficulty_up
+_gx_select_check_down
+            ror
+            bcs _gx_select_check_left
+            jmp gx_difficulty_down
+_gx_select_check_left
+            ror
+            bcs _gx_select_check_right
+            jmp gx_difficulty_down
+_gx_select_check_right
+            ror
+            bcs _gx_select_continue
+            jmp gx_difficulty_up
+_gx_select_continue
+            jsr sub_galois ; cycle randomization
+            jmp gx_show_select
+_gx_select_start
+            ; bootstrap steps
+            jsr sub_steps_init
+            lda #GAME_STATE_START
+            sta game_state
+            lda #GAME_START_SECONDS
+            sta player_timer
+            lda #SEQ_START_GAME
+            sta audio_sequence
+            jmp gx_continue
+
+gx_start    
+            lda #<SYMBOL_GRAPHICS_ZARA
+            sta draw_player_sprite
+            ; countdown to start climb
+            ldx #-1
+            jsr gx_player_clock
+            lda player_timer
+            beq _start_game
+            jmp gx_continue
+_start_game
+            lda #GAME_STATE_CLIMB
+            sta game_state
+            jmp gx_continue
+            
+gx_win    
+            lda frame
+            sta COLUP0
+            ; wait for song
+            lda audio_tracker
+            bne _wait_for_reset
+            ; on button press restart
+            bit player_input_latch
+            bpl _reset_game
+_wait_for_reset
+            jmp gx_continue
+_reset_game
+            jmp Reset
 
 ;
 ; game control subroutines
@@ -895,10 +956,10 @@ sub_steps_flights
 _steps_draw_first
             lda draw_step_offset; current step
 _steps_draw_flights
-            sta draw_bugbug_margin
+            sta temp_step_offset
             clc
             adc flights,y
-            cmp draw_bugbug_margin
+            cmp temp_step_offset
             beq _steps_draw_last_flight
             cmp #DRAW_TABLE_SIZE
             bpl _steps_draw_flights_end
@@ -987,13 +1048,18 @@ _clock_save
             rts
 
 gx_difficulty_up
+            ldx #SEQ_SELECT_UP
             lda #1
-            byte #$2c ; skip next 2 bytes
+            jmp _sub_difficulty_save_level
 gx_difficulty_down
+            ldx #SEQ_SELECT_DOWN
             lda #-1
+_sub_difficulty_save_level
+            stx audio_sequence
             clc
             adc difficulty_level
             and #$03
+gx_difficulty_set
             sta difficulty_level
             asl ; x 8 for width of levels array
             asl ; 
@@ -1039,6 +1105,49 @@ _sub_difficulty_skip_flight
             txs
             jmp gx_show_select
 
+sub_steps_respxx
+            ; a is respx, y is direction
+            sec
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop       ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            tya                     ;2   19
+            sbpl _respxx_swap        ;2   21
+            sta.w RESP0             ;4   25
+            sta RESP1               ;3   28
+            sta WSYNC               ;
+            sta HMOVE               ;3    3
+            lda #$70                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$90                ;2   10
+            sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
+            lda #$10                ;2   
+            sta HMP0                ;3   
+            lda #$30
+            sta HMP1                ;3   
+            rts                     ;6   
+_respxx_swap            
+            sta RESP1               ;3   25
+            sta RESP0               ;3   28
+            sta WSYNC
+            sta HMOVE
+            lda #$90                ;2    5
+            sta draw_hmove_a        ;3    8
+            lda #$70                ;2   10
+            sta draw_hmove_b        ;3   13
+            SLEEP 10 ; BUGBUG: kludge
+            lda #$30                ;3   
+            sta HMP0                ;3   
+            lda #$10                ;3   
+            sta HMP1                ;3   
+            rts                     ;6  
+
 sub_steps_advance
             ; move jump table "up" to next flight
             ldy player_flight
@@ -1046,7 +1155,7 @@ sub_steps_advance
             lsr
             tax
             lda MARGINS,x
-            sta draw_bugbug_margin 
+            sta temp_margin 
             lda jump_table_size
             sec
             sbc #1
@@ -1056,7 +1165,7 @@ sub_steps_advance
             clc 
             adc flights,y
             sec
-            sbc draw_bugbug_margin
+            sbc temp_margin
             bmi _sub_steps_advance_save
 
             ; scroll
@@ -1078,8 +1187,8 @@ _sub_steps_advance_save
             jmp sub_steps_refresh ; redraw steps (will rts from there)
 
 sub_steps_win
-            lda #TRACK_WIN_GAME
-            sta audio_tracker
+            lda #SEQ_WIN_GAME
+            sta audio_sequence
             lda #GAME_STATE_WIN
             sta game_state
             rts
@@ -1126,49 +1235,6 @@ _sub_scroll_cont
             sta game_state
             jmp gx_continue ; will continue later
 
-sub_steps_respxx
-            ; a is respx, y is direction
-            sec
-            sta WSYNC               ; --
-_respxx_loop
-            sbc #15                 ;2    2
-            sbcs _respxx_loop       ;2/3  4
-            tax                     ;2    6
-            lda LOOKUP_STD_HMOVE,x  ;5   11
-            sta HMP0                ;3   14
-            sta HMP1                ;3   17
-            tya                     ;2   19
-            sbpl _respxx_swap        ;2   21
-            sta.w RESP0             ;4   25
-            sta RESP1               ;3   28
-            sta WSYNC               ;
-            sta HMOVE               ;3    3
-            lda #$70                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$90                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$10                ;2   
-            sta HMP0                ;3   
-            lda #$30
-            sta HMP1                ;3   
-            rts                     ;6   
-_respxx_swap            
-            sta RESP1               ;3   25
-            sta RESP0               ;3   28
-            sta WSYNC
-            sta HMOVE
-            lda #$90                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$70                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$30                ;3   
-            sta HMP0                ;3   
-            lda #$10                ;3   
-            sta HMP1                ;3   
-            rts                     ;6  
-
 sub_calc_respx
             ldx #0
             ldy draw_base_lr
@@ -1199,12 +1265,12 @@ _calc_respx_switch_right
             tya
             ldy #$ff
 _calc_respx_end
-            sta draw_bugbug_margin
+            sta temp_margin
             asl
             asl
             asl
             sec
-            sbc draw_bugbug_margin 
+            sbc temp_margin 
             clc 
             adc #STAIRS_MARGIN
             sta draw_steps_respx
@@ -1243,12 +1309,12 @@ sub_gen_steps
             jsr sub_galois
             and #$f8 ; 32 get top 32 bits
             beq _sub_gen_steps_selected
-            sta draw_bugbug_margin
+            sta temp_rand
             ldx #3
             lda #0
 _sub_gen_steps_mul
             asl 
-            asl draw_bugbug_margin
+            asl temp_rand
             bcc _sub_gen_steps_skip
             clc
             adc maze_ptr
@@ -1261,7 +1327,7 @@ _sub_gen_steps_selected
             adc MAZE_PTR_LO,y
             sta maze_ptr
 _sub_gen_steps_loop
-            lda (maze_ptr),y ; #$11; use to force maze of 1's
+            lda  #$11;(maze_ptr),y ; #$11; use to force maze of 1's
             sta jump_table,y
             dey
             bpl _sub_gen_steps_loop
@@ -1270,7 +1336,7 @@ _sub_gen_steps_loop
             stx player_goal
             rts
 
-sub_galois  ; 16 bit lfsr from: https://github.com/bbbradsmith/prng_6502/tree/master
+sub_galois  ; 16 bit lfsr from: https:;github.com/bbbradsmith/prng_6502/tree/master
             lda seed+1
             tay ; store copy of high byte
             ; compute seed+1 ($39>>1 = %11100)
@@ -1322,11 +1388,15 @@ gx_process_jump
             bne _gx_go_fall_up
 _gx_process_dec_jump
             tax
-            asl
-            asl
-            asl
-            clc 
-            adc #TRACK_STEP_IDX
+            lda TRACK_FREQ_INDEX,x
+            sta AUDF0
+            lda audio_vx
+            sta AUDV0
+            lda #8
+            sta audio_timer
+            lda #4
+            sta AUDC0
+            lda #TRACK_WAIT
             sta audio_tracker
             txa
             dec player_jump
@@ -1343,8 +1413,8 @@ _gx_process_jump_arrive
             cmp player_goal
             bne _gx_go_redraw_player
             ; advance
-            lda #TRACK_LANDING
-            sta audio_tracker
+            lda #SEQ_LANDING
+            sta audio_sequence
             sed
             lda player_score
             clc
@@ -1879,9 +1949,6 @@ gx_show_select
             sta draw_hmove_b   
 
             lda flights_total
-            cmp #16
-            bmi _gx_show_select_flights_kludge
-            lsr ; halve the big flights display 
 _gx_show_select_flights_kludge
             tay
             dey 
@@ -1924,10 +1991,20 @@ _gx_show_select_flights_end
 
             jmp gx_title_end
 
+; ------------------------
+; audio tracks
+
+    ORG $FA00
+
+AUDIO_TRACKS ; AUDCx,AUDFx,AUDVx,T
+     byte 0
+
+    include "_steps_tracks.asm"
+
 ; ----------------------------------
 ; maze data 
 
-    ORG $FA00
+    ORG $FB00
 
 TITLE_ROW_0_DATA
     byte <COL_A0_PF0
@@ -2126,43 +2203,6 @@ MAZES_4
     byte $51,$21,$13,$04 ; sol: 8
     byte $52,$24,$13,$03 ; sol: 7
 
-    ORG $FB00
-
-MAZES_3
-
-    byte $22,$22,$03 ; w: 0.13333333333333333 sol: 6
-    byte $31,$21,$02 ; w: 0.4 sol: 6
-    byte $14,$21,$02 ; w: 0.3 sol: 5
-    byte $43,$11,$04 ; w: 0.4 sol: 5
-    byte $21,$13,$03 ; w: 0.5 sol: 5
-    byte $44,$11,$02 ; w: 0.3 sol: 5
-    byte $32,$31,$01 ; w: 0.5 sol: 5
-    byte $43,$14,$03 ; w: 0.4 sol: 5
-    byte $44,$13,$03 ; w: 0.4 sol: 4
-    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
-    byte $24,$23,$03 ; w: 0.5 sol: 5
-    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
-    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
-    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
-    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
-    byte $14,$13,$03 ; w: 0.5 sol: 5
-    byte $34,$43,$02 ; w: 0.4 sol: 4
-    byte $43,$11,$04 ; w: 0.4 sol: 5
-    byte $21,$13,$03 ; w: 0.5 sol: 5
-    byte $44,$11,$02 ; w: 0.3 sol: 5
-    byte $32,$31,$01 ; w: 0.5 sol: 5
-    byte $43,$14,$03 ; w: 0.4 sol: 5
-    byte $44,$13,$03 ; w: 0.4 sol: 4
-    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
-    byte $24,$23,$03 ; w: 0.5 sol: 5
-    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
-    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
-    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
-    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
-    byte $14,$13,$03 ; w: 0.5 sol: 5
-    byte $34,$43,$02 ; w: 0.4 sol: 4
-    byte $43,$11,$04 ; w: 0.4 sol: 5
-
 
     ORG $FC00
 
@@ -2208,10 +2248,10 @@ STEP_COLOR
 
 
 LEVELS
-    byte 3,2,0,2,0,0,60,95   ; EASY
-    byte 2,3,0,3,0,2,56,75   ; MED
-    byte 0,5,0,7,0,4,56,87   ; HARD
-    byte 0,0,0,0,0,32,56,5  ; EXTRA
+    byte 3,2,0,2,0,0,60,96   ; EASY
+    byte 2,3,0,3,0,2,56,76   ; MED
+    byte 0,5,0,7,0,4,56,40   ; HARD
+    byte 0,0,0,0,0,16,56,6   ; EXTRA
 
     ORG $FD00
 
@@ -2349,48 +2389,102 @@ MAZE_PTR_HI = . - 2
     byte >MAZES_6
     byte 0
     byte >MAZES_8
-    
+
+AUDIO_SEQUENCES
+    byte 0
+SEQ_WIN_GAME = . - AUDIO_SEQUENCES
+SEQ_TITLE = . - AUDIO_SEQUENCES
+    byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01,0
+    byte TRACK_TITLE_1_C00,TRACK_TITLE_1_C01,0
+    byte TRACK_TITLE_2_C00,TRACK_TITLE_2_C01,0
+    byte TRACK_TITLE_3_C00,TRACK_TITLE_3_C01,0
+    byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01,0
+    byte 0
+SEQ_START_GAME = . - AUDIO_SEQUENCES
+    byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01,0
+    byte 0
+SEQ_SELECT_UP = . - AUDIO_SEQUENCES
+    byte TRACK_STEP_0_C00,0,0
+    byte 0
+SEQ_SELECT_DOWN = . - AUDIO_SEQUENCES
+    byte TRACK_STEP_1_C00,0,0
+    byte 0
+SEQ_START_SELECT = . - AUDIO_SEQUENCES
+SEQ_LANDING = . - AUDIO_SEQUENCES
+    byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01,0
+    byte 0
+
+TRACK_FREQ_INDEX
+    ; CX:4, FX:31, VX:15, D:8
+    byte 31
+    ; CX:4, FX:27, VX:15, D:8
+    byte 27
+    ; CX:4, FX:26, VX:15, D:8
+    byte 26
+    ; CX:4, FX:23, VX:15, D:8
+    byte 23
+    ; CX:4, FX:20, VX:15, D:8
+    byte 20
+    ; CX:4, FX:19, VX:15, D:8
+    byte 19
+    ; CX:4, FX:17, VX:15, D:8
+    byte 17
+    ; CX:4, FX:16, VX:15, D:8
+    byte 16
+    ; CX:4, FX:31, VX:15, D:8
+    byte 31
+    ; CX:4, FX:27, VX:15, D:8
+    byte 27
+    ; CX:4, FX:26, VX:15, D:8
+    byte 26
+    ; CX:4, FX:23, VX:15, D:8
+    byte 23
+    ; CX:4, FX:20, VX:15, D:8
+    byte 20
+    ; CX:4, FX:19, VX:15, D:8
+    byte 19
+    ; CX:4, FX:17, VX:15, D:8
+    byte 17
+    ; CX:4, FX:16, VX:15, D:8
+    byte 16
+
 MARGINS
     byte 5,6,6,12,14,16,16,17,17
 
-AUDIO_TRACKS ; AUDCx,AUDFx,AUDVx,T
-     byte 0
-TRACK_TITLE = . - AUDIO_TRACKS
-     byte $0e,$09,$0a,$08
-     byte $0e,$0f,$0a,$08
-     byte $0e,$01,$0a,$08
-     byte 255,0
-TRACK_START_GAME = . - AUDIO_TRACKS
-     byte $0e,$09,$0a,$08
-     byte $0e,$01,$0a,$08
-     byte $0e,$04,$0a,$08
-     byte 255,0
-TRACK_STEP_IDX = . - AUDIO_TRACKS
-     byte $0c,$0f,$0a,$08,255,0,0,0
-     byte $0c,$0e,$0a,$08,255,0,0,0
-     byte $0c,$0d,$0a,$08,255,0,0,0
-     byte $0c,$0c,$0a,$08,255,0,0,0
-     byte $0c,$0b,$0a,$08,255,0,0,0
-     byte $0c,$0a,$0a,$08,255,0,0,0
-     byte $0c,$09,$0a,$08,255,0,0,0
-     byte $0c,$08,$0a,$08,255,0,0,0
-     byte $0c,$07,$0a,$08,255,0,0,0
-     byte $0c,$06,$0a,$08,255,0,0,0
-     byte $0c,$05,$0a,$08,255,0,0,0
-     byte $0c,$04,$0a,$08,255,0,0,0
-     byte $0c,$03,$0a,$08,255,0,0,0
-     byte $0c,$02,$0a,$08,255,0,0,0
-     byte $0c,$01,$0a,$08,255,0,0,0
-     byte $0c,$00,$0a,$08,255,0,0,0
-TRACK_FALLING = . - AUDIO_TRACKS
-     byte $06,$2,$0a,$0f,255,0
-TRACK_LANDING = . - AUDIO_TRACKS
-     byte $06,$09,$0a,$08
-     byte $06,$01,$0a,$08
-     byte $06,$04,$0a,$08
-     byte 255,0
-TRACK_WIN_GAME = . - AUDIO_TRACKS
-     byte $06,$2,$0a,$0f,255,0
+MAZES_3
+
+    byte $22,$22,$03 ; w: 0.13333333333333333 sol: 6
+    byte $31,$21,$02 ; w: 0.4 sol: 6
+    byte $14,$21,$02 ; w: 0.3 sol: 5
+    byte $43,$11,$04 ; w: 0.4 sol: 5
+    byte $21,$13,$03 ; w: 0.5 sol: 5
+    byte $44,$11,$02 ; w: 0.3 sol: 5
+    byte $32,$31,$01 ; w: 0.5 sol: 5
+    byte $43,$14,$03 ; w: 0.4 sol: 5
+    byte $44,$13,$03 ; w: 0.4 sol: 4
+    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
+    byte $24,$23,$03 ; w: 0.5 sol: 5
+    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
+    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
+    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
+    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
+    byte $14,$13,$03 ; w: 0.5 sol: 5
+    byte $34,$43,$02 ; w: 0.4 sol: 4
+    byte $43,$11,$04 ; w: 0.4 sol: 5
+    byte $21,$13,$03 ; w: 0.5 sol: 5
+    byte $44,$11,$02 ; w: 0.3 sol: 5
+    byte $32,$31,$01 ; w: 0.5 sol: 5
+    byte $43,$14,$03 ; w: 0.4 sol: 5
+    byte $44,$13,$03 ; w: 0.4 sol: 4
+    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
+    byte $24,$23,$03 ; w: 0.5 sol: 5
+    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
+    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
+    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
+    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
+    byte $14,$13,$03 ; w: 0.5 sol: 5
+    byte $34,$43,$02 ; w: 0.4 sol: 4
+    byte $43,$11,$04 ; w: 0.4 sol: 5
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
