@@ -221,6 +221,7 @@ draw_t1_data_addr  ds 2
 ;   - landing song
 ;   - final success
 ;   - jingles on transition moments
+;   - fall down should use messed up voice/detuned scale
 ;  - visual 2
 ;   - time display have :
 ;   - PF gutters
@@ -260,11 +261,8 @@ draw_t1_data_addr  ds 2
 ;   - countdown timer too long
 ;   - pressing select mid title forces the select music not the go tune
 ;   - pressing select mid title should kill all audio
-; MVP
-;  - sounds 1
-;   - fall down should use messed up voice/detuned scale
-;  - glitches
 ;   - steps scale not progressive
+; MVP
 ; TODO
 ;  - gameplay 3
 ;   - lava (time attack) mode
@@ -1384,18 +1382,24 @@ gx_process_jump
             bcc _gx_process_dec_jump
             bne _gx_go_fall_up
 _gx_process_dec_jump
-            tax
+            tay ; set player location aside to compute audio queue
+            sec 
+            sbc player_goal
+            clc
+            adc #(JUMP_TABLE_SIZE - 1)
+            tax 
             lda TRACK_FREQ_INDEX,x
             sta AUDF0
+            lda TRACK_CHAN_INDEX,x
+            sta AUDC0
             lda audio_vx
             sta AUDV0
             lda #8
             sta audio_timer
             lda #4 
-            sta AUDC0
             lda #TRACK_WAIT
             sta audio_tracker
-            txa
+            tya
             dec player_jump
             beq _gx_process_jump_arrive
             ; continue movement
@@ -2412,38 +2416,17 @@ SEQ_LANDING = . - AUDIO_SEQUENCES
     byte 0
 
 TRACK_FREQ_INDEX
-    ; CX:4, FX:31, VX:15, D:8
-    byte 31
-    ; CX:4, FX:27, VX:15, D:8
-    byte 27
-    ; CX:4, FX:26, VX:15, D:8
-    byte 26
-    ; CX:4, FX:23, VX:15, D:8
-    byte 23
-    ; CX:4, FX:20, VX:15, D:8
-    byte 20
-    ; CX:4, FX:19, VX:15, D:8
-    byte 19
-    ; CX:4, FX:17, VX:15, D:8
-    byte 17
-    ; CX:4, FX:16, VX:15, D:8
-    byte 16
-    ; CX:4, FX:31, VX:15, D:8
-    byte 31
-    ; CX:4, FX:27, VX:15, D:8
-    byte 27
-    ; CX:4, FX:26, VX:15, D:8
-    byte 26
-    ; CX:4, FX:23, VX:15, D:8
-    byte 23
-    ; CX:4, FX:20, VX:15, D:8
-    byte 20
-    ; CX:4, FX:19, VX:15, D:8
-    byte 19
-    ; CX:4, FX:17, VX:15, D:8
-    byte 17
-    ; CX:4, FX:16, VX:15, D:8
-    byte 16
+    ; byte 31
+    ; byte 27
+    ; byte 26
+    byte 26,23,21,19,15,13,10
+    byte 27,26,23,20,19,17,16,15,11
+    ;byte 9
+
+
+TRACK_CHAN_INDEX
+    byte 12,12,12,12,12,12,12
+    byte 4,4,4,4,4,4,4,4,4,4
 
 MARGINS
     byte 5,6,6,12,14,16,16,17,17
