@@ -102,7 +102,6 @@ audio_vx           ds 1 ; volume
 ; random var
 seed
 random             ds 2
-maze_ptr           ds 2
 
 ; combined player input
 ; bits: f...rldu
@@ -144,9 +143,6 @@ draw_steps_respx    ds 1
 draw_steps_dir      ds 1 ; top of steps direction
 draw_steps_mask     ds 1
 draw_steps_wsync    ds 1 ; amount to shim steps up/down
-draw_hmove_a        ds 1 ; initial HMOVE
-draw_hmove_b        ds 1 ; reverse HMOVE
-draw_hmove_next     ds 1 ; next queued HMOVE
 draw_base_dir       ds 1 ; base of steps direction
 draw_base_lr        ds 1 ; base of steps lr position
 draw_player_dir     ds 1 ; player travel direction
@@ -156,6 +152,11 @@ draw_ground_color   ds 1 ; ground color
 draw_lava_counter   ds 1 ; how far to lava counter
 draw_player_sprite  ds 1 
 draw_table          ds DRAW_TABLE_BYTES
+
+; draw vars used during draw kernels
+draw_hmove_a        ds 1 ; initial HMOVE
+draw_hmove_b        ds 1 ; reverse HMOVE
+draw_hmove_next     ds 1 ; next queued HMOVE
 draw_s0_addr        ds 2
 draw_s1_addr        ds 2
 draw_s2_addr        ds 2
@@ -163,11 +164,12 @@ draw_s3_addr        ds 2
 draw_s4_addr        ds 2
 draw_s5_addr        ds 2
 
-; temp
+; temp vars
 temp_step_start
 temp_step_offset
 temp_margin
-temp_level_ptr
+temp_level_ptr    ; (ds 2)
+temp_maze_ptr     ; (ds 2)
 temp_rand
 temp_y  ds 1
 temp_step_end
@@ -194,8 +196,6 @@ draw_t1_p3_addr    ds 2
 draw_t1_p4_addr    ds 2
 draw_t1_jump_addr  ds 2
 draw_t1_data_addr  ds 2
-
-
 
 ; DONE
 ;  - basic step display
@@ -262,26 +262,32 @@ draw_t1_data_addr  ds 2
 ;   - pressing select mid title forces the select music not the go tune
 ;   - pressing select mid title should kill all audio
 ;   - steps scale not progressive
-; MVP
+;  - MVP DONE
 ; TODO
-;  - gameplay 3
-;   - lava (time attack) mode
-;   - echo (dark) mode
-;  - sounds 2
-;   - tuneup sounds
+;  - code size
+;   - shrink or remove flights array
+;   - fewer size 6 mazes
+;   - algorithmic maze gen
 ;  - sounds 3
 ;   - echo solution theme
+;  - gameplay 3
+;   - button press plays solution
+;   - lava (time attack) mode - steps "catch fire"?
+;   - echo (dark) mode - limited step visibility
+;   - stair swapping
+;   - maze changing mechanic
 ;  - sprinkles 1
-;   - should be no step edge in ground?
 ;   - select screen design, shows lava, etc
+;   - jump animation 
+;   - should be no step edge in ground?
 ;   - some kind of celebration on win (fireworks?)
+;   - some kind of graphic in sky (cloud? bird?)
 ;   - animated squirrels in title and select
+;   - screen transitions if possible
 ;   - gradient sky background
-;   - color flashes in dr
-;   - simple climb animation 
-;  - code size
-;   - fewer size 6 mazes
-;   - algorithmic maze gen?
+;   - color flashes in titles
+;  - sounds 2
+;   - tuneup sounds
 ; NODO
 ;  - second player
 ;  - flag at goal step?
@@ -1291,16 +1297,63 @@ _step_get_lo
             and #$0f
             rts 
 
+; sub_solve_puzzle
+;             lda #0
+;             ldx #15
+; _sub_solve_clear_map
+;             sta depth_map,x
+;             dex
+;             bpl _sub_solve_clear_map
+;             inx
+;             ldy #0
+; _sub_solve_iter_down
+;             stx temp_step_current
+;             jsr sub_step_getx
+;             sta temp_step_jump
+;             txa
+;             clc 
+;             adc temp_step_jump
+;             cmp jump_table_size
+;             beq _sub_solved
+;             bpl _sub_solve_minus
+;             tax
+;             lda depth_map,x
+;             bne _sub_solve_minus
+; _sub_solve_next
+;             pha
+;             iny
+;             sty depth_map,x
+;             jmp _sub_solve_iter
+; _sub_solve_minus
+;             lda temp_step_current
+; _sub_solve_iter_up
+;             ; sec
+;             ; sbc temp_step_jump
+;             ; bmi _sub_solve_up
+;             ; tax
+;             ; lda depth_map,x
+;             ; beq _sub_solve_next
+;             ; pla
+;             ; dey
+;             ; beq _sub_solve_failed
+;             ; tax
+;             ; jsr sub_step_getx
+;             ; sta temp_step_jump
+;             ; tax
+; _sub_solve_failed
+; _sub_solved
+
+
 sub_gen_steps
             sta jump_table_size
             lsr
-            sta maze_ptr ; save for multiply
+            sta temp_maze_ptr ; save for multiply
             sec
             sbc #1
             sta jump_table_end_byte
             tay
             lda MAZE_PTR_HI,y
-            sta maze_ptr + 1
+            sta temp_maze_ptr + 1
             jsr sub_galois
             and #$f8 ; 32 get top 32 bits
             beq _sub_gen_steps_selected
@@ -1312,7 +1365,7 @@ _sub_gen_steps_mul
             asl temp_rand
             bcc _sub_gen_steps_skip
             clc
-            adc maze_ptr
+            adc temp_maze_ptr
 _sub_gen_steps_skip
             dex 
             bpl _sub_gen_steps_mul
@@ -1320,9 +1373,9 @@ _sub_gen_steps_selected
             clc
             ldy jump_table_end_byte
             adc MAZE_PTR_LO,y
-            sta maze_ptr
+            sta temp_maze_ptr
 _sub_gen_steps_loop
-            lda (maze_ptr),y ; #$11; use to force maze of 1's
+            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
             sta jump_table,y
             dey
             bpl _sub_gen_steps_loop
