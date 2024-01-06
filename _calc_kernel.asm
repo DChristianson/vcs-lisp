@@ -28,25 +28,25 @@ sub_draw_accumulator
             sta HMP1                    ;3   6
             sta HMOVE                   ;3   9
 
-            ldy #CHAR_HEIGHT - 1         ;2  70
+            ldy #CHAR_HEIGHT - 1        ;2  70
 _accumulator_draw_loop    ; 40/41 w page jump
-            sta WSYNC                    ;-   --
-            lda (gx_s2_addr),y         ;5    5
-            sta GRP0                     ;3    8
-            lda (gx_s3_addr),y         ;5   13
-            sta GRP1                     ;3   16
-            lda (gx_s4_addr),y         ;5   21
-            sta GRP0                     ;3   24
+            sta WSYNC                   ;-   --
+            lda (gx_s2_addr),y          ;5    5
+            sta GRP0                    ;3    8
+            lda (gx_s3_addr),y          ;5   13
+            sta GRP1                    ;3   16
+            lda (gx_s4_addr),y          ;5   21
+            sta GRP0                    ;3   24
             SLEEP 19                    ;----
-            lda #0                       ;5   31
-            sta GRP1                     ;3   34
-            sta GRP0                     ;3   37 
-            dey                          ;2   39  
-            bpl _accumulator_draw_loop   ;2   41  
+            lda #0                      ;5   31
+            sta GRP1                    ;3   34
+            sta GRP0                    ;3   37 
+            dey                         ;2   39  
+            bpl _accumulator_draw_loop  ;2   41  
             sta WSYNC
             lda #0
             sta NUSIZ0
             sta NUSIZ1
-            sta VDELP0                              ;3
-            sta VDELP1                              ;3
+            sta VDELP0                  ;3
+            sta VDELP1                  ;3
             rts

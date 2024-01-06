@@ -101,10 +101,10 @@ BUGS
     - complex program takes too long to analyze in vblank
 BETA
   - dev support
-     - self hosted javatari page
-       - allow load/save of programs
+     - self hosted stellerator page
        - display and editing of programs as text
-       - allow keyboard controller
+       - allow load/save of programs
+       - keyboard controller support
      - gitlab deployment
      - some way to do unit tests (stellerator debugger?)
   - game modes 2
@@ -112,6 +112,7 @@ BETA
         - changes color with different beeps
         - stable framerate both repl and eval
         - be able to handle DSS generative examples as demos
+          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
       - ball game
         - draw paddles
         - move paddles
@@ -136,9 +137,9 @@ BETA
       - calc
         - stable framerate both repl and eval
   - menu 
-        - mode switch show all the names of modes
-        - allow for selection without actually switching
-        - allow cyclical switching
+      - mode switch show all the names of modes
+      - allow for selection without actually switching
+      - allow cyclical switching
   - virtual keyboard 3
       - extend to all commands
       - can only see numbers in number mode
