@@ -266,16 +266,26 @@ draw_t1_data_addr  ds 2
 ; TODO
 ;  - code size
 ;   - shrink or remove flights array
+;   - optimize title screen
 ;   - fewer size 6 mazes
 ;   - algorithmic maze gen
 ;  - sounds 3
 ;   - echo solution theme
+;  - visual 3
+;   - addressible colors on stairs
+;   - size 1 stairs no number?
 ;  - gameplay 3
 ;   - button press plays solution
 ;   - lava (time attack) mode - steps "catch fire"?
 ;   - echo (dark) mode - limited step visibility
-;   - stair swapping
+;   - zero / missing steps in mazes
+;   - breakable stairs - 1 or two touches cause break?
+;   - stair swapping mechanic
 ;   - maze changing mechanic
+;      ****T G
+;      ***T2 G
+;      **2T3G
+;   - flight jumping mechanic
 ;  - sprinkles 1
 ;   - select screen design, shows lava, etc
 ;   - jump animation 
@@ -930,13 +940,13 @@ _steps_addr_loop
             ; get horizontal offset
             lda #22
             sec
-            sbc flights
+            sbc flights ; first flight
             lsr
             sta draw_base_lr
             ; jump init
             lda #$ff
             sta draw_base_dir
-            lda flights
+            lda flights ; first flight
             jsr sub_gen_steps
 sub_steps_refresh
             ; clear draw table
@@ -1524,104 +1534,124 @@ sub_draw_player_step
 
    ORG $F700
 
-;BUGBUG: P not PF
 COL_A0_PF0
-    byte $0,$0,$0;,$0,$0,$0,$0,$0; 8
-COL_A8_PF2
-    byte $0,$0,$0,$0,$0;,$1,$1,$1; 8
-COL_A6_PF2
-    byte $1,$1,$1,$1,$1,$1,$1,$1; 8
+    byte $0,$0,$0,$0,$0,$0,$0,$0; 8
+COL_A1_PF1
+    byte $80,$c0,$e0,$f0,$f8,$fc,$fe;,$ff; 8
 COL_A0_PF1
-    byte $7f,$3f,$1f,$f,$7,$3,$1,$0; 8
+    byte $ff,$7f,$3f,$1f,$f,$7,$3,$1; 8
 COL_A0_PF2
-    byte $2,$82,$c2,$e2,$f2,$fa,$fe,$fe; 8
+    byte $81,$c1,$e1,$f1,$f9,$fd,$ff;,$ff; 8
+COL_A2_PF0
+    byte $ff;,$80,$80,$80,$80,$80,$80,$80; 8
+COL_A2_PF1
+    byte $80;,$80,$80,$80,$80,$80,$80,$80; 8
+COL_BC_PF1
+    byte $80,$80,$80,$80,$80,$80,$80;,$84; 8
+COL_A5_PF3
+    byte $84,$c4,$a4,$94,$8c,$84;,$80,$80; 8
+COL_AA_PF5
+    byte $80,$80,$80,$80,$80,$84,$86;,$87; 8
+COL_A9_PF5
+    byte $87,$87,$87,$83,$81,$80,$80,$84; 8
 COL_A0_PF3 = COL_A0_PF0
 COL_A0_PF4 = COL_A0_PF0
 COL_A0_PF5 = COL_A0_PF0
-
+COL_B0_PF0 = COL_A0_PF0
+COL_B0_PF1 = COL_A0_PF0
+COL_B0_PF2 = COL_A0_PF0
+COL_B0_PF3 = COL_A0_PF0
+COL_B0_PF4 = COL_A0_PF0
 COL_A1_PF0 = COL_A0_PF1
-COL_A1_PF1
-    byte $2,$81,$c0,$e0,$f0,$f8,$fc,$fe; 8
 COL_A1_PF2
-    byte $0,$0,$80,$40,$20,$10,$8,$4; 8
+    byte $80,$40,$20,$10,$8,$4,$2;,$1; 8
+COL_A2_PF2
+    byte $1,$2,$4,$8,$10,$20,$40,$80; 8
 COL_A1_PF3 = COL_A0_PF0
 COL_A1_PF4 = COL_A0_PF0
 COL_A1_PF5 = COL_A0_PF0
-
-COL_A2_PF0
-    byte $fe,$82,$82,$82,$82,$82,$82,$fe; 8
-COL_A2_PF1
-    byte $0,$0,$0,$0,$0,$0,$1,$2; 8
-COL_A2_PF2
-    byte $4,$8,$10,$20,$40,$80,$0,$0; 8
+COL_B1_PF0 = COL_A0_PF0
+COL_B1_PF1 = COL_A0_PF0
+COL_B1_PF2 = COL_A0_PF0
+COL_B1_PF3 = COL_A0_PF0
+COL_B1_PF4 = COL_A0_PF0
 COL_A2_PF3 = COL_A0_PF0
 COL_A2_PF4 = COL_A0_PF0
 COL_A2_PF5 = COL_A0_PF0
-
-COL_A3_PF0
-    byte $0,$1,$3,$7,$e,$1d,$3b,$7f; 8
-COL_A3_PF1
-    byte $fe,$fc,$b8,$70,$e0,$c0,$80,$0; 8
+COL_B2_PF0 = COL_A0_PF0
+COL_B2_PF1 = COL_A0_PF0
+COL_B2_PF2 = COL_A0_PF0
+COL_B2_PF3 = COL_A0_PF0
+COL_B2_PF4 = COL_A0_PF0
+COL_A3_PF0 = COL_A2_PF2
+COL_A3_PF1 = COL_A2_PF2
+COL_B7_PF0
+    byte $61,$21;,$1,$1,$1,$1,$1,$1; 8
 COL_A3_PF2
-    byte $2,$2,$2,$2,$2,$2;,$2,$2; 8
+    byte $1,$1,$1,$1,$1,$1;,$1,$1; 8
 COL_BB_PF2
-    byte $2,$2,$82,$82,$82,$82,$82,$82; 8
+    byte $1,$1,$81,$c1,$21,$21,$21,$a1; 8
 COL_A3_PF3 = COL_A0_PF1
 COL_A3_PF4 = COL_A0_PF2
 COL_A3_PF5 = COL_A0_PF0
-
+COL_B3_PF0 = COL_A0_PF0
+COL_B3_PF1 = COL_A0_PF0
+COL_B3_PF2 = COL_A0_PF0
+COL_B3_PF3 = COL_A0_PF0
+COL_B3_PF4 = COL_A0_PF0
 COL_A4_PF0 = COL_A0_PF1
 COL_A4_PF1 = COL_A1_PF1
-COL_A4_PF2
-    byte $7f,$3f,$9f,$4f,$27,$13,$9,$4; 8
-COL_A4_PF3
-    byte $0,$80,$c0,$e0,$f0,$f8,$fc,$fe; 8
-COL_A4_PF4
-    byte $40,$40,$40,$40,$20,$10,$8,$4; 8
+COL_A4_PF2 = COL_A0_PF1
+COL_A4_PF3 = COL_A1_PF1
 COL_A4_PF5 = COL_A0_PF0
-
-COL_A5_PF0
-    byte $fe,$83,$82,$82,$82,$82,$82,$fe; 8
-COL_A5_PF1 = COL_A1_PF2
-COL_A5_PF2
-    byte $ff,$83,$82,$82,$82,$82,$82,$fe; 8
-COL_A5_PF3
-    byte $10,$10,$90,$50,$30,$10,$0,$0; 8
+COL_B4_PF0 = COL_A0_PF0
+COL_B4_PF1 = COL_A0_PF0
+COL_B4_PF2 = COL_A0_PF0
+COL_B4_PF3 = COL_A0_PF0
+COL_B4_PF4 = COL_A0_PF0
+COL_A5_PF0 = COL_A2_PF0
+COL_A5_PF2 = COL_A2_PF0
 COL_A5_PF4
-    byte $40,$40,$40,$40,$40,$40,$40,$40; 8
+    byte $20,$20,$20,$20,$20;,$20,$20,$20; 8
+COL_A4_PF4
+    byte $20,$20,$20,$10,$8,$4,$2,$1; 8
 COL_A5_PF5 = COL_A0_PF0
-
+COL_B5_PF0 = COL_A0_PF0
+COL_B5_PF1 = COL_A0_PF0
+COL_B5_PF2 = COL_A0_PF0
+COL_B5_PF3 = COL_A0_PF0
+COL_B5_PF4 = COL_A0_PF0
 COL_A6_PF0 = COL_A0_PF0
 COL_A6_PF1 = COL_A0_PF0
-COL_A7_PF3
-    byte $12,$11;,$10,$10,$10,$10,$10,$10; 8
+COL_A6_PF2 = COL_A3_PF2
+COL_A8_PF3
+    byte $fc,$6,$5;,$4,$4,$4,$4,$4; 8
 COL_A6_PF3
-    byte $10,$10;,$10,$10,$10,$10,$10,$10; 8
-COL_BD_PF1
-    byte $10,$10,$10,$10,$10,$10,$8,$4; 8
+    byte $4,$4,$4,$4,$4,$4,$4,$4; 8
 COL_A6_PF4 = COL_A5_PF4
 COL_A6_PF5 = COL_A0_PF1
 COL_B6_PF0 = COL_A0_PF2
-
+COL_B6_PF1 = COL_A0_PF0
+COL_B6_PF2 = COL_A0_PF0
+COL_B6_PF3 = COL_A0_PF0
+COL_B6_PF4 = COL_A0_PF0
 COL_A7_PF0 = COL_A0_PF0
 COL_A7_PF1 = COL_A0_PF0
-COL_A7_PF2 = COL_A6_PF2
+COL_A7_PF2 = COL_A3_PF2
+COL_A7_PF3 = COL_A6_PF3
 COL_A7_PF4
-    byte $7f,$3f,$9f,$4f,$47,$43,$41,$40; 8
-COL_A7_PF5 = COL_A4_PF3
-COL_B7_PF0 = COL_A3_PF2
+    byte $ff,$7f,$3f,$3f,$2f,$27,$23,$21; 8
+COL_A7_PF5 = COL_A1_PF1
 COL_B7_PF1 = COL_A0_PF0
 COL_B7_PF2 = COL_A0_PF0
 COL_B7_PF3 = COL_A0_PF0
 COL_B7_PF4 = COL_A0_PF0
 COL_A8_PF0 = COL_A0_PF0
 COL_A8_PF1 = COL_A0_PF0
-COL_A8_PF3
-    byte $0,$0,$0,$0,$0,$f0,$18,$14; 8
-COL_A8_PF5
-    byte $1e,$1f,$1f,$8,$4,$2,$1,$0; 8
+COL_A8_PF2 = COL_A3_PF2
+COL_A8_PF4 = COL_A2_PF1
 COL_B8_PF0
-    byte $10,$8,$84,$82,$82,$82,$82,$82; 8
+    byte $10,$8,$84,$c2,$21,$21,$21,$a1; 8
 COL_B8_PF1 = COL_A0_PF0
 COL_B8_PF2 = COL_A0_PF0
 COL_B8_PF3 = COL_A0_PF0
@@ -1630,16 +1660,7 @@ COL_A9_PF0 = COL_A0_PF0
 COL_A9_PF1 = COL_A0_PF0
 COL_A9_PF2 = COL_A0_PF0
 COL_A9_PF3 = COL_A0_PF0
-COL_AB_PF4
-    byte $fe,$83;,$82,$82,$82,$82,$82,$82; 8
-COL_A9_PF4
-    byte $82;,$82,$82,$82,$82,$82,$82,$82; 8
-COL_A8_PF4
-    byte $82,$82,$82,$82,$82,$82,$82,$fe; 8
-COL_A9_PF5
-    byte $1f,$f,$7,$3,$1,$10,$18,$1c; 8
-COL_B9_PF0
-    byte $82,$c2,$e2,$f2,$fa,$fe,$7e,$20; 8
+COL_A9_PF4 = COL_A2_PF1
 COL_B9_PF1 = COL_A0_PF1
 COL_B9_PF2 = COL_A0_PF2
 COL_B9_PF3 = COL_A0_PF0
@@ -1648,20 +1669,19 @@ COL_AA_PF0 = COL_A0_PF0
 COL_AA_PF1 = COL_A0_PF0
 COL_AA_PF2 = COL_A0_PF0
 COL_AA_PF3 = COL_A0_PF0
-COL_AA_PF4 = COL_A9_PF4
-COL_AA_PF5
-    byte $2,$1,$0,$10,$18,$1c,$1e,$1f; 8
-COL_BA_PF0 = COL_A4_PF2
-COL_BA_PF1 = COL_A4_PF3
-COL_BA_PF2 = COL_A3_PF2
+COL_AA_PF4 = COL_A2_PF1
+COL_BA_PF0 = COL_A0_PF1
+COL_BA_PF1 = COL_A1_PF1
+COL_BA_PF2 = COL_B7_PF0
 COL_BA_PF3 = COL_A0_PF0
 COL_BA_PF4 = COL_A0_PF0
 COL_AB_PF0 = COL_A0_PF0
 COL_AB_PF1 = COL_A0_PF0
 COL_AB_PF2 = COL_A0_PF0
 COL_AB_PF3 = COL_A0_PF0
-COL_AB_PF5 = COL_A1_PF2
-COL_BB_PF0 = COL_A8_PF4
+COL_AB_PF4 = COL_A2_PF0
+COL_AB_PF5 = COL_A5_PF1
+COL_BB_PF0 = COL_A2_PF1
 COL_BB_PF1 = COL_A8_PF5
 COL_BB_PF3 = COL_A0_PF0
 COL_BB_PF4 = COL_A0_PF0
@@ -1671,9 +1691,7 @@ COL_AC_PF2 = COL_A0_PF0
 COL_AC_PF3 = COL_A0_PF0
 COL_AC_PF4 = COL_A0_PF0
 COL_AC_PF5 = COL_A0_PF0
-COL_BC_PF0 = COL_A9_PF4
-COL_BC_PF1
-    byte $2,$1,$0,$0,$0,$10,$18,$1c; 8
+COL_BC_PF0 = COL_A2_PF1
 COL_BC_PF2 = COL_A1_PF2
 COL_BC_PF3 = COL_A0_PF1
 COL_BC_PF4 = COL_A0_PF2
@@ -1683,7 +1701,15 @@ COL_AD_PF2 = COL_A0_PF0
 COL_AD_PF3 = COL_A0_PF0
 COL_AD_PF4 = COL_A0_PF0
 COL_AD_PF5 = COL_A0_PF0
-COL_BD_PF0 = COL_A9_PF4
+COL_BD_PF0 = COL_A2_PF1
+COL_A8_PF5
+    byte $86,$87,$87,$87,$84,$82,$81;,$80; 8
+COL_A5_PF1
+    byte $80,$c0,$a0,$90,$88,$84,$82;,$81; 8
+COL_BD_PF1
+    byte $81,$81,$81,$81,$81,$81,$81;,$81; 8
+COL_B9_PF0
+    byte $81,$c1,$e1,$f1,$f9,$fd,$7f,$3f; 8
 COL_BD_PF2 = COL_A0_PF1
 COL_BD_PF3 = COL_A1_PF1
 COL_BD_PF4 = COL_A1_PF2
@@ -1693,9 +1719,8 @@ COL_AE_PF2 = COL_A0_PF0
 COL_AE_PF3 = COL_A0_PF0
 COL_AE_PF4 = COL_A0_PF0
 COL_AE_PF5 = COL_A0_PF0
-COL_BE_PF0 = COL_AB_PF4
-COL_BE_PF1
-    byte $0,$0,$80,$40,$20,$10,$10,$10; 8
+COL_BE_PF0 = COL_A2_PF0
+COL_BE_PF1 = COL_A5_PF1
 COL_BE_PF2 = COL_A2_PF0
 COL_BE_PF3 = COL_A2_PF1
 COL_BE_PF4 = COL_A2_PF2
@@ -1707,8 +1732,8 @@ COL_AF_PF4 = COL_A0_PF0
 COL_AF_PF5 = COL_A0_PF0
 COL_BF_PF0 = COL_A0_PF0
 COL_BF_PF1 = COL_A0_PF0
-COL_BF_PF2 = COL_A3_PF0
-COL_BF_PF3 = COL_A3_PF1
+COL_BF_PF2 = COL_A2_PF2
+COL_BF_PF3 = COL_A2_PF2
 COL_BF_PF4 = COL_A3_PF2
 COL_AG_PF0 = COL_A0_PF0
 COL_AG_PF1 = COL_A0_PF0
@@ -1729,8 +1754,8 @@ COL_AH_PF4 = COL_A0_PF0
 COL_AH_PF5 = COL_A0_PF0
 COL_BH_PF0 = COL_A0_PF0
 COL_BH_PF1 = COL_A0_PF0
-COL_BH_PF2 = COL_A5_PF0
-COL_BH_PF3 = COL_A1_PF2
+COL_BH_PF2 = COL_A2_PF0
+COL_BH_PF3 = COL_A5_PF1
 COL_BH_PF4 = COL_A0_PF0
 
    ORG $F800
@@ -2142,7 +2167,7 @@ TITLE_ROW_8_DATA
     byte <TITLE_ROW_9_DATA
 
 TITLE_ROW_9_DATA
-    byte $82; <COL_A9_PF4
+    byte $80; <COL_A9_PF4
     byte <COL_A9_PF5
     byte <COL_B9_PF0
     byte <COL_B9_PF1
@@ -2169,7 +2194,7 @@ TITLE_ROW_B_DATA
     byte <TITLE_ROW_C_DATA
 
 TITLE_ROW_C_DATA
-    byte $82;<COL_BC_PF0
+    byte $80;<COL_BC_PF0
     byte <COL_BC_PF1
     byte <COL_BC_PF2
     byte <COL_BC_PF3
