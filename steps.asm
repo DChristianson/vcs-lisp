@@ -114,7 +114,6 @@ player_jump          ds 1 ; jump counter
 player_inc           ds 1 ; direction of movement
 player_goal          ds 1 ; next goal
 player_score         ds 1 ; decimal score
-player_flight        ds 1 ; current flight 
 player_clock         ds 1 ; for player timer
 player_timer         ds 2 ; game timer
 
@@ -128,12 +127,13 @@ jump_table           ds JUMP_TABLE_BYTES
 jump_table_end_byte  ds 1 ; last byte of jump table
 jump_table_offset    ds 1 ; where to locate jump table for drawing
 jump_table_size      ds 1 ; number of entries in jump table
+jump_layout_index    ds 1 ; layout index for jump table
+jump_layout_repeat   ds 1 ; number of repeats left for jump table
 
 ; flights
 difficulty_level     ds 1
-flights              ds FLIGHTS_TABLE_BYTES + 1
-flights_total        ds 1
-
+draw_layout_index    ds 1
+draw_layout_repeat   ds 1
 
 draw_registers_start
 
@@ -145,9 +145,9 @@ draw_steps_mask     ds 1
 draw_steps_wsync    ds 1 ; amount to shim steps up/down
 draw_base_dir       ds 1 ; base of steps direction
 draw_base_lr        ds 1 ; base of steps lr position
+draw_base_flight    ds 1
 draw_player_dir     ds 1 ; player travel direction
-draw_flight_offset  ds 1 ; flight to start at
-draw_step_offset    ds 1 ; what step do we start drawing at
+draw_step_offset    ds 1 ; what step # do we start drawing at
 draw_ground_color   ds 1 ; ground color
 draw_lava_counter   ds 1 ; how far to lava counter
 draw_player_sprite  ds 1 
@@ -170,11 +170,12 @@ temp_step_offset
 temp_margin
 temp_level_ptr    ; (ds 2)
 temp_maze_ptr     ; (ds 2)
-temp_rand
 temp_y  ds 1
+temp_layout_repeat
 temp_step_end
 temp_stack
 temp_p4 ds 1
+temp_rand ds 1
 
    ; draw registers for title and select screen
    ORG draw_registers_start
@@ -554,7 +555,7 @@ gx_continue
             sta COLUP0
 
             ; altitude
-            lda draw_flight_offset
+            lda draw_base_flight
             ora draw_step_offset
             bne _gx_continue_ground_calc
             lda #GROUND_COLOR
@@ -938,15 +939,20 @@ _steps_addr_loop
             dex
             bpl _steps_addr_loop
             ; get horizontal offset
-            lda #22
-            sec
-            sbc flights ; first flight
+            ldy draw_layout_index
+            lda LAYOUTS,y
+            and #LAYOUT_COUNTER_MASK
+            asl
+            tax
+            eor #$ff
+            clc
+            adc #23
             lsr
             sta draw_base_lr
             ; jump init
             lda #$ff
             sta draw_base_dir
-            lda flights ; first flight
+            txa ; first flight
             jsr sub_gen_steps
 sub_steps_refresh
             ; clear draw table
@@ -958,31 +964,40 @@ _steps_draw_clear_loop
             bpl _steps_draw_clear_loop
 sub_steps_flights
             ; add flight markers
-            ldy draw_flight_offset
-            beq _steps_draw_first
-            lda draw_step_offset         
-            bne _steps_draw_first
+            ldy draw_layout_index
+            lda draw_layout_repeat
+            sta temp_layout_repeat
+            ldx draw_step_offset; current step
+            bne _steps_draw_flights
+            lda draw_base_flight  ; KLUDGE: trick to find bottom of stairs
+            beq _steps_draw_flights
             lda #$40
             sta draw_table + 1
-_steps_draw_first
-            lda draw_step_offset; current step
 _steps_draw_flights
-            sta temp_step_offset
-            clc
-            adc flights,y
-            cmp temp_step_offset
+            stx temp_step_offset
+            lda LAYOUTS,y
             beq _steps_draw_last_flight
+            and #LAYOUT_COUNTER_MASK
+            asl ; 2x
+            adc temp_step_offset
             cmp #DRAW_TABLE_SIZE
             bpl _steps_draw_flights_end
             tax
             lda #$40
             sta draw_table,x
             dex
-            txa
+            dec temp_layout_repeat
+            bpl _steps_draw_flights
             iny
+            lda LAYOUTS,y
+            and #LAYOUT_REPEAT_MASK
+            lsr
+            lsr
+            lsr
+            lsr
+            sta temp_layout_repeat      
             jmp _steps_draw_flights 
 _steps_draw_last_flight
-            tax
             lda #$00 + ((SYMBOL_GRAPHICS_CROWN - SYMBOL_GRAPHICS) / 8) ; force crown stair (NOTE: should be $0f)
 _steps_draw_blanks_loop
             sta draw_table,x
@@ -1072,48 +1087,25 @@ _sub_difficulty_save_level
             and #$03
 gx_difficulty_set
             sta difficulty_level
-            asl ; x 8 for width of levels array
-            asl ; 
+            asl ; x 4 for width of levels array
             asl ; 
             tay
-            sty temp_level_ptr
-            lda LEVELS + 6,y ; BUGBUG: magic number
+            lda LEVELS + 2,y ; BUGBUG: magic number
             sta draw_steps_respx
-            lda LEVELS + 7,y ; BUGBUG: magic number
+            lda LEVELS + 3,y ; BUGBUG: magic number
             sta draw_steps_wsync
-            ldx #5
-            lda #0
-            clc
-_sub_difficulty_total_flights_loop
-            adc LEVELS,y
-            iny
-            dex 
-            bpl _sub_difficulty_total_flights_loop
-            sta flights_total
-            adc #flights
-            tsx
-            stx temp_stack
-            tax
-            txs
-            lda #0
-            pha
-            dey
-            lda #16
-_sub_difficulty_next_flight
-            ldx LEVELS,y
-            beq _sub_difficulty_skip_flight
-_sub_difficulty_flight_loop
-            pha
-            dex
-            bne _sub_difficulty_flight_loop
-_sub_difficulty_skip_flight
-            sec
-            sbc #2
-            dey
-            cpy temp_level_ptr
-            bpl _sub_difficulty_next_flight
-            ldx temp_stack
-            txs
+            lda LEVELS,y
+            sta draw_layout_index
+            sta jump_layout_index
+            tay
+            lda LAYOUTS,y
+            and #LAYOUT_REPEAT_MASK
+            lsr
+            lsr
+            lsr
+            lsr
+            sta draw_layout_repeat
+            sta jump_layout_repeat            
             jmp gx_show_select
 
 sub_steps_respxx
@@ -1160,36 +1152,46 @@ _respxx_swap
             rts                     ;6  
 
 sub_steps_advance
-            ; move jump table "up" to next flight
-            ldy player_flight
-            lda flights,y
+            dec jump_layout_repeat
+            bpl _sub_steps_advance_retry
+            inc jump_layout_index
+            ldy jump_layout_index
+            ; increment flight
+            lda LAYOUTS,y
+            and #LAYOUT_REPEAT_MASK
             lsr
-            tax
-            lda MARGINS,x
-            sta temp_margin 
+            lsr
+            lsr
+            lsr
+            sta jump_layout_repeat
+_sub_steps_advance_retry
+            ; check if we need to move jump table "up" to next flight
+            ldy jump_layout_index
+            lda LAYOUTS,y
+            and #LAYOUT_COUNTER_MASK
+            tax ; next flight size / 2
+            asl
+            adc jump_table_size
+            adc jump_table_offset
+            sec
+            sbc MARGINS,x
+            bmi _sub_steps_advance_save 
+            ; we are not where we need to be - scroll
+            jsr sub_steps_scroll ; start scrolling - we will exit
+            jmp _sub_steps_advance_retry
+_sub_steps_advance_save
             lda jump_table_size
             sec
             sbc #1
             clc
             adc jump_table_offset
-            tax 
-            clc 
-            adc flights,y
-            sec
-            sbc temp_margin
-            bmi _sub_steps_advance_save
-
-            ; scroll
-            jsr sub_steps_scroll
-            jmp sub_steps_advance
-_sub_steps_advance_save
-            stx jump_table_offset
-            ldy player_flight
+            sta jump_table_offset
             lda #0
             sta player_step
-            lda flights,y
+            txa ; next flight size / 2
+            asl ; x2
             beq sub_steps_win
-            jsr sub_gen_steps
+            jsr sub_gen_steps ; will set new jump table size
             lda #GAME_STATE_CLIMB
             sta game_state
             lda draw_player_dir
@@ -1212,7 +1214,8 @@ sub_steps_scroll
             sta draw_steps_wsync
             bne _sub_scroll_cont
             dec jump_table_offset 
-            ldy draw_flight_offset
+            ldy draw_layout_index
+            lda draw_base_flight
             beq _sub_scroll_landing_skip
             lda draw_step_offset
             bne _sub_scroll_landing_skip
@@ -1229,14 +1232,29 @@ _sub_scroll_lr_calc
             clc
             adc draw_base_lr
             sta draw_base_lr
-            lda draw_step_offset
+            lda LAYOUTS,y
+            and #LAYOUT_COUNTER_MASK
+            asl
             clc
-            adc flights,y
+            adc draw_step_offset
             sec
             sbc #1
             bne _sub_scroll_update
+            dec draw_layout_repeat
+            bpl _sub_scroll_inc_flight
+            ; increment draw start
+            ; BUGBUG: make subroutine?
             iny
-            sty draw_flight_offset
+            sty draw_layout_index
+            lda LAYOUTS,y
+            and #LAYOUT_REPEAT_MASK
+            lsr
+            lsr
+            lsr
+            lsr
+            sta draw_layout_repeat
+_sub_scroll_inc_flight
+            inc draw_base_flight
             lda #0
             sta draw_step_offset
 _sub_scroll_update
@@ -1483,9 +1501,8 @@ _gx_process_jump_arrive
             lda player_score
             clc
             adc #1
-            sta player_score
+            sta player_score ; collect prize
             cld
-            inc player_flight
             jsr sub_steps_advance
             jmp _gx_go_redraw_player
 _gx_go_fall_down
@@ -1758,11 +1775,6 @@ COL_BH_PF2 = COL_A2_PF0
 COL_BH_PF3 = COL_A5_PF1
 COL_BH_PF4 = COL_A0_PF0
 
-   ORG $F800
-    
-;--------------------
-; Title Screen Kernel
-
 TITLE_WRITE_OFFSET
     byte 0,2,4,6,8,10,12
 
@@ -1774,6 +1786,12 @@ TITLE_ROW_HI
     byte >COL_A0_PF4
     byte >gx_title_1_delay_0
     byte >TITLE_ROW_1_DATA
+
+   ORG $F800
+    
+;--------------------
+; Title Screen Kernel
+
 
 gx_show_title
             lda #WHITE
@@ -2027,16 +2045,24 @@ gx_show_select
             lda #$10         
             sta draw_hmove_b   
 
-            lda flights_total
-_gx_show_select_flights_kludge
-            tay
-            dey 
+            ldy draw_layout_index
+_gx_show_select_scan_loop
+            iny
+            lda LAYOUTS,y
+            bne _gx_show_select_scan_loop
+            dey
 _gx_show_select_flights_loop
-            lda flights,y
+            lda LAYOUTS,y
+            and #LAYOUT_REPEAT_MASK
             lsr
+            lsr
+            lsr
+            lsr
+            sta temp_layout_repeat
+_gx_show_select_flights_repeat
+            lda LAYOUTS,y
+            and #LAYOUT_COUNTER_MASK
             tax
-            dex
-            dex
 _gx_show_select_stairs_loop
             sta WSYNC
             sta HMOVE
@@ -2056,7 +2082,10 @@ _gx_show_select_stairs_loop
             sta draw_hmove_b                 ;3  15
             stx draw_hmove_a                 ;3  18
             stx HMP0                         ;3  21
+            dec temp_layout_repeat
+            bpl _gx_show_select_flights_repeat
             dey
+            cpy draw_layout_index
             bpl _gx_show_select_flights_loop
 _gx_show_select_flights_end
             lda #0
@@ -2327,10 +2356,29 @@ STEP_COLOR
 
 
 LEVELS
-    byte 3,2,0,2,0,0,60,96   ; EASY
-    byte 2,3,0,3,0,2,56,76   ; MED
-    byte 0,5,0,7,0,4,56,40   ; HARD
-    byte 0,0,0,0,0,16,56,6   ; EXTRA
+    byte LAYOUT_EASY,0,60,96   ; EASY
+    byte LAYOUT_MED,0,56,76   ; MED
+    byte LAYOUT_HARD,0,56,40   ; HARD
+    byte LAYOUT_EXTRA,0,56,6   ; EXTRA
+
+    ; layouts
+    ; nnnnffff = flight of length 2f, repeat n times (n+1 total)
+    ; 00000000 = stop
+LAYOUT_COUNTER_MASK = %00001111
+LAYOUT_REPEAT_MASK = %11110000
+LAYOUTS
+LAYOUT_EASY= . - LAYOUTS
+;    byte 3,2,0,2,0,0
+    byte $23,$14,$16,0
+LAYOUT_MED = . - LAYOUTS
+;    byte 2,3,0,3,0,2
+    byte $13,$24,$26,$18,0
+LAYOUT_HARD = . - LAYOUTS
+;    byte 0,5,0,7,0,4
+    byte $44,$66,$38,0
+LAYOUT_EXTRA = . - LAYOUTS
+;    byte 0,0,0,0,0,16
+    byte $f8,0
 
     ORG $FD00
 
@@ -2453,8 +2501,7 @@ TIMER_MASK
     byte $00,$00,$00,$01,$00,$01,$00,$00
 
     ; maze data LUT
-MAZE_PTR_LO 
-    byte 0,0
+MAZE_PTR_LO = . - 2
     byte <MAZES_3
     byte <MAZES_4
     byte 0
@@ -2507,7 +2554,7 @@ TRACK_CHAN_INDEX
     byte 4,4,4,4,4,4,4,4,4,4
 
 MARGINS
-    byte 5,6,6,12,14,16,16,17,17
+    byte 6,7,7,13,15,17,17,18,18
 
 MAZES_3
 
