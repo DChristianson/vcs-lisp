@@ -64,7 +64,7 @@ DRAW_TABLE_SIZE = 18
 DRAW_TABLE_BYTES = DRAW_TABLE_SIZE
 
 JUMP_TABLE_SIZE = 16
-JUMP_TABLE_BYTES = JUMP_TABLE_SIZE / 2
+JUMP_TABLE_BYTES = JUMP_TABLE_SIZE
 
 FLIGHTS_TABLE_SIZE = 16
 FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
@@ -92,6 +92,7 @@ AUDIO_VOLUME = 8
 ; frame-based "clock"
 frame              ds 1
 game_state         ds 1
+difficulty_level   ds 1
 
 ; game audio
 audio_sequence     ds 1 ; play multiple tracks in sequence
@@ -124,16 +125,14 @@ lava_height          ds 1
 
 ; game state
 jump_table           ds JUMP_TABLE_BYTES 
-jump_table_end_byte  ds 1 ; last byte of jump table
 jump_table_offset    ds 1 ; where to locate jump table for drawing
 jump_table_size      ds 1 ; number of entries in jump table
-jump_layout_index    ds 1 ; layout index for jump table
-jump_layout_repeat   ds 1 ; number of repeats left for jump table
 
-; flights
-difficulty_level     ds 1
-draw_layout_index    ds 1
-draw_layout_repeat   ds 1
+; steps drawing
+jump_layout_index    ds 1 ; layout index for jump table
+base_layout_index    ds 1 ; layout index for base of stairs
+jump_layout_repeat   ds 1 ; number of repeats left for jump table
+base_layout_repeat   ds 1 ; number of repeats left for base of stairs
 
 draw_registers_start
 
@@ -264,19 +263,16 @@ draw_t1_data_addr  ds 2
 ;   - pressing select mid title should kill all audio
 ;   - steps scale not progressive
 ;  - MVP DONE
-; TODO
 ;  - code size
 ;   - shrink or remove flights array
 ;   - optimize title screen
-;   - fewer size 6 mazes
-;   - algorithmic maze gen
-;  - sounds 3
-;   - echo solution theme
+; TODO
 ;  - visual 3
-;   - addressible colors on stairs
 ;   - size 1 stairs no number?
+;   - jump animation 
+;   - addressible colors on stairs
 ;  - gameplay 3
-;   - button press plays solution
+;   - double button press "plays" solution musically
 ;   - lava (time attack) mode - steps "catch fire"?
 ;   - echo (dark) mode - limited step visibility
 ;   - zero / missing steps in mazes
@@ -287,18 +283,21 @@ draw_t1_data_addr  ds 2
 ;      ***T2 G
 ;      **2T3G
 ;   - flight jumping mechanic
+;  - sounds 2
+;   - tuneup sound pass
+;  - code size
+;   - algorithmic maze gen
+;   - fewer size 6 mazes
 ;  - sprinkles 1
 ;   - select screen design, shows lava, etc
-;   - jump animation 
-;   - should be no step edge in ground?
 ;   - some kind of celebration on win (fireworks?)
+;   - some kind of theme on lose
 ;   - some kind of graphic in sky (cloud? bird?)
+;   - should be no step edge in ground?
 ;   - animated squirrels in title and select
-;   - screen transitions if possible
+;   - horizontal screen transitions
 ;   - gradient sky background
 ;   - color flashes in titles
-;  - sounds 2
-;   - tuneup sounds
 ; NODO
 ;  - second player
 ;  - flag at goal step?
@@ -501,7 +500,7 @@ gx_climb
             sta draw_player_sprite
 gx_update
             ldx player_step
-            jsr sub_step_getx
+            lda jump_table,x
             tay
             lda player_input
             bpl _gx_update_special_latch
@@ -939,7 +938,7 @@ _steps_addr_loop
             dex
             bpl _steps_addr_loop
             ; get horizontal offset
-            ldy draw_layout_index
+            ldy base_layout_index
             lda LAYOUTS,y
             and #LAYOUT_COUNTER_MASK
             asl
@@ -964,8 +963,8 @@ _steps_draw_clear_loop
             bpl _steps_draw_clear_loop
 sub_steps_flights
             ; add flight markers
-            ldy draw_layout_index
-            lda draw_layout_repeat
+            ldy base_layout_index
+            lda base_layout_repeat
             sta temp_layout_repeat
             ldx draw_step_offset; current step
             bne _steps_draw_flights
@@ -1006,28 +1005,18 @@ _steps_draw_blanks_loop
             cpx #DRAW_TABLE_SIZE
             bmi _steps_draw_blanks_loop            
 _steps_draw_flights_end
-sub_steps_jump
-            ldx jump_table_end_byte
-            lda jump_table_size
+            ; inject jump table graphics
+            ldx jump_table_size
+            dex
+            txa
             clc
             adc jump_table_offset
             tay
-            dey
 _steps_draw_jumps
             lda jump_table,x
-            lsr
-            lsr
-            lsr
-            lsr
             bne _steps_draw_goal_skip
             lda #((SYMBOL_GRAPHICS_ACORN - SYMBOL_GRAPHICS) / 8) ; acorn stair (NOTE: should be $0e)
 _steps_draw_goal_skip
-            ora draw_table,y
-            sta draw_table,y
-            dey
-            bmi _steps_end_jumps
-            lda jump_table,x
-            and #$0f
             ora draw_table,y
             sta draw_table,y
             dey
@@ -1095,7 +1084,7 @@ gx_difficulty_set
             lda LEVELS + 3,y ; BUGBUG: magic number
             sta draw_steps_wsync
             lda LEVELS,y
-            sta draw_layout_index
+            sta base_layout_index
             sta jump_layout_index
             tay
             lda LAYOUTS,y
@@ -1104,7 +1093,7 @@ gx_difficulty_set
             lsr
             lsr
             lsr
-            sta draw_layout_repeat
+            sta base_layout_repeat
             sta jump_layout_repeat            
             jmp gx_show_select
 
@@ -1152,18 +1141,8 @@ _respxx_swap
             rts                     ;6  
 
 sub_steps_advance
-            dec jump_layout_repeat
-            bpl _sub_steps_advance_retry
-            inc jump_layout_index
-            ldy jump_layout_index
-            ; increment flight
-            lda LAYOUTS,y
-            and #LAYOUT_REPEAT_MASK
-            lsr
-            lsr
-            lsr
-            lsr
-            sta jump_layout_repeat
+            ldx #0
+            jsr sub_inc_layout
 _sub_steps_advance_retry
             ; check if we need to move jump table "up" to next flight
             ldy jump_layout_index
@@ -1214,7 +1193,7 @@ sub_steps_scroll
             sta draw_steps_wsync
             bne _sub_scroll_cont
             dec jump_table_offset 
-            ldy draw_layout_index
+            ldy base_layout_index
             lda draw_base_flight
             beq _sub_scroll_landing_skip
             lda draw_step_offset
@@ -1240,20 +1219,8 @@ _sub_scroll_lr_calc
             sec
             sbc #1
             bne _sub_scroll_update
-            dec draw_layout_repeat
-            bpl _sub_scroll_inc_flight
-            ; increment draw start
-            ; BUGBUG: make subroutine?
-            iny
-            sty draw_layout_index
-            lda LAYOUTS,y
-            and #LAYOUT_REPEAT_MASK
-            lsr
-            lsr
-            lsr
-            lsr
-            sta draw_layout_repeat
-_sub_scroll_inc_flight
+            ldx #1
+            jsr sub_inc_layout
             inc draw_base_flight
             lda #0
             sta draw_step_offset
@@ -1263,6 +1230,22 @@ _sub_scroll_cont
             lda #GAME_STATE_SCROLL
             sta game_state
             jmp gx_continue ; will continue later
+
+sub_inc_layout
+            dec jump_layout_repeat,x
+            bpl _sub_inc_layout_continue
+            inc jump_layout_index,x
+            ldy jump_layout_index,x
+            ; increment flight
+            lda LAYOUTS,y
+            and #LAYOUT_REPEAT_MASK
+            lsr
+            lsr
+            lsr
+            lsr
+            sta jump_layout_repeat,x
+_sub_inc_layout_continue
+            rts
 
 sub_calc_respx
             ldx #0
@@ -1309,20 +1292,6 @@ _calc_respx_end
             ldy #$80
 _calc_respx_mask
             sty draw_steps_mask
-            rts 
-
-sub_step_getx
-            txa ; x has step number
-            lsr ; div by 2
-            tay
-            lda jump_table,y
-            bcc _step_get_lo
-            lsr
-            lsr
-            lsr
-            lsr
-_step_get_lo
-            and #$0f
             rts 
 
 ; sub_solve_puzzle
@@ -1376,17 +1345,10 @@ sub_gen_steps
             sta jump_table_size
             lsr
             sta temp_maze_ptr ; save for multiply
-            sec
-            sbc #1
-            sta jump_table_end_byte
-            tay
-            lda MAZE_PTR_HI,y
-            sta temp_maze_ptr + 1
             jsr sub_galois
             and #$f8 ; 32 get top 32 bits
-            beq _sub_gen_steps_selected
             sta temp_rand
-            ldx #3
+            ldx #4
             lda #0
 _sub_gen_steps_mul
             asl 
@@ -1397,19 +1359,30 @@ _sub_gen_steps_mul
 _sub_gen_steps_skip
             dex 
             bpl _sub_gen_steps_mul
-_sub_gen_steps_selected
             clc
-            ldy jump_table_end_byte
+            ldy temp_maze_ptr
+            dey
             adc MAZE_PTR_LO,y
             sta temp_maze_ptr
-_sub_gen_steps_loop
-            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
-            sta jump_table,y
-            dey
-            bpl _sub_gen_steps_loop
+            lda MAZE_PTR_HI,y
+            sta temp_maze_ptr + 1
             ldx jump_table_size
             dex
             stx player_goal
+_sub_gen_steps_loop
+            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
+            lsr
+            lsr
+            lsr
+            lsr
+            sta jump_table,x
+            dex
+            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
+            and #$0f
+            sta jump_table,x
+            dex
+            dey
+            bpl _sub_gen_steps_loop
             rts
 
 sub_galois  ; 16 bit lfsr from: https:;github.com/bbbradsmith/prng_6502/tree/master
@@ -2045,7 +2018,7 @@ gx_show_select
             lda #$10         
             sta draw_hmove_b   
 
-            ldy draw_layout_index
+            ldy base_layout_index
 _gx_show_select_scan_loop
             iny
             lda LAYOUTS,y
@@ -2085,7 +2058,7 @@ _gx_show_select_stairs_loop
             dec temp_layout_repeat
             bpl _gx_show_select_flights_repeat
             dey
-            cpy draw_layout_index
+            cpy base_layout_index
             bpl _gx_show_select_flights_loop
 _gx_show_select_flights_end
             lda #0
