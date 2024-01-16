@@ -65,6 +65,7 @@ DRAW_TABLE_BYTES = DRAW_TABLE_SIZE
 
 JUMP_TABLE_SIZE = 16
 JUMP_TABLE_BYTES = JUMP_TABLE_SIZE
+JUMP_SOLUTION_BYTES = JUMP_TABLE_SIZE / 8
 
 FLIGHTS_TABLE_SIZE = 16
 FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
@@ -127,6 +128,7 @@ lava_height          ds 1
 jump_table           ds JUMP_TABLE_BYTES 
 jump_table_offset    ds 1 ; where to locate jump table for drawing
 jump_table_size      ds 1 ; number of entries in jump table
+jump_solution        ds JUMP_SOLUTION_BYTES
 
 ; steps drawing
 jump_layout_index    ds 1 ; layout index for jump table
@@ -164,6 +166,7 @@ draw_s4_addr        ds 2
 draw_s5_addr        ds 2
 
 ; temp vars
+temp_solve_current
 temp_step_start
 temp_step_offset
 temp_margin
@@ -172,8 +175,10 @@ temp_maze_ptr     ; (ds 2)
 temp_y  ds 1
 temp_layout_repeat
 temp_step_end
-temp_stack
+temp_solve_jump
 temp_p4 ds 1
+temp_timer_stack
+temp_solve_stack
 temp_rand ds 1
 
    ; draw registers for title and select screen
@@ -500,7 +505,8 @@ gx_climb
             sta draw_player_sprite
 gx_update
             ldx player_step
-            lda jump_table,x
+            lda jump_table,x ; load jump distance for any moves
+            and #$0f
             tay
             lda player_input
             bpl _gx_update_special_latch
@@ -528,6 +534,10 @@ _gx_update_check_right
 _gx_update_rev_left
             jmp gx_go_up
 _gx_update_special_latch
+            rol jump_solution ; BUGBUG: TESTING SOLVE
+            rol jump_solution + 1 ; BUGBUG: TESTING SOLVE
+            bcs _gx_update_rev_left ; BUGBUG: TESTING SOLVE
+            jmp gx_go_down ; BUGBUG: TESTING SOLVE
             and player_special_latch
             sta player_special_latch
             bne gx_update_return
@@ -723,7 +733,7 @@ gx_timer
             sta VDELP1
 
             tsx
-            stx temp_stack
+            stx temp_timer_stack
             sta WSYNC
             sta HMOVE
             lda #WHITE
@@ -762,7 +772,7 @@ _gx_timer_loop
             sta GRP0               ;3  65
             dey                    ;2  67
             sbpl _gx_timer_loop    ;3  70
-            ldx temp_stack
+            ldx temp_timer_stack
             txs
 
 gx_overscan
@@ -952,7 +962,7 @@ _steps_addr_loop
             lda #$ff
             sta draw_base_dir
             txa ; first flight
-            jsr sub_gen_steps
+            jsr sub_gen_steps    ; gen steps
 sub_steps_refresh
             ; clear draw table
             ldx #(DRAW_TABLE_SIZE - 1)
@@ -1014,6 +1024,7 @@ _steps_draw_flights_end
             tay
 _steps_draw_jumps
             lda jump_table,x
+            and #$0f
             bne _steps_draw_goal_skip
             lda #((SYMBOL_GRAPHICS_ACORN - SYMBOL_GRAPHICS) / 8) ; acorn stair (NOTE: should be $0e)
 _steps_draw_goal_skip
@@ -1294,95 +1305,76 @@ _calc_respx_mask
             sty draw_steps_mask
             rts 
 
-; sub_solve_puzzle
-;             lda #0
-;             ldx #15
-; _sub_solve_clear_map
-;             sta depth_map,x
-;             dex
-;             bpl _sub_solve_clear_map
-;             inx
-;             ldy #0
-; _sub_solve_iter_down
-;             stx temp_step_current
-;             jsr sub_step_getx
-;             sta temp_step_jump
-;             txa
-;             clc 
-;             adc temp_step_jump
-;             cmp jump_table_size
-;             beq _sub_solved
-;             bpl _sub_solve_minus
-;             tax
-;             lda depth_map,x
-;             bne _sub_solve_minus
-; _sub_solve_next
-;             pha
-;             iny
-;             sty depth_map,x
-;             jmp _sub_solve_iter
-; _sub_solve_minus
-;             lda temp_step_current
-; _sub_solve_iter_up
-;             ; sec
-;             ; sbc temp_step_jump
-;             ; bmi _sub_solve_up
-;             ; tax
-;             ; lda depth_map,x
-;             ; beq _sub_solve_next
-;             ; pla
-;             ; dey
-;             ; beq _sub_solve_failed
-;             ; tax
-;             ; jsr sub_step_getx
-;             ; sta temp_step_jump
-;             ; tax
-; _sub_solve_failed
-; _sub_solved
-
-
-sub_gen_steps
-            sta jump_table_size
-            lsr
-            sta temp_maze_ptr ; save for multiply
-            jsr sub_galois
-            and #$f8 ; 32 get top 32 bits
-            sta temp_rand
-            ldx #4
-            lda #0
-_sub_gen_steps_mul
-            asl 
-            asl temp_rand
-            bcc _sub_gen_steps_skip
-            clc
-            adc temp_maze_ptr
-_sub_gen_steps_skip
-            dex 
-            bpl _sub_gen_steps_mul
-            clc
-            ldy temp_maze_ptr
-            dey
-            adc MAZE_PTR_LO,y
-            sta temp_maze_ptr
-            lda MAZE_PTR_HI,y
-            sta temp_maze_ptr + 1
-            ldx jump_table_size
-            dex
-            stx player_goal
-_sub_gen_steps_loop
-            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
-            lsr
-            lsr
-            lsr
-            lsr
-            sta jump_table,x
-            dex
-            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
+sub_solve_puzzle
+            tsx 
+            stx temp_solve_stack
+            ldx #0
+            ldy #0
+            sty jump_solution
+            sty jump_solution + 1
+_sub_solve_iter_down
+            stx temp_solve_current
+            lda jump_table,x
             and #$0f
+            sta temp_solve_jump
+            clc 
+            adc temp_solve_current
+            cmp player_goal
+            beq _sub_solved
+            bpl _sub_solve_minus
+            tax
+            lda jump_table,x     ; check if we already stored this
+            and #$f0
+            bne _sub_solve_minus
+            sec
+_sub_solve_next
+            rol jump_solution
+            rol jump_solution + 1
+            lda temp_solve_current
+            pha
+            iny
+            tya
+            asl
+            asl
+            asl
+            asl
+            ora jump_table,x
             sta jump_table,x
-            dex
+            jmp _sub_solve_iter_down
+_sub_solve_minus
+            lda temp_solve_current
+            sec
+            sbc temp_solve_jump
+            bmi _sub_solve_iter_up
+            tax
+            lda jump_table,x     ; check if we already stored this
+            and #$f0
+            bne _sub_solve_iter_up
+            clc
+            jmp _sub_solve_next
+_sub_solve_iter_up
+            clc
+            ror jump_solution + 1
+            ror jump_solution
             dey
-            bpl _sub_gen_steps_loop
+            pla
+            beq _sub_solve_failed
+            sta temp_solve_current
+            tax
+            lda jump_table,x
+            and #$0f
+            sta temp_solve_jump
+            jmp _sub_solve_minus
+_sub_solved
+            lda jump_solution + 1
+_sub_solved_rol
+            bmi _sub_solve_failed
+            rol jump_solution
+            rol jump_solution + 1
+            jmp _sub_solved_rol
+_sub_solve_failed
+            ldx temp_solve_stack
+            txs
             rts
 
 sub_galois  ; 16 bit lfsr from: https:;github.com/bbbradsmith/prng_6502/tree/master
@@ -1759,6 +1751,51 @@ TITLE_ROW_HI
     byte >COL_A0_PF4
     byte >gx_title_1_delay_0
     byte >TITLE_ROW_1_DATA
+
+sub_gen_steps
+            sta jump_table_size
+            lsr
+            sta temp_maze_ptr ; save for multiply
+            jsr sub_galois
+            and #$f8 ; 32 get top 32 bits
+            sta temp_rand
+            ldx #4
+            lda #0
+_sub_gen_steps_mul
+            asl 
+            asl temp_rand
+            bcc _sub_gen_steps_skip
+            clc
+            adc temp_maze_ptr
+_sub_gen_steps_skip
+            dex 
+            bpl _sub_gen_steps_mul
+            clc
+            ldy temp_maze_ptr
+            dey
+            adc MAZE_PTR_LO,y
+            sta temp_maze_ptr
+            lda MAZE_PTR_HI,y
+            sta temp_maze_ptr + 1
+            ldx jump_table_size
+            dex
+            stx player_goal
+_sub_gen_steps_loop
+            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
+            lsr
+            lsr
+            lsr
+            lsr
+            sta jump_table,x
+            dex
+            lda (temp_maze_ptr),y ; #$11; use to force maze of 1's
+            and #$0f
+            sta jump_table,x
+            dex
+            dey
+            bpl _sub_gen_steps_loop
+            jmp sub_solve_puzzle
+            ;rts
 
    ORG $F800
     
