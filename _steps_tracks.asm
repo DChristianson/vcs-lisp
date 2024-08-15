@@ -1,526 +1,281 @@
-    byte 0
 TRACK_TITLE_0_C00 = . - AUDIO_TRACKS
-SEQ_S00_O00_R00_C00
-SEQ_S00_O00_R01_C00
-    ; CX:12, FX:6, VX:15, D:9
-    byte 54, 201
-SEQ_S00_O00_R02_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O00_R03_C00
-    ; CX:12, FX:7, VX:15, D:8
-    byte 62, 200
-SEQ_S00_O00_R04_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O00_R05_C00
-SEQ_S00_O00_R06_C00
-SEQ_S00_O00_R07_C00
-    ; CX:12, FX:8, VX:15, D:17
-    byte 70, 209
-SEQ_S00_O00_R08_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O00_R09_C00
-SEQ_S00_O00_R0a_C00
-SEQ_S00_O00_R0b_C00
-    ; CX:4, FX:15, VX:15, D:18
-    byte 126, 82
-SEQ_S00_O00_R0c_C00
-SEQ_S00_O00_R0d_C00
-SEQ_S00_O00_R0e_C00
-SEQ_S00_O00_R0f_C00
-SEQ_S00_O00_R10_C00
-    ; PAUSE, D:19
-    byte 39
-SEQ_S00_O00_R11_C00
-SEQ_S00_O00_R12_C00
-SEQ_S00_O00_R13_C00
-SEQ_S00_O00_R14_C00
-SEQ_S00_O00_R15_C00
-SEQ_S00_O00_R16_C00
-SEQ_S00_O00_R17_C00
-    ; CX:4, FX:16, VX:15, D:31
-    byte 134, 95
-    ; CX:4, FX:16, VX:15, D:4
-    byte 134, 68
+    ;F6 C12 V15 D8 - SS:0 O:0 R:0
+    byte 54,207,44
+    ;F6 C12 V0 D1 - SS:0 O:0 R:1
+    byte 1
+    ;F7 C12 V15 D8 - SS:0 O:0 R:2
+    byte 62,207,44
+    ;F7 C12 V0 D1 - SS:0 O:0 R:3
+    byte 1
+    ;F8 C12 V15 D18 - SS:0 O:0 R:4
+    byte 70,207,124
+    ;F8 C12 V0 D1 - SS:0 O:0 R:7
+    byte 1
+    ;F15 C4 V15 D18 - SS:0 O:0 R:8
+    byte 126,79,124
+    ;F15 C4 V0 D20 - SS:0 O:0 R:11
+    byte 152
+    ;F16 C4 V15 D36 - SS:0 O:0 R:16
+    byte 134,79,252,12
+    ;F16 C4 V0 D1 - SS:0 O:0 R:23
+    byte 1
+TRACK_WAIT = . - AUDIO_TRACKS
     byte 0
+
 TRACK_TITLE_1_C00 = . - AUDIO_TRACKS
-SEQ_S00_O01_R00_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R01_C00
-    ; CX:4, FX:15, VX:15, D:7
-    byte 126, 71
-SEQ_S00_O01_R02_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O01_R03_C00
-    ; CX:4, FX:31, VX:15, D:8
-    byte 254, 72
-SEQ_S00_O01_R04_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R05_C00
-    ; CX:4, FX:26, VX:15, D:8
-    byte 214, 72
-SEQ_S00_O01_R06_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R07_C00
-    ; CX:4, FX:31, VX:15, D:7
-    byte 254, 71
-SEQ_S00_O01_R08_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O01_R09_C00
-    ; CX:4, FX:20, VX:15, D:8
-    byte 166, 72
-SEQ_S00_O01_R0a_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R0b_C00
-    ; CX:4, FX:31, VX:15, D:8
-    byte 254, 72
-SEQ_S00_O01_R0c_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R0d_C00
-    ; CX:4, FX:26, VX:15, D:9
-    byte 214, 73
-SEQ_S00_O01_R0e_C00
-SEQ_S00_O01_R0f_C00
-    ; CX:4, FX:31, VX:15, D:8
-    byte 254, 72
+    ;F15 C4 V15 D8 - SS:0 O:1 R:0
+    byte 126,79,44
+    ;F15 C4 V0 D2 - SS:0 O:1 R:1
+    byte 8
+    ;F31 C4 V15 D8 - SS:0 O:1 R:2
+    byte 254,79,44
+    ;F31 C4 V0 D1 - SS:0 O:1 R:3
+    byte 1
+    ;F26 C4 V15 D8 - SS:0 O:1 R:4
+    byte 214,79,44
+    ;F26 C4 V0 D1 - SS:0 O:1 R:5
+    byte 1
+    ;F31 C4 V15 D8 - SS:0 O:1 R:6
+    byte 254,79,44
+    ;F31 C4 V0 D2 - SS:0 O:1 R:7
+    byte 8
+    ;F20 C4 V15 D8 - SS:0 O:1 R:8
+    byte 166,79,44
+    ;F20 C4 V0 D1 - SS:0 O:1 R:9
+    byte 1
 TRACK_STEP_0_C00 = . - AUDIO_TRACKS
-SEQ_S00_O01_R10_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R11_C00
-    ; CX:4, FX:15, VX:15, D:8
-    byte 126, 72
-SEQ_S00_O01_R12_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O01_R13_C00
-    ; CX:4, FX:31, VX:15, D:8
-    byte 254, 72
-SEQ_S00_O01_R14_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R15_C00
-    ; CX:4, FX:26, VX:15, D:7
-    byte 214, 71
-SEQ_S00_O01_R16_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R17_C00
-    ; CX:4, FX:31, VX:15, D:8
-    byte 254, 72
+    ;F31 C4 V15 D8 - SS:0 O:1 R:10
+    byte 254,79,44
+    ;F31 C4 V0 D1 - SS:0 O:1 R:11
+    byte 1
+    ;F26 C4 V15 D9 - SS:0 O:1 R:12
+    byte 214,79,52
+    ;F26 C4 V0 D1 - SS:0 O:1 R:13
+    byte 1
+    ;F31 C4 V15 D8 - SS:0 O:1 R:14
+    byte 254,79,44
+    ;F31 C4 V0 D1 - SS:0 O:1 R:15
+    byte 1
+    ;F15 C4 V15 D8 - SS:0 O:1 R:16
+    byte 126,79,44
+    ;F15 C4 V0 D2 - SS:0 O:1 R:17
+    byte 8
+    ;F31 C4 V15 D8 - SS:0 O:1 R:18
+    byte 254,79,44
+    ;F31 C4 V0 D1 - SS:0 O:1 R:19
+    byte 1
+    ;F26 C4 V15 D8 - SS:0 O:1 R:20
+    byte 214,79,44
+    ;F26 C4 V0 D1 - SS:0 O:1 R:21
+    byte 1
+    ;F31 C4 V15 D8 - SS:0 O:1 R:22
+    byte 254,79,44
+    ;F31 C4 V0 D2 - SS:0 O:1 R:23
+    byte 8
     byte 0
+
 TRACK_TITLE_2_C00 = . - AUDIO_TRACKS
-SEQ_S00_O02_R00_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O02_R01_C00
-    ; CX:4, FX:17, VX:15, D:8
-    byte 142, 72
-SEQ_S00_O02_R02_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R03_C00
-    ; CX:12, FX:11, VX:15, D:7
-    byte 94, 199
-SEQ_S00_O02_R04_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R05_C00
-    ; CX:4, FX:27, VX:15, D:9
-    byte 222, 73
-SEQ_S00_O02_R06_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R07_C00
-    ; CX:12, FX:11, VX:15, D:8
-    byte 94, 200
-SEQ_S00_O02_R08_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R09_C00
-    ; CX:4, FX:23, VX:15, D:7
-    byte 190, 71
-SEQ_S00_O02_R0a_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O02_R0b_C00
-    ; CX:12, FX:11, VX:15, D:8
-    byte 94, 200
-SEQ_S00_O02_R0c_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R0d_C00
-    ; CX:4, FX:27, VX:15, D:8
-    byte 222, 72
-SEQ_S00_O02_R0e_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R0f_C00
-    ; CX:12, FX:11, VX:15, D:7
-    byte 94, 199
+    ;F17 C4 V15 D8 - SS:0 O:2 R:0
+    byte 142,79,44
+    ;F17 C4 V0 D1 - SS:0 O:2 R:1
+    byte 1
+    ;F11 C12 V15 D8 - SS:0 O:2 R:2
+    byte 94,207,44
+    ;F11 C12 V0 D1 - SS:0 O:2 R:3
+    byte 1
+    ;F27 C4 V15 D9 - SS:0 O:2 R:4
+    byte 222,79,52
+    ;F27 C4 V0 D1 - SS:0 O:2 R:5
+    byte 1
+    ;F11 C12 V15 D8 - SS:0 O:2 R:6
+    byte 94,207,44
+    ;F11 C12 V0 D1 - SS:0 O:2 R:7
+    byte 1
+    ;F23 C4 V15 D8 - SS:0 O:2 R:8
+    byte 190,79,44
+    ;F23 C4 V0 D2 - SS:0 O:2 R:9
+    byte 8
 TRACK_STEP_1_C00 = . - AUDIO_TRACKS
-SEQ_S00_O02_R10_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O02_R11_C00
-    ; CX:4, FX:17, VX:15, D:8
-    byte 142, 72
-SEQ_S00_O02_R12_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R13_C00
-    ; CX:12, FX:11, VX:15, D:8
-    byte 94, 200
-SEQ_S00_O02_R14_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O02_R15_C00
-    ; CX:4, FX:27, VX:15, D:9
-    byte 222, 73
-SEQ_S00_O02_R16_C00
-SEQ_S00_O02_R17_C00
-    ; CX:12, FX:11, VX:15, D:8
-    byte 94, 200
+    ;F11 C12 V15 D8 - SS:0 O:2 R:10
+    byte 94,207,44
+    ;F11 C12 V0 D1 - SS:0 O:2 R:11
+    byte 1
+    ;F27 C4 V15 D8 - SS:0 O:2 R:12
+    byte 222,79,44
+    ;F27 C4 V0 D1 - SS:0 O:2 R:13
+    byte 1
+    ;F11 C12 V15 D8 - SS:0 O:2 R:14
+    byte 94,207,44
+    ;F11 C12 V0 D2 - SS:0 O:2 R:15
+    byte 8
+    ;F17 C4 V15 D8 - SS:0 O:2 R:16
+    byte 142,79,44
+    ;F17 C4 V0 D1 - SS:0 O:2 R:17
+    byte 1
+    ;F11 C12 V15 D8 - SS:0 O:2 R:18
+    byte 94,207,44
+    ;F11 C12 V0 D1 - SS:0 O:2 R:19
+    byte 1
+    ;F27 C4 V15 D9 - SS:0 O:2 R:20
+    byte 222,79,52
+    ;F27 C4 V0 D1 - SS:0 O:2 R:21
+    byte 1
+    ;F11 C12 V15 D8 - SS:0 O:2 R:22
+    byte 94,207,44
+    ;F11 C12 V0 D1 - SS:0 O:2 R:23
+    byte 1
     byte 0
+
 TRACK_TITLE_3_C00 = . - AUDIO_TRACKS
-SEQ_S00_O03_R00_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R01_C00
-    ; CX:4, FX:9, VX:15, D:8
-    byte 78, 72
-SEQ_S00_O03_R02_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O03_R03_C00
-    ; CX:4, FX:19, VX:15, D:8
-    byte 158, 72
-SEQ_S00_O03_R04_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R05_C00
-    ; CX:4, FX:15, VX:15, D:7
-    byte 126, 71
-SEQ_S00_O03_R06_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R07_C00
-    ; CX:4, FX:19, VX:15, D:8
-    byte 158, 72
-SEQ_S00_O03_R08_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O03_R09_C00
-    ; CX:4, FX:11, VX:15, D:8
-    byte 94, 72
-SEQ_S00_O03_R0a_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R0b_C00
-    ; CX:4, FX:19, VX:15, D:7
-    byte 158, 71
-SEQ_S00_O03_R0c_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R0d_C00
-    ; CX:4, FX:15, VX:15, D:9
-    byte 126, 73
-SEQ_S00_O03_R0e_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R0f_C00
-    ; CX:4, FX:19, VX:15, D:8
-    byte 158, 72
-SEQ_S00_O03_R10_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R11_C00
-    ; CX:4, FX:9, VX:15, D:7
-    byte 78, 71
-SEQ_S00_O03_R12_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O03_R13_C00
-    ; CX:4, FX:19, VX:15, D:8
-    byte 158, 72
-SEQ_S00_O03_R14_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R15_C00
-    ; CX:4, FX:15, VX:15, D:8
-    byte 126, 72
-SEQ_S00_O03_R16_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R17_C00
-    ; CX:4, FX:19, VX:15, D:7
-    byte 158, 71
+    ;F9 C4 V15 D8 - SS:0 O:3 R:0
+    byte 78,79,44
+    ;F9 C4 V0 D2 - SS:0 O:3 R:1
+    byte 8
+    ;F19 C4 V15 D8 - SS:0 O:3 R:2
+    byte 158,79,44
+    ;F19 C4 V0 D1 - SS:0 O:3 R:3
+    byte 1
+    ;F15 C4 V15 D8 - SS:0 O:3 R:4
+    byte 126,79,44
+    ;F15 C4 V0 D1 - SS:0 O:3 R:5
+    byte 1
+    ;F19 C4 V15 D8 - SS:0 O:3 R:6
+    byte 158,79,44
+    ;F19 C4 V0 D2 - SS:0 O:3 R:7
+    byte 8
+    ;F11 C4 V15 D8 - SS:0 O:3 R:8
+    byte 94,79,44
+    ;F11 C4 V0 D1 - SS:0 O:3 R:9
+    byte 1
+    ;F19 C4 V15 D8 - SS:0 O:3 R:10
+    byte 158,79,44
+    ;F19 C4 V0 D1 - SS:0 O:3 R:11
+    byte 1
+    ;F15 C4 V15 D9 - SS:0 O:3 R:12
+    byte 126,79,52
+    ;F15 C4 V0 D1 - SS:0 O:3 R:13
+    byte 1
+    ;F19 C4 V15 D8 - SS:0 O:3 R:14
+    byte 158,79,44
+    ;F19 C4 V0 D1 - SS:0 O:3 R:15
+    byte 1
+    ;F9 C4 V15 D8 - SS:0 O:3 R:16
+    byte 78,79,44
+    ;F9 C4 V0 D2 - SS:0 O:3 R:17
+    byte 8
+    ;F19 C4 V15 D8 - SS:0 O:3 R:18
+    byte 158,79,44
+    ;F19 C4 V0 D1 - SS:0 O:3 R:19
+    byte 1
+    ;F15 C4 V15 D8 - SS:0 O:3 R:20
+    byte 126,79,44
+    ;F15 C4 V0 D1 - SS:0 O:3 R:21
+    byte 1
+    ;F19 C4 V15 D8 - SS:0 O:3 R:22
+    byte 158,79,44
+    ;F19 C4 V0 D2 - SS:0 O:3 R:23
+    byte 8
     byte 0
+
 TRACK_TITLE_4_C00 = . - AUDIO_TRACKS
-SEQ_S00_O04_R00_C00
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O04_R01_C00
-    ; CX:4, FX:15, VX:15, D:8
-    byte 126, 72
-SEQ_S00_O04_R02_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O04_R03_C00
-    ; CX:4, FX:17, VX:15, D:8
-    byte 142, 72
-SEQ_S00_O04_R04_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O04_R05_C00
-SEQ_S00_O04_R06_C00
-SEQ_S00_O04_R07_C00
-SEQ_S00_O04_R08_C00
-    ; CX:4, FX:19, VX:15, D:18
-    byte 158, 82
-SEQ_S00_O04_R09_C00
-SEQ_S00_O04_R0a_C00
-SEQ_S00_O04_R0b_C00
-SEQ_S00_O04_R0c_C00
-    ; CX:4, FX:23, VX:15, D:19
-    byte 190, 83
-SEQ_S00_O04_R0d_C00
-SEQ_S00_O04_R0e_C00
-SEQ_S00_O04_R0f_C00
-SEQ_S00_O04_R10_C00
-SEQ_S00_O04_R11_C00
-SEQ_S00_O04_R12_C00
-SEQ_S00_O04_R13_C00
-    ; CX:12, FX:8, VX:15, D:31
-    byte 70, 223
-    ; CX:12, FX:8, VX:15, D:3
-    byte 70, 195
-SEQ_S00_O04_R14_C00
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O04_R15_C00
-SEQ_S00_O04_R16_C00
-SEQ_S00_O04_R17_C00
-    ; CX:4, FX:31, VX:15, D:18
-    byte 254, 82
-    ; PAUSE, D:1
-    byte 3
+    ;F15 C4 V15 D8 - SS:0 O:4 R:0
+    byte 126,79,44
+    ;F15 C4 V0 D1 - SS:0 O:4 R:1
+    byte 1
+    ;F17 C4 V15 D8 - SS:0 O:4 R:2
+    byte 142,79,44
+    ;F17 C4 V0 D1 - SS:0 O:4 R:3
+    byte 1
+    ;F19 C4 V15 D19 - SS:0 O:4 R:4
+    byte 158,79,132
+    ;F23 C4 V15 D19 - SS:0 O:4 R:8
+    byte 191,132
+    ;F8 C12 V15 D36 - SS:0 O:4 R:12
+    byte 70,207,252,12
+    ;F8 C12 V0 D1 - SS:0 O:4 R:19
+    byte 1
+    ;F31 C4 V15 D18 - SS:0 O:4 R:20
+    byte 254,79,124
+    ;F31 C4 V0 D1 - SS:0 O:4 R:23
+;    byte 1
     byte 0
+
 TRACK_TITLE_0_C01 = . - AUDIO_TRACKS
-SEQ_S00_O00_R00_C01
-SEQ_S00_O00_R01_C01
-SEQ_S00_O00_R02_C01
-SEQ_S00_O00_R03_C01
-SEQ_S00_O00_R04_C01
-    ; PAUSE, D:19
-    byte 39
-SEQ_S00_O00_R05_C01
-SEQ_S00_O00_R06_C01
-SEQ_S00_O00_R07_C01
-SEQ_S00_O00_R08_C01
-SEQ_S00_O00_R09_C01
-SEQ_S00_O00_R0a_C01
-SEQ_S00_O00_R0b_C01
-    ; CX:4, FX:26, VX:15, D:31
-    byte 214, 95
-    ; CX:4, FX:26, VX:15, D:5
-    byte 214, 69
-SEQ_S00_O00_R0c_C01
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O00_R0d_C01
-SEQ_S00_O00_R0e_C01
-SEQ_S00_O00_R0f_C01
-SEQ_S00_O00_R10_C01
-SEQ_S00_O00_R11_C01
-SEQ_S00_O00_R12_C01
-SEQ_S00_O00_R13_C01
-    ; CX:4, FX:27, VX:15, D:31
-    byte 222, 95
-    ; CX:4, FX:27, VX:15, D:3
-    byte 222, 67
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O00_R14_C01
-SEQ_S00_O00_R15_C01
-SEQ_S00_O00_R16_C01
-SEQ_S00_O00_R17_C01
+    ;F0 C0 V0 D18 - SS:0 O:0 R:0
+    byte 136
+    ;F26 C4 V15 D37 - SS:0 O:0 R:4
+    byte 214,79,252,20
+    ;F26 C4 V0 D1 - SS:0 O:0 R:11
+    byte 1
+    ;F27 C4 V15 D36 - SS:0 O:0 R:12
+    byte 222,79,252,12
+    ;F27 C4 V0 D20 - SS:0 O:0 R:19
+;    byte 152
     byte 0
+
 TRACK_TITLE_1_C01 = . - AUDIO_TRACKS
-SEQ_S00_O01_R00_C01
-    ; PAUSE, D:20
-    byte 41
-SEQ_S00_O01_R01_C01
-SEQ_S00_O01_R02_C01
-SEQ_S00_O01_R03_C01
-SEQ_S00_O01_R04_C01
-    ; CX:12, FX:20, VX:15, D:18
-    byte 166, 210
-SEQ_S00_O01_R05_C01
-SEQ_S00_O01_R06_C01
-SEQ_S00_O01_R07_C01
-SEQ_S00_O01_R08_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O01_R09_C01
-SEQ_S00_O01_R0a_C01
-SEQ_S00_O01_R0b_C01
-SEQ_S00_O01_R0c_C01
-    ; CX:4, FX:7, VX:15, D:18
-    byte 62, 82
-SEQ_S00_O01_R0d_C01
-SEQ_S00_O01_R0e_C01
-SEQ_S00_O01_R0f_C01
-SEQ_S00_O01_R10_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O01_R11_C01
-SEQ_S00_O01_R12_C01
-SEQ_S00_O01_R13_C01
-SEQ_S00_O01_R14_C01
-    ; CX:12, FX:20, VX:15, D:19
-    byte 166, 211
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O01_R15_C01
-SEQ_S00_O01_R16_C01
-SEQ_S00_O01_R17_C01
+    ;F20 C12 V15 D19 - SS:0 O:1 R:0
+    byte 166,207,132
+    ;F20 C12 V0 D19 - SS:0 O:1 R:4
+    byte 144
+    ;F7 C4 V15 D18 - SS:0 O:1 R:8
+    byte 62,79,124
+    ;F7 C4 V0 D19 - SS:0 O:1 R:12
+    byte 144
+    ;F20 C12 V15 D19 - SS:0 O:1 R:16
+    byte 166,207,132
+    ;F20 C12 V0 D19 - SS:0 O:1 R:20
+;    byte 144
     byte 0
+
 TRACK_TITLE_2_C01 = . - AUDIO_TRACKS
-SEQ_S00_O02_R00_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O02_R01_C01
-SEQ_S00_O02_R02_C01
-SEQ_S00_O02_R03_C01
-SEQ_S00_O02_R04_C01
-    ; CX:12, FX:23, VX:15, D:17
-    byte 190, 209
-SEQ_S00_O02_R05_C01
-SEQ_S00_O02_R06_C01
-SEQ_S00_O02_R07_C01
-SEQ_S00_O02_R08_C01
-    ; PAUSE, D:19
-    byte 39
-SEQ_S00_O02_R09_C01
-SEQ_S00_O02_R0a_C01
-SEQ_S00_O02_R0b_C01
-SEQ_S00_O02_R0c_C01
-    ; CX:4, FX:8, VX:15, D:18
-    byte 70, 82
-SEQ_S00_O02_R0d_C01
-SEQ_S00_O02_R0e_C01
-SEQ_S00_O02_R0f_C01
-SEQ_S00_O02_R10_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O02_R11_C01
-SEQ_S00_O02_R12_C01
-SEQ_S00_O02_R13_C01
-SEQ_S00_O02_R14_C01
-    ; CX:12, FX:23, VX:15, D:18
-    byte 190, 210
-    ; PAUSE, D:1
-    byte 3    
-SEQ_S00_O02_R15_C01
-SEQ_S00_O02_R16_C01
-SEQ_S00_O02_R17_C01
+    ;F23 C12 V15 D18 - SS:0 O:2 R:0
+    byte 190,207,124
+    ;F23 C12 V0 D19 - SS:0 O:2 R:4
+    byte 144
+    ;F8 C4 V15 D19 - SS:0 O:2 R:8
+    byte 70,79,132
+    ;F8 C4 V0 D19 - SS:0 O:2 R:12
+    byte 144
+    ;F23 C12 V15 D18 - SS:0 O:2 R:16
+    byte 190,207,124
+    ;F23 C12 V0 D19 - SS:0 O:2 R:20
+;    byte 144
     byte 0
+
 TRACK_TITLE_3_C01 = . - AUDIO_TRACKS
-SEQ_S00_O03_R00_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O03_R01_C01
-SEQ_S00_O03_R02_C01
-SEQ_S00_O03_R03_C01
-SEQ_S00_O03_R04_C01
-    ; CX:12, FX:26, VX:15, D:19
-    byte 214, 211
-SEQ_S00_O03_R05_C01
-SEQ_S00_O03_R06_C01
-SEQ_S00_O03_R07_C01
-SEQ_S00_O03_R08_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O03_R09_C01
-SEQ_S00_O03_R0a_C01
-SEQ_S00_O03_R0b_C01
-SEQ_S00_O03_R0c_C01
-    ; CX:4, FX:19, VX:15, D:17
-    byte 158, 81
-SEQ_S00_O03_R0d_C01
-SEQ_S00_O03_R0e_C01
-SEQ_S00_O03_R0f_C01
-SEQ_S00_O03_R10_C01
-    ; PAUSE, D:19
-    byte 39
-SEQ_S00_O03_R11_C01
-SEQ_S00_O03_R12_C01
-SEQ_S00_O03_R13_C01
-SEQ_S00_O03_R14_C01
-    ; CX:12, FX:26, VX:15, D:18
-    byte 214, 210
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O03_R15_C01
-SEQ_S00_O03_R16_C01
-SEQ_S00_O03_R17_C01
+    ;F26 C12 V15 D19 - SS:0 O:3 R:0
+    byte 214,207,132
+    ;F26 C12 V0 D19 - SS:0 O:3 R:4
+    byte 144
+    ;F19 C4 V15 D18 - SS:0 O:3 R:8
+    byte 158,79,124
+    ;F19 C4 V0 D19 - SS:0 O:3 R:12
+    byte 144
+    ;F26 C12 V15 D19 - SS:0 O:3 R:16
+    byte 214,207,132
+    ;F26 C12 V0 D37 - SS:0 O:3 R:20
+;    byte 248,36
     byte 0
 TRACK_TITLE_4_C01 = . - AUDIO_TRACKS
-SEQ_S00_O04_R00_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O04_R01_C01
-SEQ_S00_O04_R02_C01
-SEQ_S00_O04_R03_C01
-SEQ_S00_O04_R04_C01
-    ; PAUSE, D:18
-    byte 37
-SEQ_S00_O04_R05_C01
-SEQ_S00_O04_R06_C01
-SEQ_S00_O04_R07_C01
-    ; CX:12, FX:8, VX:15, D:17
-    byte 70, 209
-SEQ_S00_O04_R08_C01
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O04_R09_C01
-SEQ_S00_O04_R0a_C01
-SEQ_S00_O04_R0b_C01
-    ; CX:4, FX:31, VX:15, D:18
-    byte 254, 82
-SEQ_S00_O04_R0c_C01
-    ; PAUSE, D:1
-    byte 3
-SEQ_S00_O04_R0d_C01
-SEQ_S00_O04_R0e_C01
-SEQ_S00_O04_R0f_C01
-    ; CX:12, FX:6, VX:15, D:16
-    byte 54, 208
-SEQ_S00_O04_R10_C01
-    ; PAUSE, D:2
-    byte 5
-SEQ_S00_O04_R11_C01
-SEQ_S00_O04_R12_C01
-SEQ_S00_O04_R13_C01
-SEQ_S00_O04_R14_C01
-SEQ_S00_O04_R15_C01
-SEQ_S00_O04_R16_C01
-    ; CX:4, FX:31, VX:15, D:27
-    byte 254, 91
-SEQ_S00_O04_R17_C01
-    ; PAUSE, D:9
-    byte 19
-TRACK_WAIT = . - AUDIO_TRACKS
+    ;D19
+    byte 144
+    ;F8 C12 V15 D18 - SS:0 O:4 R:4
+    byte 70,207,124
+    ;F8 C12 V0 D1 - SS:0 O:4 R:7
+    byte 1
+    ;F31 C4 V15 D18 - SS:0 O:4 R:8
+    byte 254,79,124
+    ;F31 C4 V0 D1 - SS:0 O:4 R:11
+    byte 1
+    ;F6 C12 V15 D17 - SS:0 O:4 R:12
+    byte 54,207,116
+    ;F6 C12 V0 D2 - SS:0 O:4 R:15
+    byte 8
+    ;F31 C4 V15 D28 - SS:0 O:4 R:16
+    byte 254,79,204
+    ;F31 C4 V0 D9 - SS:0 O:4 R:22
+;    byte 64
     byte 0
 
 

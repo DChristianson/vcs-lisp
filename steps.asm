@@ -272,24 +272,12 @@ draw_t1_data_addr  ds 2
 ;   - shrink or remove flights array
 ;   - optimize title screen
 ; TODO
-;  - visual 3
-;   - size 1 stairs no number?
-;   - jump animation 
-;   - addressible colors on stairs
-;  - gameplay 3
-;   - double button press "plays" solution musically
-;   - lava (time attack) mode - steps "catch fire"?
-;   - echo (dark) mode - limited step visibility
-;   - zero / missing steps in mazes
-;   - breakable stairs - 1 or two touches cause break?
-;   - stair swapping mechanic
-;   - maze changing mechanic
-;      ****T G
-;      ***T2 G
-;      **2T3G
-;   - flight jumping mechanic
 ;  - sounds 2
 ;   - tuneup sound pass
+;  - gameplay 3
+;   - lava (time attack) mode - steps "catch fire"?
+;   - echo (dark) mode - limited step visibility
+;   - double button press "plays" solution musically
 ;  - code size
 ;   - algorithmic maze gen
 ;   - fewer size 6 mazes
@@ -299,6 +287,19 @@ draw_t1_data_addr  ds 2
 ;   - some kind of theme on lose
 ;   - some kind of graphic in sky (cloud? bird?)
 ;   - should be no step edge in ground?
+;  - visual 3
+;   - jump animation 
+;   - size 1 stairs no number?
+;   - addressible colors on stairs
+;  - gameplay 4
+;   - zero / missing steps in mazes
+;   - stair swapping / maze changing mechanic
+;      ****T G
+;      ***T2 G
+;      **2T3G
+;   - breakable stairs - 1 or two touches cause break?
+;   - flight jumping mechanic
+;  - sprinkles 2
 ;   - animated squirrels in title and select
 ;   - horizontal screen transitions
 ;   - gradient sky background
@@ -409,29 +410,46 @@ _ax_next_note
             tay
             lda AUDIO_TRACKS,y
             beq _ax_stop
-            lsr                        ; pull first bit
-            bcs _ax_pause              ; if set go to pause
-            lsr                        ; KLUDGE: unused control bit (assume 0)
-            lsr                        ; KLUDGE: unused control bit (assume 1)
-            clc                        
+            lsr                        ; .......|C pull first bit
+            bcc _ax_set_all_registers  ; .......|? if clear go to load all registers
+            lsr                        ; 0......|C1 pull second bit
+            bcc _ax_cx_vx              ; 0......|?1 if clear we are loading aud(c|v)x
+            lsr                        ; 00fffff|C11 pull duration bit for later set
             sta AUDF0,x                ; store frequency
-            lda audio_vx
-            sta AUDV0,x
-            iny
-            lda AUDIO_TRACKS,y
-            lsr
-            lsr
-            lsr
-            lsr
-            sta AUDC0,x
-            lda AUDIO_TRACKS,y
-            and #$1f
-            sta audio_timer,x
-            jmp _ax_advance
-_ax_pause   
-            sta audio_timer,x
+            bpl _ax_set_timer_delta    ; jump to duration (note: should always be positive)
+_ax_cx_vx   lsr                        ; 00.....|C01
+            bcc _ax_vx                 ; 00.....|?01  
+            lsr                        ; 000cccc|C101
+            sta AUDC0,x                ; store control
+            bpl _ax_set_timer_delta    ; jump to duration (note: should always be positive)
+_ax_vx
+            lsr                        ; 000vvvv|C001
+            sta AUDV0,x                ; store volume
+_ax_set_timer_delta
+            rol audio_timer,x          ; set new timer to 0 or 1 depending on carry bit
+            bpl _ax_advance            ; done (note: should always be positive)
+_ax_set_all_registers
+            ; processing all registers
+            lsr                        ; 00......|C0
+            bcc _ax_set_suspause       ; 00......|?0 if clear we are suspausing
+            lsr                        ; 0000fffff|C10 pull duration bit
+            sta AUDF0,x                ; store frequency
+            rol audio_timer,x          ; set new timer to 0 or 1 depending on carry bit
+            iny                        ; advance 1 byte
+            lda AUDIO_TRACKS,y         ; ccccvvvv|
+            sta AUDV0,x                ; store volume
+            lsr                        ; 0ccccvvv|
+            lsr                        ; 00ccccvv|
+            lsr                        ; 000ccccv|
+            lsr                        ; 0000cccc|
+            sta AUDC0,x                ; store control
+            bpl _ax_advance            ; done (note: should always be positive)
+_ax_set_suspause
+            lsr                        ; 000ddddd|C00 pull bit 3 (reserved)
+            sta audio_timer,x          ; store timer
+            bcs _ax_advance          ; if set we sustain
             lda #0
-            sta AUDV0,x
+            sta AUDV0,x             ; clear volume
 _ax_advance
             iny
             sty audio_tracker,x
