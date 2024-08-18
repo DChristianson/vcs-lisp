@@ -271,16 +271,22 @@ draw_t1_data_addr  ds 2
 ;  - code size
 ;   - shrink or remove flights array
 ;   - optimize title screen
-; TODO
 ;  - sounds 2
 ;   - tuneup sound pass
+; TODO
+;  - code size
+;   - shrink maze size (replace with generation) - 678 bytes data + code
+;   - less data + code for title - 798 bytes data + code
+;   - shrink audio size - 256 bytes + 122 bytes code
+;  - code 
+;   - algorithmic maze gen
+;   - use incremental maze construction to conserve VBLANK
+;  - glitches
+;   - frame rate unstable
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;   - echo (dark) mode - limited step visibility
 ;   - double button press "plays" solution musically
-;  - code size
-;   - algorithmic maze gen
-;   - fewer size 6 mazes
 ;  - sprinkles 1
 ;   - select screen design, shows lava, etc
 ;   - some kind of celebration on win (fireworks?)
@@ -288,10 +294,12 @@ draw_t1_data_addr  ds 2
 ;   - some kind of graphic in sky (cloud? bird?)
 ;   - should be no step edge in ground?
 ;  - visual 3
-;   - jump animation 
+;   - jump animation (Q: is that even feasible with this kernel)
 ;   - size 1 stairs no number?
 ;   - addressible colors on stairs
 ;  - gameplay 4
+;   - player builds maze by dropping numbers?
+;     - player builds maze as numbers drop?
 ;   - zero / missing steps in mazes
 ;   - stair swapping / maze changing mechanic
 ;      ****T G
@@ -1813,13 +1821,12 @@ _sub_gen_steps_loop
             dey
             bpl _sub_gen_steps_loop
             jmp sub_solve_puzzle
-            ;rts
+            rts
 
    ORG $F800
     
 ;--------------------
 ; Title Screen Kernel
-
 
 gx_show_title
             lda #WHITE
