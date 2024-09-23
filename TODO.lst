@@ -96,9 +96,18 @@ DONE
    - bigger symbol table? 
    - game modes 2
       - calc mode
+  - bugs
+    - hmove bar in menu
+    - music note length too short
+  - menu 3
+      - allow cyclical switching
+      - separate lines for function vs mode
+      - mode switch show all the names of modes
+      - different colors depending on function selection
 BUGS
-  - code
-    - complex program takes too long to analyze in vblank
+  - unstable frame size per mode
+  - repl adds +/- 1 line
+  - complex program takes too long to analyze in vblank
 BETA
   - dev support
      - self hosted stellerator page
@@ -109,6 +118,7 @@ BETA
      - some way to do unit tests (stellerator debugger?)
   - game modes 2
       - music game (simon?)
+        - ringing changes
         - changes color with different beeps
         - stable framerate both repl and eval
         - be able to handle DSS generative examples as demos
@@ -136,10 +146,6 @@ BETA
         - stable framerate both repl and eval
       - calc
         - stable framerate both repl and eval
-  - menu 
-      - mode switch show all the names of modes
-      - allow for selection without actually switching
-      - allow cyclical switching
   - virtual keyboard 3
       - extend to all commands
       - can only see numbers in number mode
@@ -157,16 +163,18 @@ BETA
       - modulo function
       - music functions (map... or progn?)
       - game functions
-  - display 4 
-      - use PF0 to hide HMOVE + switch to std HMOVE..?.
-      - different colors depending on function selection
   - library 1
       - div functions working
+  - menu 4
+      - allow for selection without actually switching
+  - display 4 
+      - use PF0 to hide HMOVE + switch to std HMOVE..?.
   - code 2
       - hygiene
         - clean up temp variable usage
         - clean up graphics on/offs
       - compaction pass
+        - don't use extra HMOV for shims
         - use .byte $2C skip next 2 bytes trick?
         - 48 unused bytes on last page 
         - multiple ways to repl - can consolidate?

@@ -220,12 +220,14 @@ _not_return
 FUNC_BEEP
             ; beep
             ;  - we count down from arg1
-            ;  - if arg1 < 0 we return normally
+            ;  - if arg1 == 0 we return normally
             ;  - otherwise load note into audio registers and accumulator
             ldx eval_frame
             ; get timer
             lda FRAME_ARG_OFFSET_LSB - 2,x
-            and #$0f
+            and #$0f ; take least significant digit
+            asl      ; x 4
+            asl      ;
             sta beep_t0
             beq _beep_end
             ; play sound
@@ -244,6 +246,7 @@ _beep_continue
             dec beep_t0
             beq _beep_end
             jsr eval_wait
+            jmp _beep_continue
 _beep_end
             lda #0
             sta AUDV0

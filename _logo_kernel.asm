@@ -7,8 +7,6 @@
 logo_draw
 	lda #68
 	jsr sub_respxx
-    sta WSYNC
-	sta HMOVE
 	ldx #1                      ;2   2  
 	stx VDELP0                  ;3   5  
 	stx VDELP1                  ;3   8

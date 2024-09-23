@@ -56,7 +56,7 @@ HEAP_CDR_ADDR       = $0001
 REPL_CELL_ADDR      = #repl - 1 ; virtual cell
 NULL                = $00
 
-HEADER_HEIGHT = 55
+HEADER_HEIGHT = 40
 EDITOR_LINES  = 5
 LINE_HEIGHT = CHAR_HEIGHT + 10
 PROMPT_HEIGHT = EDITOR_LINES * LINE_HEIGHT
@@ -286,9 +286,26 @@ endVBlank_loop
             stx VBLANK
 
             sta WSYNC ; SL 35
-
             lda #0
             sta COLUBK
+            sta NUSIZ0
+            sta NUSIZ1
+            
+            lda game_state
+            and #$70
+            adc #$50
+            jsr sub_fmt_word_no_mult 
+            lda #70
+            jsr sub_respxx
+            lda #WHITE 
+            ldy #-2    
+            cpy repl_edit_line 
+            bne _mode_set_colupx
+            lda #CURSOR_COLOR
+_mode_set_colupx
+            sta COLUP0     
+            sta COLUP1    
+            jsr sub_draw_glyph_16px
 
             lda game_state
             and #$70
@@ -300,6 +317,15 @@ endVBlank_loop
             pha
             lda REPL_DRAW_JMP_LO,x
             pha
+            lda #0             
+            sta WSYNC
+            sta GRP0     
+            sta GRP1 
+            sta GRP0     
+            sta COLUBK
+            lda #WHITE
+            sta COLUP0
+            sta COLUP1
             rts
 game_draw_return
 

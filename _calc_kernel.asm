@@ -11,11 +11,8 @@ sub_draw_accumulator
             ldx #<accumulator
             jsr sub_fmt_number
             ; prep for a 24 px sprite graphic
-            ; BUGBUG: SPACE: same as logo
             lda #68
             jsr sub_respxx
-            sta WSYNC
-            sta HMOVE                   
             ldx #1                      ;2   2  
             stx VDELP0                  ;3   5  
             stx VDELP1                  ;3   8

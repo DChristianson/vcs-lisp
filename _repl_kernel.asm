@@ -122,12 +122,12 @@ repl_update
             ; disambiguate editor state
             lda game_state
             lsr ; #GAME_STATE_EDIT_KEYS == 1
-            bcs _repl_update_edit_keys
-            ; moving line
+            bcs _repl_update_edit_keys ; in keyboard
+            ; moving cursor
             lda repl_edit_line
-            bmi _repl_update_menu
+            bmi _repl_update_menu_move
             lda player_input_latch     ; check button push
-            bmi _repl_update_edit_move ; BUGBUG: better name prefix - _repl_keys_...?
+            bmi _repl_update_edit_move ; no push, moving cursor
 _repl_update_edit_keys_start
             ; button was pushed, so we need to display keyboard
             lda game_state
@@ -186,12 +186,17 @@ _repl_update_check_keys_save
 _repl_update_keys_skip_move
             jmp _repl_update_skip_move
 
-_repl_update_menu
-            ; check button push
-            lda player_input_latch         
-            bpl _repl_update_menu_select
+_repl_update_menu_move
+            ldx repl_edit_line
+            inx 
+            bmi _repl_update_mode_move
             ; check cursor movement
-            ror ; skip up
+            lda player_input_latch         
+            bmi _repl_update_menu_skip_press
+            jmp repl_menu_press_eval
+_repl_update_menu_skip_press
+            ror ; up
+            bcc _repl_update_up
             ror ; down
             bcc _repl_update_down
             ror
@@ -204,27 +209,32 @@ _repl_update_menu_skip_left
             lda #1
 _repl_update_set_menu
             adc repl_menu_tab ; should be carry clear
-            and #$07
-            cmp #$05 ; BUGBUG magic number should be constant
-            bcc _repl_update_save_menu_tab
-            lda #0
+            and #$03
 _repl_update_save_menu_tab
             sta repl_menu_tab
             jmp _repl_update_skip_move
-_repl_update_menu_select
-            ldx repl_menu_tab
-            lda REPL_MENU_JMP_HI,x
-            pha
-            lda REPL_MENU_JMP_LO,x
-            pha
-            rts       
+            
+_repl_update_mode_skip_game
+            ; check cursor movement
+            ror ; up
+            ror ; down
+            bcc _repl_update_down
+            jmp _repl_update_skip_move
 
 _repl_update_edit_move
             ; check cursor movement
             ror
             bcs _repl_update_skip_up
+_repl_update_up
             lda #-1
             jmp _repl_update_set_cursor_line
+
+_repl_update_mode_move
+            ; check button push
+            lda player_input_latch         
+            bmi _repl_update_mode_skip_game
+            jmp repl_menu_press_game
+
 _repl_update_skip_up
             ror
             bcs _repl_update_skip_updown
@@ -245,7 +255,6 @@ _repl_update_check_limit
             sta repl_scroll
             jmp _repl_update_skip_move
 _repl_update_above_limit            
-            lda #-1 
             sta repl_edit_line
             lda #0
             sta repl_scroll
@@ -501,48 +510,6 @@ _prep_repl_end
 ; Repl display
 ;
 
-            ; MENU
-            ; 
-sub_draw_menu
-            lda #14                      ; menu at pixel 14
-            jsr sub_respxx
-            sta WSYNC                    ;--  0
-            sta HMOVE
-            lda repl_menu_tab            ; multiply by 16 + 2
-            clc
-            adc #1
-            asl
-            asl
-            asl
-            asl
-            ldy #>SYMBOL_GRAPHICS_P2
-            ldx #3
-_menu_loop
-            sty gx_addr,x
-            dex
-            sta gx_addr,x
-            adc #8
-            dex
-            bpl _menu_loop
-            inx                         ; get to 0
-        	stx HMP0                    
-            lda #$10 
-            sta HMP1
-        	sta WSYNC                   
-            sta HMOVE
-            lda #WHITE             
-            sta COLUP0     
-            sta COLUP1    
-            lda #RED     
-            ldx repl_edit_line        
-            bpl _menu_set_colubk     
-            lda #CURSOR_COLOR           
-_menu_set_colubk
-            sta COLUBK
-            jsr sub_draw_glyph_16px
-            sta GRP0 ; forces GRP1 delay register to clear
-            rts
-
             ; PROMPT
             ; BUGBUG: change name from prompt
             ; draw repl cell tree
@@ -588,7 +555,7 @@ _prompt_repos_loop
             sta HMP1                ;3   17
             lda repl_display_indent,y ;4 21 ; check display list for who goes first
             lsr                     ;2   23 : SPACE: use lsr to check order bit
-            bcs _prompt_repos_swap  ;2/3 25 ; .
+            sbcs _prompt_repos_swap ;2/3 25 ; .
             sta.w RESP0             ;3   29 shim to 29
             sta RESP1               ;3   32
             jmp _prompt_repos_swap_end
@@ -597,41 +564,43 @@ _prompt_repos_swap
             sta RESP0               ;3   32
 _prompt_repos_swap_end
             sta WSYNC               ;--
-            lda #WHITE              ;2    2 ; BUGBUG clean this up, not needed every line
-            sta COLUP0              ;3    5
-            sta COLUP1              ;3    8
-            sta COLUPF              ;3   11
-            lda #$30                ;2   13
-            sta CTRLPF              ;3   16
-            tya                     ;2   18 
-            clc                     ;2   20
-            adc repl_scroll         ;3   23
-            and #$01                ;2   25
-            tax                     ;2   27
-            lda DISPLAY_REPL_COLORS,x ;4 31
-            cpy repl_keys_y         ;3   34
-            bne _prompt_keys_skip   ;2*  36
-            lda #0                  ;2   38
-            ldx #CURSOR_COLOR+1     ;2   40
-            SLEEP 4                 ;4   44
-            jmp _prompt_cursor_bk_1 ;3   47
+            ; lda #WHITE              ;2    2 ; BUGBUG clean this up, not needed every line
+            ; sta COLUP0              ;3    5
+            ; sta COLUP1              ;3    8
+            ; sta COLUPF              ;3   11
+            lda #$30                ;2    2
+            sta CTRLPF              ;3    5
+            tya                     ;2    7 
+            clc                     ;2    9
+            adc repl_scroll         ;3   12
+            and #$01                ;2   14
+            tax                     ;2   16
+            lda DISPLAY_REPL_COLOR_SHADES,x ;4 20
+            ldx repl_menu_tab       ;3   23
+            adc DISPLAY_REPL_COLOR_SCHEME,x ;4 27
+            cpy repl_keys_y         ;3   30
+            sbne _prompt_keys_skip  ;2*  32
+            lda #0                  ;2   34
+            ldx #CURSOR_COLOR+1     ;2   36
+            SLEEP 4                 ;4   40
+            jmp _prompt_cursor_bk_1 ;3   43
 _prompt_keys_skip
-            cpy repl_edit_y         ;3   40
-            bne _prompt_cursor_skip ;2*  42
-            ldx #CURSOR_COLOR       ;2   44
-            jmp _prompt_cursor_bk_1 ;3   47
+            cpy repl_edit_y         ;3   36
+            sbne _prompt_cursor_skip ;2*  38
+            ldx #CURSOR_COLOR       ;2   40
+            jmp _prompt_cursor_bk_1 ;3   43
 _prompt_cursor_skip
-            tax                     ;2   45    
-            SLEEP 2                 ;2   47
+            tax                     ;2   41    
+            SLEEP 2                 ;2   43
 _prompt_cursor_bk_1
-            SLEEP 20                ;20  67
+            SLEEP 24                ;24  67
             stx COLUPF              ;3   70
             sta HMOVE               ;3   73
             sta COLUBK              ;3   76
             SLEEP 14                ;14  14 ; sleep to protect HMX registers
             lda repl_display_indent,y ;4 18
             and #$01                ;2   10
-            bne _prompt_swap_hpos   ;2/3 22
+            sbne _prompt_swap_hpos  ;2/3 22
             lda #$a0                ;2   24
             sta HMP0                ;3   27
             lda #$b0                ;2   29
@@ -862,9 +831,28 @@ prompt_done
             rts
 
 repl_draw
-
-            jsr sub_draw_menu
-            jsr sub_clear_gx
+            lda #5
+            jsr sub_respxx
+            ldx repl_menu_tab 
+            lda DISPLAY_REPL_COLOR_SCHEME,x
+        	sta WSYNC
+            sta COLUBK
+            inx
+            txa
+            jsr sub_fmt_word
+            lda #WHITE     
+            cpy repl_edit_line 
+            bne _menu_set_colupx
+            lda #CURSOR_COLOR
+_menu_set_colupx
+        	sta WSYNC
+            sta COLUP0     
+            sta COLUP1    
+            jsr sub_draw_glyph_16px
+            sta GRP0     
+            lda #WHITE
+            sta COLUP0
+            sta COLUP1
             jsr sfd_draw_prompt
 
             sta WSYNC
@@ -874,12 +862,6 @@ repl_draw
             jsr sub_wsync_loop
 
             jmp waitOnOverscan
-
-sub_fmt_number
-            WRITE_DIGIT_LO HEAP_CAR_ADDR, gx_s2_addr ;16 15
-            WRITE_DIGIT_HI HEAP_CDR_ADDR, gx_s3_addr   ;14 29
-            WRITE_DIGIT_LO HEAP_CDR_ADDR, gx_s4_addr   ;16 45
-            rts
 
 repl_menu_press_game
             ; inc game
@@ -892,20 +874,16 @@ repl_menu_press_game
 _menu_press_save_game
             sta game_state
             jmp _repl_update_skip_move            
+
 repl_menu_press_eval
+            lda repl_menu_tab
+            bne repl_menu_press_noop
             ; eval
             lda game_state
             ora #GAME_STATE_EVAL
             sta game_state
 repl_menu_press_noop
             jmp _repl_update_skip_move     
-
-REPL_MENU_JMP_LO
-    byte <(repl_menu_press_eval-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1),<(repl_menu_press_noop-1)
-    byte <(repl_menu_press_game-1)
-REPL_MENU_JMP_HI
-    byte >(repl_menu_press_eval-1),>(repl_menu_press_noop-1),>(repl_menu_press_noop-1),>(repl_menu_press_noop-1)
-    byte >(repl_menu_press_game-1)
 
 ; interleaved jump table
 ; BUGBUG: notation for this?
@@ -916,75 +894,6 @@ REPL_DRAW_JMP_HI = REPL_DRAW_JMP_LO + 1
     word (repl_draw_game-1)
     word (repl_draw_steps-1)
     word (repl_draw_tower-1)
-
-sub_respxx
-            ; a has position
-            sec
-            sta WSYNC               ; --
-_respxx_loop
-            sbc #15                 ;2    2
-            sbcs _respxx_loop       ;2/3  4
-            tax                     ;2    6
-            lda LOOKUP_STD_HMOVE,x  ;5   11
-            sta HMP0                ;3   14
-            sta HMP1                ;3   17
-            NOP                     ;2   19
-            sta.w RESP0             ;4   23
-            sta RESP1               ;3   27
-            rts
-
-sub_draw_glyph_16px ; draw p0 and p1, using y and a registers
-            ldy #CHAR_HEIGHT - 1
-_glyph_loop
-            sta WSYNC          
-            lda (gx_s3_addr),y   
-            sta GRP0                    
-            lda (gx_s4_addr),y         
-            sta GRP1                     
-            dey
-            sbpl _glyph_loop
-            rts
-
-sub_fmt_symbol
-            ; a is a symbol value, y is location
-            asl ; multiply by 8
-            asl ; .
-            asl ; .
-            sta gx_addr,y
-            lda #>SYMBOL_GRAPHICS_P0
-            adc #0 ; will pick up carry bit
-            sta gx_addr+1,y
-            rts
-
-sub_clear_gx
-            ; clear gx
-            lda #>SYMBOL_GRAPHICS_BLANK
-            ldy #<SYMBOL_GRAPHICS_BLANK
-            ldx #9
-_clear_gx_loop
-            sta gx_addr,x
-            dex
-            sty gx_addr,x
-            dex
-            bpl _clear_gx_loop
-            rts
-
-sub_repl_edit_symbol
-            ldx repl_edit_sym
-            lda MENU_PAGE_0_HI,x            ; convert repl_edit_sym to symbol
-            sec
-            sbc #>SYMBOL_GRAPHICS_P0
-            lsr
-            ror
-            ror
-            sta repl_edit_sym
-            lda MENU_PAGE_0_LO,x
-            lsr
-            lsr
-            ora repl_edit_sym
-            lsr
-            sta repl_edit_sym
-            rts
 
     ; line width X sprite arrangement
     ; we use the same display kernel for all 
@@ -1007,8 +916,91 @@ DISPLAY_COLS_NUSIZ0_B
     byte $00,$00,$01,$01,$03
 DISPLAY_COLS_NUSIZ1_B
     byte $00,$01,$01,$03,$03
-DISPLAY_REPL_COLORS
-    byte #$7A,#$7E,#$86 ; BUGBUG: make pal safe
+
+sub_respxx
+            ; respx both players at once
+            ; a has position
+            sec
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop       ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            NOP                     ;2   19
+            sta.w RESP0             ;4   23
+            sta RESP1               ;3   27
+            sta WSYNC               ;--   0
+            sta HMOVE               ;3    3
+            rts                     ;6    9
+
+sub_draw_glyph_16px ; draw p0 and p1, using y and a registers
+            ldy #CHAR_HEIGHT - 1
+_glyph_loop
+            sta WSYNC          
+            lda (gx_s3_addr),y   
+            sta GRP0                    
+            lda (gx_s4_addr),y         
+            sta GRP1                     
+            dey
+            sbpl _glyph_loop
+            rts
+
+sub_fmt_symbol
+            ; a is a symbol value, y is location
+            asl ; multiply by 8
+            asl ; .
+            asl ; .
+            sta gx_addr,y
+            lda #>SYMBOL_GRAPHICS_P0
+            adc #0 ; will pick up carry bit if we have P1
+            sta gx_addr+1,y
+            rts
+
+sub_fmt_word
+            ; a is a symbol value
+            asl ; multiply by 16
+            asl ; .
+            asl ; .
+            asl ; .
+sub_fmt_word_no_mult
+            sta gx_s3_addr
+            adc #$08
+            sta gx_s4_addr
+            lda #>SYMBOL_GRAPHICS_P2
+            sta gx_s3_addr+1
+            sta gx_s4_addr+1
+            rts
+
+sub_fmt_number
+            WRITE_DIGIT_LO HEAP_CAR_ADDR, gx_s2_addr ;16 15
+            WRITE_DIGIT_HI HEAP_CDR_ADDR, gx_s3_addr   ;14 29
+            WRITE_DIGIT_LO HEAP_CDR_ADDR, gx_s4_addr   ;16 45
+            rts
+
+sub_repl_edit_symbol
+            ldx repl_edit_sym
+            lda MENU_PAGE_0_HI,x            ; convert repl_edit_sym to symbol
+            sec
+            sbc #>SYMBOL_GRAPHICS_P0
+            lsr
+            ror
+            ror
+            sta repl_edit_sym
+            lda MENU_PAGE_0_LO,x
+            lsr
+            lsr
+            ora repl_edit_sym
+            lsr
+            sta repl_edit_sym
+            rts
+
+DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
+    byte $60,$B0,$50,$30
+DISPLAY_REPL_COLOR_SHADES
+    byte #$0A,#$0E ; BUGBUG: make pal safe
 
     MAC WRITE_DIGIT_HI 
             lda {1},x
