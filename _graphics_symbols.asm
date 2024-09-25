@@ -38,6 +38,7 @@ SYMBOL_GRAPHICS_CAR
     byte $0,$f8,$e0,$a8,$e0,$a8,$e0,$f8; 8
 SYMBOL_GRAPHICS_CDR
     byte $0,$f8,$38,$a8,$38,$a8,$38,$f8; 8
+SYMBOL_F0 = $10
 SYMBOL_GRAPHICS_F0
     byte $0,$88,$98,$50,$30,$20,$20,$60; 8
 SYMBOL_GRAPHICS_F1
@@ -61,17 +62,17 @@ SYMBOL_GRAPHICS_PLAYER_1_FN
     byte $0,$b8,$90,$b0,$c0,$a0,$a0,$e0; 8
 SYMBOL_GRAPHICS_BALL_FN
     byte $0,$0,$20,$70,$0,$70,$20,$0; 8
-    
-        ; pack 40 bytes of logo in here
-
-LOGO_0
-    byte $0,$46,$a8,$a8,$a6,$0,$0,$78
-    byte $7c,$3c,$3e,$1e,$1f,$f,$f,$7
-    byte $7,$3,$1,$1,$0,$0,$0,$0
+SYMBOL_GRAPHICS_HASH
+    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
+SYMBOL_GRAPHICS_QUOTE
+    byte $0,$0,$0,$10,$20,$20,$20,$0; 8
+SYMBOL_GRAPHICS_J0
+    byte $0,$f8,$f8,$f8,$70,$20,$20,$20; 8
+SYMBOL_GRAPHICS_J1
+    byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
+SYMBOL_BLANK = $1f
 SYMBOL_GRAPHICS_BLANK ; pack blank bytes in
-    byte $0,$0,$0,$0,$0,$0,$0,$0,$0,$20,$30,$38,$1f,$f,$7; 40
-LOGO_HEIGHT = . - LOGO_0
-
+    byte $0,$0,$0,$0,$0,$0,$0,$0
 
     align 256
 
@@ -109,43 +110,17 @@ SYMBOL_GRAPHICS_STACK_VAR
     byte $0,$fe,$54,$54,$14,$14,$10,$10; 8
 SYMBOL_GRAPHICS_STEPS_VAR
     byte $0,$80,$a0,$80,$f0,$14,$10,$1c; 8
-SYMBOL_GRAPHICS_J0
-    byte $0,$f8,$f8,$f8,$70,$20,$20,$20; 8
-SYMBOL_GRAPHICS_J1
-    byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
 SYMBOL_GRAPHICS_CX0B
     byte $0,$b8,$a8,$b8,$80,$80,$88,$80; 8
 SYMBOL_GRAPHICS_CX1B
     byte $0,$b8,$90,$b0,$80,$80,$88,$80; 8
 SYMBOL_GRAPHICS_CX01
     byte $0,$b8,$90,$b0,$0,$e8,$a8,$e8; 8
-
-; 80 bytes of logo
-LOGO_1
-    byte $0,$c5,$45,$44,$65,$0,$0,$0,$0,$0,$0,$0,$1,$1,$81,$83,$c3,$c3,$e3,$e7,$fe,$fe,$7e,$7e,$3c,$3c,$3c,$1c,$18,$18,$18,$38,$30,$70,$70,$e0,$c0,$c0,$80; 40
-LOGO_2
-    byte $0,$64,$24,$27,$37,$0,$0,$3c,$7e,$72,$e0,$c0,$c0,$c0,$80,$80,$80,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0; 40
-   
-    align 256
-
-SYMBOL_GRAPHICS_P2
-SYMBOL_GRAPHICS_HASH
-    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
-SYMBOL_GRAPHICS_QUOTE
-    byte $0,$0,$0,$10,$20,$20,$20,$0; 8
+SYMBOL_GRAPHICS_WORDS
 SYMBOL_GRAPHICS_EV
     byte $0,$64,$84,$8a,$ca,$8a,$8a,$62; 8
 SYMBOL_GRAPHICS_AL
-    byte $0,$a6,$a8,$a8,$e8,$a8,$a8,$48; 8
-
-; function defs BUGBUG: space (compact?)
-    byte $0,$88,$98,$50,$30,$20,$20,$60; 8
-    byte $0,$0,$0,$0,$0,$0,$0,$0
-    byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
-    byte $0,$0,$0,$0,$0,$0,$0,$0
-    byte $0,$e0,$20,$20,$70,$20,$20,$38; 8
-    byte $0,$0,$0,$0,$0,$0,$0,$0
-
+    byte $0,$a6,$a8,$a8,$e8,$a8,$a8,$48; 8 
 SYMBOL_GRAPHICS_CA
     byte $0,$6a,$8a,$8a,$8e,$8a,$8a,$64; 8
 SYMBOL_GRAPHICS_LC

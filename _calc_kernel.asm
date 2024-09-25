@@ -2,7 +2,7 @@ repl_draw_accumulator
             ldx #HEADER_HEIGHT / 2
             jsr sub_wsync_loop
             jsr sub_draw_accumulator
-            ldx #HEADER_HEIGHT / 2
+            ldx #HEADER_HEIGHT / 2 - 1
             jsr sub_wsync_loop
             jmp game_draw_return
 
@@ -40,7 +40,6 @@ _accumulator_draw_loop    ; 40/41 w page jump
             sta GRP0                    ;3   37 
             dey                         ;2   39  
             bpl _accumulator_draw_loop  ;2   41  
-            sta WSYNC
             lda #0
             sta NUSIZ0
             sta NUSIZ1

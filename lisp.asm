@@ -290,10 +290,10 @@ endVBlank_loop
             sta COLUBK
             sta NUSIZ0
             sta NUSIZ1
-            
+
             lda game_state
             and #$70
-            adc #$50
+            adc #$10
             jsr sub_fmt_word_no_mult 
             lda #70
             jsr sub_respxx
@@ -313,9 +313,9 @@ _mode_set_colupx
             lsr
             lsr
             tax
-            lda REPL_DRAW_JMP_HI,x
+            lda GAME_STATE_DRAW_JMP_HI,x
             pha
-            lda REPL_DRAW_JMP_LO,x
+            lda GAME_STATE_DRAW_JMP_LO,x
             pha
             lda #0             
             sta WSYNC
@@ -334,6 +334,10 @@ game_draw_return
             jmp logo_draw
 _jmp_repl_draw
             jmp repl_draw
+
+
+game_state_init_noop
+    jmp game_state_init_return
 
 ;--------------------
 ; Overscan start
@@ -448,6 +452,24 @@ oom
 ; data
 
     include "_graphics_symbols.asm"
+
+; interleaved jump table
+; BUGBUG: notation for this?
+GAME_STATE_DRAW_JMP_LO
+GAME_STATE_DRAW_JMP_HI = GAME_STATE_DRAW_JMP_LO + 1
+    word (repl_draw_accumulator-1)
+    word (repl_draw_music-1)
+    word (repl_draw_game-1)
+    word (repl_draw_steps-1)
+    word (repl_draw_tower-1)
+
+GAME_STATE_INIT_JMP_LO
+GAME_STATE_INIT_JMP_HI = GAME_STATE_INIT_JMP_LO + 1
+    word (game_state_init_noop-1)
+    word (game_state_init_noop-1)
+    word (repl_init_game-1)
+    word (game_state_init_noop-1)
+    word (game_state_init_noop-1)
 
     ORG $FF00
 

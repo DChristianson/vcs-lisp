@@ -105,6 +105,8 @@ DONE
       - mode switch show all the names of modes
       - different colors depending on function selection
 BUGS
+  - sprites in display area bleed
+  - evaluating empty list has random results
   - unstable frame size per mode
   - repl adds +/- 1 line
   - complex program takes too long to analyze in vblank
@@ -118,32 +120,32 @@ BETA
      - some way to do unit tests (stellerator debugger?)
   - game modes 2
       - music game (simon?)
-        - ringing changes
-        - changes color with different beeps
         - stable framerate both repl and eval
+        - changes color with different beeps
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
+        - ringing changes examples
       - ball game
+        - stable framerate both repl and eval
         - draw paddles
         - move paddles
-        - change paddle graphics
-        - read joystick
         - move ball
+        - read joystick
         - read collision registers
-        - stable framerate both repl and eval
+        - change paddle graphics
       - steps (tweetmaze)
+        - stable framerate both repl and eval
         - draw steps
         - move left/right commands
         - different mazes
-        - play tune on game end
         - reset game
-        - stable framerate both repl and eval
+        - play tune on game end
       - towers of hanoi
+        - stable framerate both repl and eval
         - draw disks
         - move disks
         - read disk positions
         - reset game
-        - stable framerate both repl and eval
       - calc
         - stable framerate both repl and eval
   - virtual keyboard 3
@@ -153,11 +155,11 @@ BETA
       - keyboard controller support
         - use color switch to turn keyboard on/off
   - eval mode
-     - be able to interrupt eval with switch (reset? select?)
      - minimum eval display time 1 second
+     - be able to interrupt eval with switch (reset? select?)
      - transition from repl to eval..?
      - song that plays during eval?
-     - show free mem / stack / heap 
+     - show free mem / stack / heap during eval
      - real safeties against stack overflow
   - library 2
       - modulo function
@@ -167,8 +169,6 @@ BETA
       - div functions working
   - menu 4
       - allow for selection without actually switching
-  - display 4 
-      - use PF0 to hide HMOVE + switch to std HMOVE..?.
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -181,6 +181,9 @@ BETA
         - multiple ways to draw - can consolidate?
         - 87 bytes of sleeps
         - 24 zp y offset lookups
+      - simplify REPL
+        - use PF0 to hide HMOVE + switch to std HMOVE..?.
+        - use only 4 line repl
 SPRINKLES
   - font
      - tune font / symbols
@@ -196,7 +199,6 @@ SPRINKLES
       - no cell boxes on numbers 
       - cancel move undoes changes
       - too slow to scroll through keys
-
 BONUS 
   - dedicated executable for steps
   - dedicated music sequencer

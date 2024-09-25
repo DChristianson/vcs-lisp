@@ -52,6 +52,6 @@ _music_end
         lda #0
         sta NUSIZ0
         sta NUSIZ1
-        ldx #7
+        ldx #6
         jsr sub_wsync_loop
         jmp game_draw_return

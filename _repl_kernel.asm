@@ -282,6 +282,7 @@ _repl_update_set_cursor_col
             lda #0
 _repl_update_check_col_limit
             sta repl_edit_col
+game_state_init_return
 _repl_update_skip_move
 
             ; calculate visible program
@@ -834,12 +835,22 @@ repl_draw
             lda #5
             jsr sub_respxx
             ldx repl_menu_tab 
+            txa
+            bne _menu_fmt_fn
+            jsr sub_fmt_word_no_mult
+            jmp _menu_draw_start
+_menu_fmt_fn
+            ldy #2
+            clc
+            adc #SYMBOL_F0-1
+            jsr sub_fmt_symbol
+            lda #SYMBOL_BLANK
+            ldy #0
+            jsr sub_fmt_symbol
+_menu_draw_start
             lda DISPLAY_REPL_COLOR_SCHEME,x
         	sta WSYNC
             sta COLUBK
-            inx
-            txa
-            jsr sub_fmt_word
             lda #WHITE     
             cpy repl_edit_line 
             bne _menu_set_colupx
@@ -873,7 +884,15 @@ repl_menu_press_game
             lda #GAME_STATE_EDIT
 _menu_press_save_game
             sta game_state
-            jmp _repl_update_skip_move            
+            lsr
+            lsr
+            lsr
+            tax
+            lda GAME_STATE_INIT_JMP_HI,x
+            pha
+            lda GAME_STATE_INIT_JMP_LO,x
+            pha
+            rts
 
 repl_menu_press_eval
             lda repl_menu_tab
@@ -884,16 +903,6 @@ repl_menu_press_eval
             sta game_state
 repl_menu_press_noop
             jmp _repl_update_skip_move     
-
-; interleaved jump table
-; BUGBUG: notation for this?
-REPL_DRAW_JMP_LO
-REPL_DRAW_JMP_HI = REPL_DRAW_JMP_LO + 1
-    word (repl_draw_accumulator-1)
-    word (repl_draw_music-1)
-    word (repl_draw_game-1)
-    word (repl_draw_steps-1)
-    word (repl_draw_tower-1)
 
     ; line width X sprite arrangement
     ; we use the same display kernel for all 
@@ -959,17 +968,14 @@ sub_fmt_symbol
             sta gx_addr+1,y
             rts
 
-sub_fmt_word
             ; a is a symbol value
-            asl ; multiply by 16
-            asl ; .
-            asl ; .
-            asl ; .
 sub_fmt_word_no_mult
+            clc 
+            adc #<SYMBOL_GRAPHICS_WORDS
             sta gx_s3_addr
             adc #$08
             sta gx_s4_addr
-            lda #>SYMBOL_GRAPHICS_P2
+            lda #>SYMBOL_GRAPHICS_WORDS
             sta gx_s3_addr+1
             sta gx_s4_addr+1
             rts
