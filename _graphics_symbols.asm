@@ -77,6 +77,7 @@ SYMBOL_GRAPHICS_BLANK ; pack blank bytes in
     align 256
 
 SYMBOL_GRAPHICS_P1
+SYMBOL_ZERO = $20
 SYMBOL_GRAPHICS_ZERO
     byte $0,$70,$88,$88,$88,$88,$88,$70; 8
 SYMBOL_GRAPHICS_ONE
@@ -133,12 +134,12 @@ SYMBOL_GRAPHICS_BA
     byte $0,$6a,$aa,$aa,$ae,$8a,$8a,$64; 8
 SYMBOL_GRAPHICS_LL
     byte $0,$a6,$a8,$a8,$ac,$e8,$e8,$a6; 8
-SYMBOL_GRAPHICS_MA
-    byte $0,$c4,$24,$24,$44,$84,$84,$6e; 8
-SYMBOL_GRAPHICS_ZE
-    byte $0,$68,$88,$88,$ce,$8a,$8a,$66; 8
 SYMBOL_GRAPHICS_DI
     byte $0,$c4,$24,$24,$44,$84,$84,$6e; 8
 SYMBOL_GRAPHICS_SK
     byte $0,$aa,$aa,$ea,$a4,$aa,$aa,$4a; 8
+SYMBOL_GRAPHICS_MA
+    byte $0,$c4,$24,$24,$44,$84,$84,$6e; 8
+SYMBOL_GRAPHICS_ZE
+    byte $0,$68,$88,$88,$ce,$8a,$8a,$66; 8
 

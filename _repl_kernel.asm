@@ -879,9 +879,7 @@ repl_menu_press_game
             lda game_state
             clc
             adc #$10
-            cmp #(__GAME_TYPE_STEPS + $10)
-            bcc _menu_press_save_game
-            lda #GAME_STATE_EDIT
+            and #$3f
 _menu_press_save_game
             sta game_state
             lsr

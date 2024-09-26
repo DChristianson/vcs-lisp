@@ -442,16 +442,9 @@ oom
 
     include "_tower_kernel.asm"
 
-    include "_steps_kernel.asm"
-
     include "_logo_kernel.asm"
 
     include "_heap_init.asm"
-
-; ----------------------------------
-; data
-
-    include "_graphics_symbols.asm"
 
 ; interleaved jump table
 ; BUGBUG: notation for this?
@@ -460,7 +453,6 @@ GAME_STATE_DRAW_JMP_HI = GAME_STATE_DRAW_JMP_LO + 1
     word (repl_draw_accumulator-1)
     word (repl_draw_music-1)
     word (repl_draw_game-1)
-    word (repl_draw_steps-1)
     word (repl_draw_tower-1)
 
 GAME_STATE_INIT_JMP_LO
@@ -468,8 +460,12 @@ GAME_STATE_INIT_JMP_HI = GAME_STATE_INIT_JMP_LO + 1
     word (game_state_init_noop-1)
     word (game_state_init_noop-1)
     word (repl_init_game-1)
-    word (game_state_init_noop-1)
-    word (game_state_init_noop-1)
+    word (repl_init_tower-1)
+
+; ----------------------------------
+; data
+
+    include "_graphics_symbols.asm"
 
     ORG $FF00
 
