@@ -27,12 +27,12 @@ curr_disc_pf3 = gx_s4_addr + 6;
 ; 01000001
 ; 10000001
 repl_init_tower
-        lda #$84
+        lda #$81
         ldx #4
 _repl_init_tower_loop
         sta tower_disc_0,x
         lsr
-        eor #$06
+        eor #$01
         dex
         bpl _repl_init_tower_loop
         jmp game_state_init_return

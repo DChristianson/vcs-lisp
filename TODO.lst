@@ -99,15 +99,15 @@ DONE
   - bugs
     - hmove bar in menu
     - music note length too short
+    - sprites in display area bleed
+    - unstable frame size per mode
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
       - mode switch show all the names of modes
       - different colors depending on function selection
 BUGS
-  - sprites in display area bleed
   - evaluating empty list has random results
-  - unstable frame size per mode
   - repl adds +/- 1 line
   - complex program takes too long to analyze in vblank
 BETA
@@ -121,25 +121,18 @@ BETA
   - game modes 2
       - music game (simon?)
         - stable framerate both repl and eval
+        - ringing changes examples
         - changes color with different beeps
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
-        - ringing changes examples
       - ball game
         - stable framerate both repl and eval
-        - draw paddles
-        - move paddles
+        - draw players
+        - move players
         - move ball
         - read joystick
         - read collision registers
-        - change paddle graphics
-      - steps (tweetmaze)
-        - stable framerate both repl and eval
-        - draw steps
-        - move left/right commands
-        - different mazes
-        - reset game
-        - play tune on game end
+        - change player graphics
       - towers of hanoi
         - stable framerate both repl and eval
         - draw disks
@@ -204,7 +197,14 @@ BONUS
   - dedicated music sequencer
   - dedicated hanoi
   - alt/bonus game mode/dedicated 
-     - steps + lisp
-     - tictactoe? 
-     - mastermind / cows and bulls
-     - robot tanks 
+    - steps + lisp
+    - tictactoe? 
+    - mastermind / cows and bulls
+    - robot tanks 
+    - steps (tweetmaze)
+      - stable framerate both repl and eval
+      - draw steps
+      - move left/right commands
+      - different mazes
+      - reset game
+      - play tune on game end
