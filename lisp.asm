@@ -489,9 +489,6 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_S08_AND-1
     word FUNC_S09_OR-1
     word FUNC_S0A_NOT-1
-    word $0000 ; IF
-    word $0000 ; LOOP
-    word $0000 ; PROGN
     word $0000 ; CONS
     word $0000 ; CAR
     word $0000 ; CDR
@@ -500,12 +497,9 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_F2-1
     word FUNC_BEEP-1
     word FUNC_STACK-1
-    word FUNC_STEPS-1 ; BUGBUG: DEPRECATE
     word FUNC_POS_P0-1
     word FUNC_POS_P1-1
     word FUNC_POS_BL-1
-    word $0000 ; HASH
-    word $0000 ; QUOTE
     word FUNC_J0-1
     word FUNC_J1-1
 
@@ -562,10 +556,10 @@ MENU_PAGE_0_LO
 
     byte <SYMBOL_GRAPHICS_CX0B
     byte <SYMBOL_GRAPHICS_CX1B
-    byte <SYMBOL_GRAPHICS_STEPS_FN
+    byte <SYMBOL_GRAPHICS_APPLY_FN
     byte <SYMBOL_GRAPHICS_STACK_FN
 
-    byte <SYMBOL_GRAPHICS_STEPS_VAR
+    byte <SYMBOL_GRAPHICS_LOOP_VAR
     byte <SYMBOL_GRAPHICS_STACK_VAR
 
 MENU_PAGE_0_HI
@@ -613,10 +607,10 @@ MENU_PAGE_0_HI
 
     byte >SYMBOL_GRAPHICS_CX0B
     byte >SYMBOL_GRAPHICS_CX1B
-    byte >SYMBOL_GRAPHICS_STEPS_FN
+    byte >SYMBOL_GRAPHICS_APPLY_FN
     byte >SYMBOL_GRAPHICS_STACK_FN
     
-    byte >SYMBOL_GRAPHICS_STEPS_VAR
+    byte >SYMBOL_GRAPHICS_LOOP_VAR
     byte >SYMBOL_GRAPHICS_STACK_VAR
 
 ;-----------------------------------------------------------------------------------

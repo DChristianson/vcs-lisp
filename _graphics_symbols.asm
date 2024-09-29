@@ -57,8 +57,8 @@ SYMBOL_GRAPHICS_J0
     byte $0,$f8,$f8,$f8,$70,$20,$20,$20; 8
 SYMBOL_GRAPHICS_J1
     byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
-SYMBOL_GRAPHICS_EVAL_FN ; BUGBUG: change graphics
-    byte $0,$38,$78,$7c,$d8,$d8,$8c,$c; 8
+SYMBOL_GRAPHICS_APPLY_FN ;
+    byte $0,$70,$88,$88,$68,$88,$70,$0; 8
 SYMBOL_GRAPHICS_QUOTE
     byte $0,$0,$0,$10,$20,$20,$20,$0; 8
 SYMBOL_GRAPHICS_HASH
@@ -111,8 +111,8 @@ SYMBOL_GRAPHICS_A3
     byte $0,$78,$88,$88,$88,$78,$8,$8; 8
 SYMBOL_GRAPHICS_STACK_VAR
     byte $0,$fe,$54,$54,$14,$14,$10,$10; 8
-SYMBOL_GRAPHICS_STEPS_VAR
-    byte $0,$80,$a0,$80,$f0,$14,$10,$1c; 8
+SYMBOL_GRAPHICS_LOOP_VAR
+    byte $0,$10,$20,$20,$20,$00,$20,$00; 8
 SYMBOL_GRAPHICS_CX0B
     byte $0,$b8,$a8,$b8,$80,$80,$88,$80; 8
 SYMBOL_GRAPHICS_CX1B

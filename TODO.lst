@@ -87,6 +87,9 @@ DONE
      - crude safety (inexact) against stack overflow
   - code 2
     - compaction pass
+  - code 2
+      - compaction pass
+        - don't use extra HMOV for shims
         - 75 logo color bytes removed
         - 375 bytes of logo
         - 80 bytes of symbol function lookup
@@ -101,13 +104,31 @@ DONE
     - music note length too short
     - sprites in display area bleed
     - unstable frame size per mode
+    - evaluating empty list has random results
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
       - mode switch show all the names of modes
       - different colors depending on function selection
+  - game modes 2
+      - music game (simon?)
+        - stable-ish framerate
+        - changes color with different beeps
+      - ball game
+        - stable-ish framerate
+        - draw players
+      - towers of hanoi
+        - stable-ish framerate
+        - draw disks
+        - move disks
+      - calc
+        - stable-ish framerate
+  - library 2
+      - modulo function
+      - music functions (map... or progn?)
+      - game functions
 BUGS
-  - evaluating empty list has random results
+  - disks kernel adds extra line in some configirations
   - repl adds +/- 1 line
   - complex program takes too long to analyze in vblank
 BETA
@@ -119,28 +140,23 @@ BETA
      - gitlab deployment
      - some way to do unit tests (stellerator debugger?)
   - game modes 2
-      - music game (simon?)
-        - stable framerate both repl and eval
-        - ringing changes examples
-        - changes color with different beeps
-        - be able to handle DSS generative examples as demos
-          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
       - ball game
         - stable framerate both repl and eval
-        - draw players
         - move players
         - move ball
         - read joystick
         - read collision registers
         - change player graphics
+      - music game (simon?)
+        - ringing changes examples
+        - be able to handle DSS generative examples as demos
+          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
       - towers of hanoi
-        - stable framerate both repl and eval
-        - draw disks
-        - move disks
         - read disk positions
         - reset game
-      - calc
-        - stable framerate both repl and eval
+  - instruction manual
+    - examples of all programs
+    - award program
   - virtual keyboard 3
       - extend to all commands
       - can only see numbers in number mode
@@ -154,20 +170,15 @@ BETA
      - song that plays during eval?
      - show free mem / stack / heap during eval
      - real safeties against stack overflow
-  - library 2
-      - modulo function
-      - music functions (map... or progn?)
-      - game functions
   - library 1
       - div functions working
   - menu 4
-      - allow for selection without actually switching
+      - allow for mode selection without actually switching
   - code 2
       - hygiene
         - clean up temp variable usage
         - clean up graphics on/offs
       - compaction pass
-        - don't use extra HMOV for shims
         - use .byte $2C skip next 2 bytes trick?
         - 48 unused bytes on last page 
         - multiple ways to repl - can consolidate?
@@ -197,11 +208,10 @@ BONUS
   - dedicated music sequencer
   - dedicated hanoi
   - alt/bonus game mode/dedicated 
-    - steps + lisp
     - tictactoe? 
     - mastermind / cows and bulls
     - robot tanks 
-    - steps (tweetmaze)
+    - steps + lisp dedicated (tweetmaze)
       - stable framerate both repl and eval
       - draw steps
       - move left/right commands
