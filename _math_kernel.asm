@@ -265,7 +265,7 @@ FUNC_STACK
             jsr sub_repl_find_tower_top
             cpx #0
             bpl _func_stack_check_base
-            ldx #$80
+            lda #$80
             jmp _func_stack_save
 _func_stack_check_base
             cpx accumulator_lsb
