@@ -132,6 +132,10 @@ BUGS
   - repl adds +/- 1 line
   - complex program takes too long to analyze in vblank
 BETA
+  - lang 1
+     - loop, loopvar implemented
+     - cons, car, cdr implemented
+     - quote, apply implemented
   - dev support
      - self hosted stellerator page
        - display and editing of programs as text
