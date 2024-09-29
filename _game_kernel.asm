@@ -6,9 +6,9 @@ game_p0_y = game_data + 2
 game_p1_y = game_data + 3
 game_bl_x = game_data + 4
 game_bl_y = game_data + 5
-game_bl_h = game_data + 6
 game_p0_h = gx_s4_addr + 0
 game_p1_h = gx_s4_addr + 1
+game_bl_h = gx_s4_addr + 2
 
 repl_init_game
         lda #5

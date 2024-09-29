@@ -253,9 +253,35 @@ _beep_end
             sta beep_f0
             jmp exec_frame_return
 
-FUNC_PROGN
-FUNC_LOOP
 FUNC_STACK
+            ldx eval_frame
+            ldy FRAME_ARG_OFFSET_LSB,x
+            jsr sub_repl_find_tower_top
+            cpx #0
+            bmi _func_stack_illegal_move
+            stx accumulator_lsb
+            ldx eval_frame
+            ldy FRAME_ARG_OFFSET_LSB-2,x
+            jsr sub_repl_find_tower_top
+            cpx #0
+            bpl _func_stack_check_base
+            ldx #$80
+            jmp _func_stack_save
+_func_stack_check_base
+            cpx accumulator_lsb
+            bmi _func_stack_illegal_move  
+            lda tower_disc_0,x
+            lsr
+            and #$f8
+_func_stack_save
+            ora TOWER_STACK_MASK,y
+            ldx accumulator_lsb
+            sta tower_disc_0,x
+_func_stack_illegal_move
+            jmp exec_frame_return
+
+FUNC_J0
+FUNC_J1
 FUNC_STEPS
             jmp exec_frame_return
 

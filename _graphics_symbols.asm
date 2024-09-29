@@ -29,47 +29,49 @@ SYMBOL_GRAPHICS_OR
     byte $0,$20,$20,$20,$20,$20,$20,$20; 8
 SYMBOL_GRAPHICS_NOT
     byte $0,$20,$20,$0,$20,$20,$20,$20; 8
-SYMBOL_IF = $0c
-SYMBOL_GRAPHICS_IF
-    byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
 SYMBOL_GRAPHICS_CONS
     byte $0,$f8,$20,$a8,$20,$a8,$20,$f8; 8
 SYMBOL_GRAPHICS_CAR
     byte $0,$f8,$e0,$a8,$e0,$a8,$e0,$f8; 8
 SYMBOL_GRAPHICS_CDR
     byte $0,$f8,$38,$a8,$38,$a8,$38,$f8; 8
-SYMBOL_F0 = $10
+SYMBOL_F0 = $0f
 SYMBOL_GRAPHICS_F0
     byte $0,$88,$98,$50,$30,$20,$20,$60; 8
 SYMBOL_GRAPHICS_F1
     byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
 SYMBOL_GRAPHICS_F2
     byte $0,$e0,$20,$20,$70,$20,$20,$38; 8
-SYMBOL_BEEP = $13
+SYMBOL_BEEP = $12
 SYMBOL_GRAPHICS_BEEP
     byte $0,$c0,$d8,$d8,$58,$48,$48,$78; 8
-SYMBOL_GRAPHICS_PROGN
-    byte $0,$20,$0,$20,$0,$20,$0,$20; 8
-SYMBOL_GRAPHICS_LOOP
-    byte $0,$38,$28,$28,$f8,$a0,$a0,$e0; 8
 SYMBOL_GRAPHICS_STACK_FN
     byte $0,$f8,$70,$20,$0,$50,$d8,$50; 8
-SYMBOL_GRAPHICS_STEPS_FN
-    byte $0,$38,$78,$7c,$d8,$d8,$8c,$c; 8
 SYMBOL_GRAPHICS_PLAYER_0_FN
     byte $0,$b8,$a8,$b8,$c0,$a0,$a0,$e0; 8
 SYMBOL_GRAPHICS_PLAYER_1_FN
     byte $0,$b8,$90,$b0,$c0,$a0,$a0,$e0; 8
 SYMBOL_GRAPHICS_BALL_FN
     byte $0,$0,$20,$70,$0,$70,$20,$0; 8
-SYMBOL_GRAPHICS_HASH
-    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
-SYMBOL_GRAPHICS_QUOTE
-    byte $0,$0,$0,$10,$20,$20,$20,$0; 8
 SYMBOL_GRAPHICS_J0
     byte $0,$f8,$f8,$f8,$70,$20,$20,$20; 8
 SYMBOL_GRAPHICS_J1
     byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
+SYMBOL_GRAPHICS_EVAL_FN ; BUGBUG: change graphics
+    byte $0,$38,$78,$7c,$d8,$d8,$8c,$c; 8
+SYMBOL_GRAPHICS_QUOTE
+    byte $0,$0,$0,$10,$20,$20,$20,$0; 8
+SYMBOL_GRAPHICS_HASH
+    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
+SYMBOL_IF = $1c
+SYMBOL_GRAPHICS_IF
+    byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
+SYMBOL_LOOP = $1d
+SYMBOL_GRAPHICS_LOOP
+    byte $0,$38,$28,$28,$f8,$a0,$a0,$e0; 8
+SYMBOL_PROGN = $1e
+SYMBOL_GRAPHICS_PROGN
+    byte $0,$20,$0,$20,$0,$20,$0,$20; 8
 SYMBOL_BLANK = $1f
 SYMBOL_GRAPHICS_BLANK ; pack blank bytes in
     byte $0,$0,$0,$0,$0,$0,$0,$0

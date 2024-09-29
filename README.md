@@ -5,11 +5,11 @@ This is an Atari 2600 game from an alternate reality...
 
 - where a [computer language](https://en.wikipedia.org/wiki/Lisp_(programming_language)) from 1960 
 - has been hastily crammed onto a VCS ROM cartridge in 1977
-- so you can learn to write programs of the type you find in the first chapter of a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984.
+- so you can learn to program from a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984
 
 <img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png" height=180></img><img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png" height=180></img><img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png" height=180></img>
 
-It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming) but I am definitely trying to think in terms of the feature set and capture the spirit of a "programming game"...
+It is *not* a competitor to [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming), it is an attempt to capture the spirit and potential of a "retro programming game"...
 
 <img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" width=180></img>
 
@@ -111,6 +111,7 @@ eval_next        ds 1 ; the next action to take
                       ; if negative, it is a reference to the next expression to evaluate
                       ; if 1, then return from the current frame
                       ; if 2, then execute as a conditional test
+                      ; if 3, then execute a sequence in place
 eval_env         ds 1 ; pointer to beginning of stack for calling frame
 eval_frame       ds 1 ; pointer to beginning of stack for current frame```
 
@@ -147,6 +148,16 @@ eval_frame = FP+0  ...(arg1 arg2)
              FP-1  arg0 lsb / cdr
              FP-2  arg0 msb / car
         SP = FP-3    ... top of stack
+
+Example: evaluating a progn statement 
+--------------------------------------------------
+eval_next  = #3 (progn - evaluate all args, return value of last arg)
+eval_env   = FP+2  previous eval_next
+             FP+1  previous eval_frame
+eval_frame = FP+0  ...(arg1 arg2)  ==> replace with (arg2...)
+             FP-1  arg0 lsb / cdr : ignore
+             FP-2  arg0 msb / car ; ignore
+        SP = FP-3    ... top of stack, set back to FP+0 and eval arg1
 
 ```
 

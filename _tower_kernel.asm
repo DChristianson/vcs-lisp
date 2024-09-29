@@ -123,6 +123,22 @@ _draw_tower_loop_end
         sta PF2
         jmp game_draw_return
 
+        ; y = stack, x will be top disk 0-4
+sub_repl_find_tower_top
+        ldx #0
+_find_top_disc_loop
+        lda TOWER_STACK_MASK,y
+        and tower_disc_0,x
+        bne _find_top_disc
+        inx
+        cpx #5
+        bne _find_top_disc_loop
+        ldx #$ff
+_find_top_disc
+        rts
+
+TOWER_STACK_MASK
+        byte $01,$02,$04
 TOWER_DISC_AC_PF1
         byte $18,$3c,$7e,$ff,$ff
 TOWER_DISC_B_PF2

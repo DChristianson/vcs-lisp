@@ -844,15 +844,17 @@ _menu_fmt_fn
             clc
             adc #SYMBOL_F0-1
             jsr sub_fmt_symbol
-            lda #SYMBOL_BLANK
-            ldy #0
-            jsr sub_fmt_symbol
+            lda #>SYMBOL_GRAPHICS_BLANK
+            sta gx_s4_addr + 1
+            lda #<SYMBOL_GRAPHICS_BLANK
+            sta gx_s4_addr
 _menu_draw_start
             lda DISPLAY_REPL_COLOR_SCHEME,x
         	sta WSYNC
             sta COLUBK
             lda #WHITE     
-            cpy repl_edit_line 
+            ldy repl_edit_line 
+            iny
             bne _menu_set_colupx
             lda #CURSOR_COLOR
 _menu_set_colupx

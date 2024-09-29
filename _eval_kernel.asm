@@ -42,19 +42,27 @@ eval_iter
             tsx                   ; save current stack pointer to eval_frame
             stx eval_frame        ;
             tax                   ; read head of cell reference in accumulator 
+            beq _eval_null
             lda HEAP_CAR_ADDR,x   ; .
             bpl _eval_number      ; branch if it's a number
-            cmp #SYMBOL_IF + $c0  ; special case if we are applying test
-            bne _eval_funcall     ; otherwise eval as funcall
-_eval_test
+            and #SYMBOL_IF + $c0
+            eor #SYMBOL_IF + $c0  ; special case if we are applying test, loop, progn
+            bne _eval_funcall       ; otherwise eval as funcall
+_eval_test_loop_progn
+            lda HEAP_CAR_ADDR,x   ; .
+            lsr
+            bcc _eval_no_loop
+            ; BUGBUG: push criteria for repeat
+            lda #$03              ; signal progn
+_eval_no_loop
+            and #$03
+            sta eval_next         ; store 2/3 to eval_next (KLUDGE: 2= test, 3=progn ; READABILITY: notation
             ; BUGBUG: need 1 stack
-            ; x references a test expression
-            lda HEAP_CDR_ADDR,x   ; follow cdr of test
+            ; x references a test/progn expression
+            lda HEAP_CDR_ADDR,x   ; follow cdr of test ; BUGBUG: what if empty
             tax                   ; .
-            lda HEAP_CDR_ADDR,x   ; push cddr of test to be rest of args
+            lda HEAP_CDR_ADDR,x   ; push cddr of test to be rest of args ; BUGBUG: what if empty
             pha                   ; . 
-            lda #2                ; store 2 to eval_next (KLUDGE: signals test ; READABILITY: notation
-            sta eval_next         ;
             jmp _eval_funcall_arg ;  
 _eval_number
             ; BUGBUG: need 0 stack
@@ -62,10 +70,12 @@ _eval_number
             sta accumulator_car   ; push number cell into accumulator and return
             lda HEAP_CDR_ADDR,x   ; .
             sta accumulator_cdr   ; .
+_eval_null  ; BUGBUG: just returning from null
             jmp exec_frame_return ; .
 _eval_funcall
             ; BUGBUG: need 1 stack
-            ; x references a function call, a is the head
+            ; x references a function call
+            lda HEAP_CAR_ADDR,x   ; .
             pha                   ; push head to stack
 _eval_funcall_push_args
             ; push all args to stack
@@ -167,16 +177,17 @@ _eval_old_env
             pla ; pull next action from frame
             bmi _eval_continue_args ; if negative, eval next arg cell
             beq _eval_continue_args ; if zero, eval next arg cell (will be nil)
-            ; args is 1 = return or 2 = test
+            ; args is 1 = return, 2 = test, 3 = progn
             lsr
             beq _eval_return
-            ; evaluate test expression
+            ; evaluate test/progn expression
             ; BUGBUG: potentially we can optimize the stack here
             sta eval_next ; a should be = 1 after the lsr
             ldx eval_frame ; pull 
             txs
-            lda #0,x ; READABILITY: notation
+            lda #0,x ; get the next arg READABILITY: notation
             tax
+            bcs _eval_progn
             lda accumulator_lsb
             ora accumulator_msb
             bne _eval_test_true ; assume 0 is false
@@ -185,6 +196,13 @@ _eval_test_false
             tax
 _eval_test_true
             jmp _eval_funcall_arg
+_eval_progn
+            lda HEAP_CDR_ADDR,x   ; get cddr to rest of args 
+            beq _eval_test_true ; if null, we will return 
+            pha                   ; else push cddr back 
+            lda #3                ; we will continue
+            sta eval_next
+            jmp _eval_funcall_arg ;  
 _eval_return
             sta eval_next ; BUGBUG may not be needed?
             jmp exec_frame_return

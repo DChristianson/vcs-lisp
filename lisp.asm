@@ -489,23 +489,26 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_S08_AND-1
     word FUNC_S09_OR-1
     word FUNC_S0A_NOT-1
-    word $0000
-    word $0000
-    word $0000
-    word $0000
+    word $0000 ; IF
+    word $0000 ; LOOP
+    word $0000 ; PROGN
+    word $0000 ; CONS
+    word $0000 ; CAR
+    word $0000 ; CDR
     word FUNC_F0-1
     word FUNC_F1-1
     word FUNC_F2-1
     word FUNC_BEEP-1
-    word FUNC_PROGN-1
-    word FUNC_LOOP-1
     word FUNC_STACK-1
-    word FUNC_STEPS-1
+    word FUNC_STEPS-1 ; BUGBUG: DEPRECATE
     word FUNC_POS_P0-1
     word FUNC_POS_P1-1
     word FUNC_POS_BL-1
+    word $0000 ; HASH
+    word $0000 ; QUOTE
+    word FUNC_J0-1
+    word FUNC_J1-1
 
-    ;
 MENU_PAGE_0_LO
     byte <SYMBOL_GRAPHICS_TERM
     byte <SYMBOL_GRAPHICS_MULT
