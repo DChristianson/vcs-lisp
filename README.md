@@ -141,7 +141,7 @@ eval_frame = FP+0  function symbol
 
 Example: evaluating a test (if) statement 
 --------------------------------------------------
-eval_next  = #2 (test - use value of first arg to choose the next arg to evaluate)
+eval_next  = #4 (test - use value of first arg to choose the next arg to evaluate)
 eval_env   = FP+2  previous eval_next
              FP+1  previous eval_frame
 eval_frame = FP+0  ...(arg1 arg2)
@@ -151,14 +151,24 @@ eval_frame = FP+0  ...(arg1 arg2)
 
 Example: evaluating a progn statement 
 --------------------------------------------------
-eval_next  = #3 (progn - evaluate all args, return value of last arg)
+eval_next  = #6 (progn - evaluate all args, return value of last arg)
 eval_env   = FP+2  previous eval_next
              FP+1  previous eval_frame
-eval_frame = FP+0  ...(arg1 arg2)  ==> replace with (arg2...)
+eval_frame = FP+0  prog list ...(arg1 arg2...)  ==> replace with (arg2...)
              FP-1  arg0 lsb / cdr : ignore
              FP-2  arg0 msb / car ; ignore
         SP = FP-3    ... top of stack, set back to FP+0 and eval arg1
 
+Example: evaluating a loop statement 
+--------------------------------------------------
+eval_next  = #5/7 (loop - evaluate test condition, loop until done)
+eval_env   = FP+5  previous eval_next
+             FP+4  previous eval_frame
+             FP+3  loop args (arg0=test arg1 ...)
+             FP+2  iterator counter lsb / cdr
+             FP+1  iterator counter msb / car
+eval_frame = FP+0  prog list ...(arg1 arg2) ==> replace with (arg2...)
+        SP = FP-1  ... top of stack
 ```
 
 ## References, Credits and Inspirations

@@ -71,7 +71,7 @@ _game_skip_bl_gfx
 sub_respx_object
         lda game_p0_x,x
         sta WSYNC
-        SLEEP 3                  ;3  3
+        SLEEP 3                  ;3  3 ;---- BUGBUG: SPACE?
         sec                      ;2  5
 _respx_object_loop
         sbc #15                  ;2  7

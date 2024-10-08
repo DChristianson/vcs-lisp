@@ -565,10 +565,6 @@ _prompt_repos_swap
             sta RESP0               ;3   32
 _prompt_repos_swap_end
             sta WSYNC               ;--
-            ; lda #WHITE              ;2    2 ; BUGBUG clean this up, not needed every line
-            ; sta COLUP0              ;3    5
-            ; sta COLUP1              ;3    8
-            ; sta COLUPF              ;3   11
             lda #$30                ;2    2
             sta CTRLPF              ;3    5
             tya                     ;2    7 
@@ -594,9 +590,9 @@ _prompt_cursor_skip
             tax                     ;2   41    
             SLEEP 2                 ;2   43
 _prompt_cursor_bk_1
-            SLEEP 24                ;24  67
+            SLEEP 24                ;24  67 ; BUGBUG: SPACE?
             stx COLUPF              ;3   70
-            sta HMOVE               ;3   73
+            sta HMOVE               ;3   73 ; BUGBUG: can move back? or go to one HMOVE?
             sta COLUBK              ;3   76
             SLEEP 14                ;14  14 ; sleep to protect HMX registers
             lda repl_display_indent,y ;4 18

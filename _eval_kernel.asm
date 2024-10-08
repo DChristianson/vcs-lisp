@@ -45,21 +45,29 @@ eval_iter
             beq _eval_null
             lda HEAP_CAR_ADDR,x   ; .
             bpl _eval_number      ; branch if it's a number
-            and #SYMBOL_IF + $c0
+            and #SYMBOL_IF + $c0  ; 11001100, 
             eor #SYMBOL_IF + $c0  ; special case if we are applying test, loop, progn
-            bne _eval_funcall       ; otherwise eval as funcall
+            bne _eval_funcall     ; otherwise eval as funcall
 _eval_test_loop_progn
-            lda HEAP_CAR_ADDR,x   ; .
-            lsr
+            lda HEAP_CAR_ADDR,x   ; 11001100
+            and #$07
+            sta eval_next
+            lsr                   ; test/loop/progn : dc/dd/de -> 6e/6e/6f
             bcc _eval_no_loop
-            ; BUGBUG: push criteria for repeat
-            lda #$03              ; signal progn
+_eval_loop_init
+            ; BUGBUG: need 3 stack
+            lda HEAP_CDR_ADDR,x   ; push cdr of loop 
+            pha                   ; . 
+            lda #0                ; initialize iterator to zero
+            pha                   ;
+            pha                   ;
+            tsx 
+            stx eval_frame
+            jmp _eval_loop_iter_test
 _eval_no_loop
-            and #$03
-            sta eval_next         ; store 2/3 to eval_next (KLUDGE: 2= test, 3=progn ; READABILITY: notation
-            ; BUGBUG: need 1 stack
+            ; BUGBUG: need 1 more stack
             ; x references a test/progn expression
-            lda HEAP_CDR_ADDR,x   ; follow cdr of test ; BUGBUG: what if empty
+            lda HEAP_CDR_ADDR,x   ; follow cddr of test ; BUGBUG: what if empty
             tax                   ; .
             lda HEAP_CDR_ADDR,x   ; push cddr of test to be rest of args ; BUGBUG: what if empty
             pha                   ; . 
@@ -139,7 +147,7 @@ _eval_funcall_args_next
 _eval_funcall_exec
             ; exec frame
             ldx eval_frame
-            lda 0,x
+            lda #0,x
             and #$3f
             asl
             tax
@@ -177,16 +185,17 @@ _eval_old_env
             pla ; pull next action from frame
             bmi _eval_continue_args ; if negative, eval next arg cell
             beq _eval_continue_args ; if zero, eval next arg cell (will be nil)
-            ; args is 1 = return, 2 = test, 3 = progn
+            ; args is 1 = return, 4 = test, 5 = loop test, 6 = progn,  7 = loop eval
             lsr
             beq _eval_return
+            bcs _eval_loop_continue
             ; evaluate test/progn expression
             ; BUGBUG: potentially we can optimize the stack here
-            sta eval_next ; a should be = 1 after the lsr
-            ldx eval_frame ; pull 
-            txs
-            lda #0,x ; get the next arg READABILITY: notation
-            tax
+            lsr
+            sta eval_next ; should be 1 after the lsr
+            lda #0,x      ; get pointer at FRAME+0
+            txs           ; reset stack pointer
+            tax           ; .
             bcs _eval_progn
             lda accumulator_lsb
             ora accumulator_msb
@@ -196,18 +205,53 @@ _eval_test_false
             tax
 _eval_test_true
             jmp _eval_funcall_arg
+_eval_loop_continue
+            lsr
+            bcs _eval_loop_progn
+            lda accumulator_lsb   ; check results of loop test
+            ora accumulator_msb   ; .
+            beq _eval_loop_return ; assume 0 is false
+            ;BUGBUG: need to make sure we return right
+            ;BUGBUG: need to advance frame and stack
+_eval_loop_progn
+            lda #0,x              ; get the next arg
+            txs
+            tax                   ; .
+            lda #7                ; we will continue
+            jmp _eval_progn_next
+_eval_loop_iter
+            sed                   ; increment loop counter
+            lda #2,x              ; READABILITY
+            clc
+            adc #1
+            sta #2,x
+            lda #1,x
+            adc #0
+            sta #1,x
+            cld
+_eval_loop_iter_test
+            lda #3,x
+            tax
+            lda #5
+            jmp _eval_progn_next  ; 
 _eval_progn
-            lda HEAP_CDR_ADDR,x   ; get cddr to rest of args 
-            beq _eval_test_true ; if null, we will return 
-            pha                   ; else push cddr back 
-            lda #3                ; we will continue
+            lda #6                ; we will continue
+_eval_progn_next
             sta eval_next
+            lda HEAP_CDR_ADDR,x   ; get cddr to rest of args 
+            beq _eval_return      ; if null, we will return 
+            pha                   ; else push cddr back 
             jmp _eval_funcall_arg ;  
+_eval_loop_return
+            dex
+            dex
+            dex
+            stx eval_frame
 _eval_return
-            sta eval_next ; BUGBUG may not be needed?
+            sta eval_next ; SPACE: REDUNDANT? may not be needed?
             jmp exec_frame_return
 _eval_continue_args
-            sta eval_next
+            sta eval_next ; SPACE: REDUNDANT? could consolidate?
             ; BUGBUG: need 2 stack
             lda accumulator_lsb
             pha

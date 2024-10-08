@@ -34,7 +34,7 @@ _accumulator_draw_loop    ; 40/41 w page jump
             sta GRP1                    ;3   16
             lda (gx_s4_addr),y          ;5   21
             sta GRP0                    ;3   24
-            SLEEP 19                    ;----
+            SLEEP 19                    ;---- BUGBUG: SPACE
             lda #0                      ;5   31
             sta GRP1                    ;3   34
             sta GRP0                    ;3   37 

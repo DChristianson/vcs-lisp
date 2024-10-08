@@ -285,8 +285,6 @@ draw_t1_data_addr  ds 2
 ;   - frame rate unstable
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
-;   - echo (dark) mode - limited step visibility
-;   - double button press "plays" solution musically
 ;  - sprinkles 1
 ;   - select screen design, shows lava, etc
 ;   - some kind of celebration on win (fireworks?)
@@ -298,6 +296,7 @@ draw_t1_data_addr  ds 2
 ;   - size 1 stairs no number?
 ;   - addressible colors on stairs
 ;  - gameplay 4
+;   - dark mode - limited step visibility, double button press "plays" solution musically
 ;   - player builds maze by dropping numbers?
 ;     - player builds maze as numbers drop?
 ;   - zero / missing steps in mazes
