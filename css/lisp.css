@@ -1,5 +1,3 @@
-/* Style the tab */
-
 
 #stellerator-canvas {
   height: 600px;
@@ -8,37 +6,72 @@
   max-width: 100vw;
 }
 
-.lde {
-    overflow: hidden;
-    border: 1px solid #ccc;
-    background-color: #f1f1f1;
-  }
-  
-  /* Style the buttons that are used to open the tab content */
-  .lde button {
-    background-color: inherit;
-    float: left;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    padding: 14px 16px;
-    transition: 0.3s;
-  }
-  
-  /* Change background color of buttons on hover */
-  .lde button:hover {
-    background-color: #ddd;
-  }
-  
-  /* Create an active/current tablink class */
-  .lde button.active {
-    background-color: #ccc;
-  }
-  
-  /* Style the tab content */
-  .ldecontent {
-    display: none;
-    padding: 6px 12px;
-    border: 1px solid #ccc;
-    border-top: none;
-  }
+#stellerator-keyboard {
+  height: 300px;
+  width: 300px;
+  background-color: antiquewhite;
+
+}
+
+.root {
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+
+.outlet {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.ide {
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+}
+
+/* Style the buttons that are used to open the tab content */
+.ide button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+.ide button:hover {
+  background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.ide button.active {
+  background-color: #ccc;
+}
+
+/* Style the tab content */
+.ide_content {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+  min-height: 300px;
+}

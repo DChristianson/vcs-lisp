@@ -9,84 +9,63 @@
     </head>
 
     <body>
-
-
-        <div class="container">
-            <canvas id="stellerator-canvas"></canvas>
-        </div>
-
-        <div id="emulator_menu">
-            <button class="ops" onclick="save(event)">SAVE</button>
-            <button class="ops" onclick="load(event)">LOAD</button>    
-        </div>
-
-        <button class="input_links" onclick="openWindow(event, 'keyboard')">KEYBOARD</button>
-        <button class="input_links" onclick="openWindow(event, 'ide')">IDE</button>
-
-        <div class="input_content" id="keyboard">
-            <canvas id="stellerator-keyboard"></canvas>
-        </div>  
-
-        <div class="input_content" id="ide" className="active">
-
-           <button class="ops" onclick="changeMode(event)">MODE</button>
-           <button class="ops" onclick="clearMemory(event)">CLR</button>
-           <button class="ops" onclick="recallMemory(event)">RCL</button>
-           <button class="ops" onclick="storeMemory(event)">STO</button>
-           <button class="ops" onclick="eval(event)">EVAL</button>
-
-           <button class="ide_links" onclick="openWindow(event, 'repl')">REPL</button>
-           <button class="ide_links" onclick="openWindow(event, 'f0')">f0</button>
-           <button class="ide_links" onclick="openWindow(event, 'f1')">f1</button>
-           <button class="ide_links" onclick="openWindow(event, 'f2')">f2</button>
-
-            <div id="repl" class="ide_content" className="active" display="block"></div>
-            <div id="f0" class="ide_content"></div>
-            <div id="f1" class="ide_content"></div>        
-            <div id="f2" class="ide_content"></div>
-
-        </div>
-
-        <div id="debugger">
-            <div class="heap">
-                
+        <div class="root">
+            <div class="header">
+                <span>VCS Lisp - LISP programming on the Atari 2600</span>
             </div>
-            <div class="registers">
+            <div class="main">
+                <div class="outlet">
+                    <div id="screen">
+                        <canvas id="stellerator-canvas"></canvas>
+                    </div>
+                    <div id="console">
+                        <div class="console_switch" id="console_switch_power">Power</div>
+                        <div class="console_switch" id="console_switch_color">Color/BW</div>        
+                        <div class="console_switch" id="console_switch_a">Difficulty A</div>        
+                        <div class="console_switch" id="console_switch_b">Difficulty B</div>        
+                        <div class="console_toggle" id="console_switch_select">Select</div>        
+                        <div class="console_toggle" id="console_switch_reset">Reset</div> 
+                    </div>
+                </div>
+                <div class="sidebar">
+                        <div id="keyboard">
+                            <canvas id="stellerator-keyboard"></canvas>
+                        </div>  
+                        <div class="row">
+                            <button class="ide_ops" onclick="window.ide.saveProject(event)">SAVE</button>
+                            <button class="ide_ops" onclick="window.ide.loadProject(event)">LOAD</button>        
+                        </div>
+                        <div class="row">
+                            <button class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</button>
+                            <button class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</button>
+                            <button class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</button>
+                            <button class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</button>
+                            <button class="ide_ops" onclick="window.ide.eval(event)">EVAL</button>
+                        </div>
+                        <div class="row">
+                            <button class="ide_ops" onclick="window.ide.recallMemory(event)">RCL</button>
+                            <button class="ide_ops" onclick="window.ide.storeMemory(event)">STO</button>
+                            <button class="ide_ops" onclick="window.ide.clearMemory(event)">CLR</button>
+                        </div>
 
-            </div>    
-            <div class="stack">
-                
+                        <div class="ide" id="ide">
+                            <div class="row">
+                                <button class="ide_links" className=" active" onclick="window.ide.openWindow(event, 'repl')">REPL</button>
+                                <button class="ide_links" onclick="window.ide.openWindow(event, 'f0')">&#x1D77A;</button>
+                                <button class="ide_links" onclick="window.ide.openWindow(event, 'f1')">&#x1084B;</button>
+                                <button class="ide_links" onclick="window.ide.openWindow(event, 'f2')">&#x1D453;</button>
+                            </div>
+                            <div id="repl" class="ide_content" style="display: block" className=" active"></div>
+                            <div id="f0" class="ide_content"></div>
+                            <div id="f1" class="ide_content"></div>        
+                            <div id="f2" class="ide_content"></div>
+                        </div>
+                </div>
             </div>
         </div>
-
 
         <script src="js/stellerator-embedded.js"></script>
         <script src="js/lisp.js"></script>
-        <script>
-            openWindow = function(event, id) {
-            
-                let classPrefix = this.className.split("_")[0];
-                let contentClass = classPrefix + "_content";
-                let linkClass = classPrefix + "_links";
-
-                // Get all elements with class and hide them
-                let tabcontent = document.getElementsByClassName(contentClass);
-                for (let i = 0; i < tabcontent.length; i++) {
-                    tabcontent[i].style.display = "none";
-                }
-
-                // Get all elements with class="tablinks" and remove the class "active"
-                let tablinks = document.getElementsByClassName(linkClass);
-                for (let i = 0; i < tablinks.length; i++) {
-                    tablinks[i].className = tablinks[i].className.replace(" active", "");
-                }
-
-                // Show the current tab, and add an "active" class to the button that opened the tab
-                let currenttab = document.getElementById(id);
-                currenttab.style.display = "block";
-                event.currentTarget.className += " active";
-            };
-        </script>
         <script>
              (async function() {
                 // Shortcut to avoid typing out the namespace
@@ -94,7 +73,7 @@
 
                 // We load the ROM file using the fetch API. We could also hardcode the ROM as a base64 encoded string
                 // and pass that to stellerator instead.
-                const response = await fetch("./roms/lisp_NTSC.bin");
+                const response = await fetch("./roms/lisp_NTSC.bin");//study/keypad.bin");/
                 const rom = new Uint8Array(await response.arrayBuffer());
 
                 // Create the stellerator instance
@@ -127,13 +106,20 @@
                 window.addEventListener('resize', () => stellerator.isFullscreen() || stellerator.resize());
 
                 // Run the emulator in NTSC mode.
-                await stellerator.run(rom, Stellerator.TvMode.ntsc);
+                await stellerator.run(
+                    rom, 
+                    Stellerator.TvMode.ntsc,
+                    { 
+                        controllerPort0: Stellerator.ControllerType.keypad,
+                        controllerPort1: Stellerator.ControllerType.keypad
+                    }
+                );
 
                 // Expose the instance for tinkering.
                 window.stellerator = stellerator;
 
-                const lisp = lispInit(stellerator);
-                window.lisp = lisp;
+                const ide = await lispInit(stellerator);
+                window.ide = ide;
 
             })();
         </script>

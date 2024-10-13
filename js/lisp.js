@@ -1,228 +1,5 @@
 
 
-LispMachine = function (ram) {
-
-    "use strict";
-
-    var self = this;
-
-    var CELL_TYPE_PREFIX_MASK = 0x8000;
-    var CELL_TYPE_PAIR_PREFIX = 0x8000;
-    var CELL_TYPE_DECIMAL_PREFIX = 0x0000;
-   
-    var REF_TYPE_PREFIX_MASK = 0xc0;
-    var REF_TYPE_SYMBOL_PREFIX = 0xc0;
-    var SYMBOL_INDEX_MASK = 0x3f;
-    
-    var SYMBOLS = [
-        '',
-        '*',
-        '+',
-        '-',
-        '/',
-        '%',
-        '=',
-        '>',
-        '<',
-        '&',
-        '|',
-        '!',
-        'if',
-        'cons',
-        'car',
-        'cdr',
-        'f0',
-        'f1',
-        'f2',
-        'beep',
-        'progn',
-        'loop',
-        'stack',
-        'steps',
-        'p0',
-        'p1',
-        'ball',
-        'x1b',
-        'x1c',
-        'x1d',
-        'x1e',
-        'x1f',
-        '0',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-        'a',
-        'b',
-        'c',
-        'd'
-    ];
-
-    var _registers = {
-        'free': 0xc0,
-        'repl': 0xc1, 
-        'f0': 0xc2, 
-        'f1': 0xc3,
-        'f2': 0xc4,
-        'accumulator': 0xc5
-    };
-
-    var head = function(cell) {
-        return cell >> 8;
-    };
-
-    var tail = function(cell) {
-        return cell & 0xff;
-    };
-
-    this.decodeRef = function(ref) {
-        switch (ref & REF_TYPE_PREFIX_MASK) {
-            case REF_TYPE_SYMBOL_PREFIX:
-                var index = ref & SYMBOL_INDEX_MASK;
-                var symbol = SYMBOLS[index];
-                return new Symbolic(symbol);
-            case 0:
-                return Null;
-        };
-        var cell = ram.readWord(ref);
-        switch (cell & CELL_TYPE_PREFIX_MASK) {
-            case CELL_TYPE_DECIMAL_PREFIX:
-                return new Numeric(cell);
-            case CELL_TYPE_PAIR_PREFIX:
-                var car = self.decodeRef(head(cell));
-                var cdr = self.decodeRef(tail(cell));
-                return new Pair(car, cdr);
-        };
-    };
-
-    this.freeRef = function(ref) {
-        var freeRef = ram.read(_registers['free']);
-        var cell = ram.readWord(ref);
-        switch (cell & CELL_TYPE_PREFIX_MASK) {
-            case CELL_TYPE_PAIR_PREFIX:
-                self.freeRef(head(cell));
-            case CELL_TYPE_DECIMAL_PREFIX:
-                self.freeRef(car(cell));
-        };
-        ram.write(ref, 0);
-        ram.write(ref + 1, freeRef);
-        ram.write(_registers['free'], ref);
-    }
-
-    this.allocRef = function() {
-        var freeRef = ram.read(_registers['free']);
-        var freeCell = ram.readWord(freeRef);
-        ram.write(_registers['free'], tail(freeCell));
-        return freeRef;
-    }
-
-    this.encodeExpression = function(exp) {
-        if (exp instanceof Array) {
-            if (exp.length == 0) {
-                return Null;
-            }
-            var ref = self.allocRef();
-            var car = self.encodeExpression(exp.head());
-            var cdr = self.encodeExpression(exp.tail());
-            ram.write(ref, car.ref());
-            ram.write(ref + 1, cdr === 0 ? 0 : cdr.ref());
-            var pair = new Pair(
-                ref,
-                car,
-                cdr
-            );
-            return pair;
-        } else if (exp instanceof String) {
-            var ref = self.symbolRef(exp);
-            return new Symbolic(ref, exp);
-        } else if (exp instanceof Number) {
-            var ref = self.allocRef();
-            var word = self.convertNumber(exp);
-            ram.writeWord(ref, word);
-            return new Numeric(ref, word);            
-        } else {
-            // TODO: throw?
-            return 0;
-        }
-    }
-
-    this.symbolRef = function(s) {
-        var i = SYMBOLS.findIndex(s);
-        return i || REF_TYPE_SYMBOL_PREFIX;
-    }
-
-    this.convertNumber = function (n) {
-        var h = (n / 100).trunc();
-        var d = ((n % 100) / 10).trunc();
-        var u = (n % 10).trunc();
-        var word = (h << 8) + (d << 4) + u;
-        return n;
-    }
-
-    this.decodeRegister = function (name) {
-        var cellRef = ram.read(_registers[name]);
-        return self.decodeRef(cellRef);
-    };
-
-    this.encodeRegister = function (name, data) {
-        var cellRef = encodeData(data);
-        ram.write(_registers[name], cellRef);
-    };
-
-    this.freeRegister = function (name) {
-        var cellRef = ram.read(_registers[name]);
-        self.freeRef(cellRef);
-        raw.write(_registers[name], 0);
-    }
-
-    this.accumulator = function () {
-        return new Numeric(ram.readWord(_registers["accumulator"])).value();
-    };
-
-};
-
-ConsoleRam = function(stellerator) {
-
-    var self = this;
-    var ram = new Array(128);
-
-    this.snapshot = async function() {
-        for (i = 128; i < 256; i++) {
-            ram[i & 0x7f] = await stellerator._emulationService.peek(i);
-        }
-        return ram;
-    }
-
-    this.restore = async function() {
-        for (i = 128; i < 256; i++) {
-            await stellerator._emulationService.poke(i, ram[i & 0x7f]);
-        }
-    }
-
-    this.read = function(address) {
-        return ram[address & 0x7f]
-    }
-
-    this.write = function(address, value) {
-        ram[address & 0x7f] = value & 0xff
-    }
-
-    this.readWord = function(address) {
-        return (self.read(address) << 8) + self.read(address + 1);
-    }
-
-    this.writeWord = function(address, word) {
-        self.write(address, word >> 8);
-        self.write(address, word & 0xff);
-    }
-
-};
-
 Null = 0;
 
 Symbolic = function(ref, name) {
@@ -287,6 +64,261 @@ Pair = function(ref, car, cdr) {
 
 };
 
+LispMachine = function (ram) {
+
+    "use strict";
+
+    var self = this;
+
+    var CELL_TYPE_PREFIX_MASK = 0x8000;
+    var CELL_TYPE_PAIR_PREFIX = 0x8000;
+    var CELL_TYPE_DECIMAL_PREFIX = 0x0000;
+   
+    var REF_TYPE_PREFIX_MASK = 0xc0;
+    var REF_TYPE_SYMBOL_PREFIX = 0xc0;
+    var SYMBOL_INDEX_MASK = 0x3f;
+    
+    var SYMBOLS = [
+        '',
+        '*',
+        '+',
+        '-',
+        '/',
+        '%',
+        '=',
+        '>',
+        '<',
+        '&',
+        '|',
+        '!',
+        'cons',
+        'car',
+        'cdr',
+        'f0',
+        'f1',
+        'f2',
+        'beep',
+        'stack',
+        'p0',
+        'p1',
+        'ball',
+        'j0',
+        'j1',
+        'apply',
+        'quote',
+        'hash',
+        'if',
+        'loop',
+        'progn',
+        ' ',
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        'a',
+        'b',
+        'c',
+        'd',
+        's',
+        'i',
+        'cx0b',
+        'cx1b',
+        'cx01',
+    ];
+
+    var _registers = {
+        'free': 0xc0,
+        'repl': 0xc1, 
+        'f0': 0xc2, 
+        'f1': 0xc3,
+        'f2': 0xc4,
+        'accumulator': 0xc5
+    };
+
+    var _functionNames = ['repl', 'f0', 'f1', 'f2'];
+
+    var head = function(cell) {
+        return cell >> 8;
+    };
+
+    var tail = function(cell) {
+        return cell & 0xff;
+    };
+
+    this.decodeRef = function(ref) {
+        switch (ref & REF_TYPE_PREFIX_MASK) {
+            case REF_TYPE_SYMBOL_PREFIX:
+                var index = ref & SYMBOL_INDEX_MASK;
+                var symbol = SYMBOLS[index];
+                console.log(`symbol ${ref} ${symbol} ${index}`)
+                return new Symbolic(ref, symbol);
+            case 0:
+                return Null;
+        };
+        var cell = ram.readWord(ref);
+        switch (cell & CELL_TYPE_PREFIX_MASK) {
+            case CELL_TYPE_DECIMAL_PREFIX:
+                console.log(`numeric ${ref} ${cell}`)
+                return new Numeric(ref, cell);
+            case CELL_TYPE_PAIR_PREFIX:
+                var car = self.decodeRef(head(cell));
+                var cdr = self.decodeRef(tail(cell));
+                return new Pair(ref, car, cdr);
+        };
+    };
+
+    this.freeRef = function(ref) {
+        var freeRef = ram.read(_registers['free']);
+        var cell = ram.readWord(ref);
+        switch (cell & CELL_TYPE_PREFIX_MASK) {
+            case CELL_TYPE_PAIR_PREFIX:
+                self.freeRef(head(cell));
+            case CELL_TYPE_DECIMAL_PREFIX:
+                self.freeRef(car(cell));
+        };
+        ram.write(ref, 0);
+        ram.write(ref + 1, freeRef);
+        ram.write(_registers['free'], ref);
+    }
+
+    this.allocRef = function() {
+        var freeRef = ram.read(_registers['free']);
+        var freeCell = ram.readWord(freeRef);
+        ram.write(_registers['free'], tail(freeCell));
+        return freeRef;
+    }
+
+    this.encodeExpression = function(exp) {
+        if (exp instanceof Array) {
+            if (exp.length == 0) {
+                return Null;
+            }
+            var ref = self.allocRef();
+            var car = self.encodeExpression(exp.head());
+            var cdr = self.encodeExpression(exp.tail());
+            ram.write(ref, car.ref());
+            ram.write(ref + 1, cdr === 0 ? 0 : cdr.ref());
+            var pair = new Pair(
+                ref,
+                car,
+                cdr
+            );
+            return pair;
+        } else if (exp instanceof String) {
+            var ref = self.symbolRef(exp);
+            return new Symbolic(ref, exp);
+        } else if (exp instanceof Number) {
+            var ref = self.allocRef();
+            var word = self.convertNumber(exp);
+            ram.writeWord(ref, word);
+            return new Numeric(ref, word);            
+        } else {
+            // TODO: throw?
+            return Null;
+        }
+    }
+
+    this.symbolRef = function(s) {
+        var i = SYMBOLS.findIndex(s);
+        return i || REF_TYPE_SYMBOL_PREFIX;
+    }
+
+    this.convertNumber = function (n) {
+        var h = (n / 100).trunc();
+        var d = ((n % 100) / 10).trunc();
+        var u = (n % 10).trunc();
+        var word = (h << 8) + (d << 4) + u;
+        return n;
+    }
+
+    this.decodeRegister = function (name) {
+        var cellRef = ram.read(_registers[name]);
+        return self.decodeRef(cellRef);
+    };
+
+    this.encodeRegister = function (name, expr) {
+        var cellRef = this.encodeExpression(expr);
+        ram.write(_registers[name], cellRef);
+    };
+
+    this.freeRegister = function (name) {
+        var cellRef = ram.read(_registers[name]);
+        self.freeRef(cellRef);
+        raw.write(_registers[name], 0);
+    }
+
+    this.accumulator = function () {
+        return new Numeric(ram.readWord(_registers["accumulator"])).value();
+    };
+
+    this.recall = async function () {
+        const snapshot = await ram.snapshot();
+        const fxns = {};
+        _functionNames.forEach( (name) => {
+            const data = self.decodeRegister(name);
+            fxns[name] = data;
+        });
+        return fxns;
+    };
+
+    this.store = async function(exprs) {
+        await self.clear();
+        _functionNames.forEach( (name) => {
+            self.encodeRegister(name, exprs[name]);
+        });
+    }
+
+    this.clear = async function() {
+        _functionNames.forEach( (name) => {
+            self.freeRegister(name);
+        });
+    };
+
+};
+
+ConsoleRam = function(stellerator) {
+
+    var self = this;
+    var ram = new Array(128);
+
+    this.snapshot = async function() {
+        for (i = 128; i < 256; i++) {
+            ram[i & 0x7f] = await stellerator._emulationService.peek(i);
+        }
+        return ram;
+    }
+
+    this.restore = async function() {
+        for (i = 128; i < 256; i++) {
+            await stellerator._emulationService.poke(i, ram[i & 0x7f]);
+        }
+    }
+
+    this.read = function(address) {
+        return ram[address & 0x7f]
+    }
+
+    this.write = function(address, value) {
+        ram[address & 0x7f] = value & 0xff
+    }
+
+    this.readWord = function(address) {
+        return (self.read(address) << 8) + self.read(address + 1);
+    }
+
+    this.writeWord = function(address, word) {
+        self.write(address, word >> 8);
+        self.write(address, word & 0xff);
+    }
+
+};
+
 LispParser = function() {
 
     "use strict";
@@ -320,7 +352,7 @@ LispParser = function() {
         return root;
     };
     
-    this.tokenize = function(s) {
+    this.tokenize = function*(s) {
         var token = "";
         for (let i = 0; i < exp.length; i++) {
             
@@ -381,30 +413,141 @@ LispParser = function() {
 
 };
 
+LispIde = function (lisp) {
 
+    var self = this;
 
+    this.project = 'vcs_lisp';
+    this.functions = {
+        repl: Null,
+        f0: Null,
+        f1: Null,
+        f2: Null
+    };
 
-recall = function(register) {
-    ram.snapshot().then( _ => {
-        let tabcontent = document.getElementsByClassName("ldecontent");
-        for (let i  = 0; i < tabcontent.length; i++) {
-    
-            let data = self.decodeRegister(tabcontent[i].id);
-            tabcontent[i].textContent = data.toString();
-            tabcontent[i].data = data;
+    this.openWindow = function(event, id) {
+
+        let classPrefix = event.currentTarget.className.split("_")[0];
+        let contentClass = classPrefix + "_content";
+        let linkClass = classPrefix + "_links";
+
+        // Get all elements with class and hide them
+        let tabcontent = document.getElementsByClassName(contentClass);
+        for (let i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
         }
-    });
-}
 
-store = function(register, data) {
-}
+        // Get all elements with class="tablinks" and remove the class "active"
+        let tablinks = document.getElementsByClassName(linkClass);
+        for (let i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
 
-clear = function() {
+        // Show the current tab, and add an "active" class to the button that opened the tab
+        let currenttab = document.getElementById(id);
+        currenttab.style.display = "flex";
+        event.currentTarget.className += " active";
+    };
 
-}
+    this.changeMode = async function(event, idx) {
+        // BUGBUG: implement
+    };
+
+    this.eval = async function() {
+        // BUGBUG: implement
+    };
+
+    this.recallMemory = async function() {
+        const compiledFunctions = await lisp.recall();
+        self.functions = compiledFunctions;
+        self._updateEditors();
+    };
+
+    this.storeMemory = async function(register, data) {
+        var parsedFunctions = self._parseFunctionExpressions();
+        await lisp.clear();
+        await lisp.store(parsedFunctions);
+        const compiledFunctions = await lisp.recall();
+        self.functions = compiledFunctions;
+    };
+
+    this.clearMemory = async function() {
+        if (await self._yesno("CLR?")) {
+            await lisp.clear();
+            this.recallMemory();    
+        }
+    };
+
+    this.saveProject = async function() {
+        let filename = self.project + '.js';
+        let data = {
+            project: self.project,
+            editors: {}
+        };
+        let ide = document.getElementById("ide")
+        let tabcontent = ide.getElementsByClassName("ide_content");
+        for (let i  = 0; i < tabcontent.length; i++) {
+            let name = tabcontent[i].id;
+            let textContent = tabcontent[i].textContent;
+            data.editors[name] = textContent;
+        }
+        // execute download
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(data)));
+        element.setAttribute('download', filename);
+        element.style.visibility = 'hidden';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    };
+
+    this.loadProject = async function() {
+        let filename = self.project + '.js';
+        var reader = new FileReader();
+        reader.onload = function(){
+            console.log(reader.result);
+        };
+        reader.readAsDataURL(filename);
+    };
+
+    this._yesno = async function(text) {
+        // BUGBUG: dialog
+        return false;
+    };
+
+    /**
+     * Get function expressions
+     * @returns 
+     */
+    this._parseFunctionExpressions = function() {
+        var exprs = {};
+        var parser = LispParser();
+        let ide = document.getElementById("ide")
+        let tabcontent = ide.getElementsByClassName("ide_content");
+        for (let i  = 0; i < tabcontent.length; i++) {
+            let name = tabcontent[i].id;
+            let textContent = tabcontent[i].textContent;
+            exprs[name] = parser.parse(textContent);
+        }
+        return exprs;
+    }
+
+    this._updateEditors = function() {
+        let ide = document.getElementById("ide")
+        let tabcontent = ide.getElementsByClassName("ide_content");
+        for (let i  = 0; i < tabcontent.length; i++) {
+            let data = self.functions[tabcontent[i].id];
+            if (data) {
+                tabcontent[i].textContent = data.toString();
+            }
+        }
+    }
+
+};
 
 lispInit = async function(stellerator) {
     const ram = new ConsoleRam(stellerator);
     const lisp = new LispMachine(ram);
-    return lisp;
+    const ide = new LispIde(lisp);
+    return ide;
 };
