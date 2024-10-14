@@ -9,13 +9,35 @@
 #stellerator-keyboard {
   height: 300px;
   background-color: antiquewhite;
+}
 
+body {
+  background-color: #000000;
+  font-family: sans-serif;
+  font-size: large;
+  color: #ffffff;
+}
+
+.header {
+  padding: 10px;
+  background-color: #5d4287;
+  border-color: #f4d410;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-style: dashed;
+  border-bottom: 0;
 }
 
 .main {
   display: flex;
   flex-direction: row;
   flex-grow: 1;
+  background-color: #5d4287;
+  border-color: #f4d410;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  border-style: dashed;
+  border-top: 0;
 }
 
 .console {
@@ -24,14 +46,20 @@
   flex-direction: column;
 }
 
+.sidepanel {
+  display: flex;
+  flex-grow: 1;
+  padding: 10px;
+}
+
 .metaconsole {
   display: flex;
   padding: 10px;
   flex-direction: column;
   flex-grow: 1;
+  background-color: #f4d410;
+  border-radius: 10px;
 }
-
-
 
 .row {
   display: flex;
@@ -50,18 +78,18 @@
   flex-grow: 1;
   overflow: hidden;
   border: 1px solid #ccc;
-  background-color: #f1f1f1;
+  background-color: #c1332c;
 }
 
 /* Style the control buttons */
 
 .ide_ops {
-  background-color: #f2f2f2;
   border: 1px solid #ccc;
   padding: 10px;
   font-size: 16px;
   border-radius: 5px;
   cursor: pointer;
+  background-color: #5d4287;
 }
 
 .ide_ops:hover {
@@ -94,6 +122,7 @@
   display: none;
   padding: 6px 12px;
   border: 1px solid #ccc;
-  background-color: white;
+  background-color: #ffffff;
+  color: #000000;
   flex-grow: 1;
 }
