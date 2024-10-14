@@ -9,61 +9,65 @@
     </head>
 
     <body>
-        <div class="root">
-            <div class="header">
-                <span>VCS Lisp - LISP programming on the Atari 2600</span>
+        <div class="header">
+            <span>VCS Lisp - LISP programming on the Atari 2600</span>
+        </div>
+        <div class="main">
+            <div class="console">
+                <div id="screen">
+                    <canvas id="stellerator-canvas" tabindex=0></canvas>
+                </div>
+                <div id="console_controls" class="row">
+                    <div class="console_switch" id="console_switch_power">Power</div>
+                    <div class="console_switch" id="console_switch_color">Color/BW</div>        
+                    <div class="console_switch" id="console_switch_a">Difficulty A</div>        
+                    <div class="console_switch" id="console_switch_b">Difficulty B</div>        
+                    <div class="console_toggle" id="console_switch_select">Select</div>        
+                    <div class="console_toggle" id="console_switch_reset">Reset</div> 
+                </div>
             </div>
-            <div class="main">
-                <div class="outlet">
-                    <div id="screen">
-                        <canvas id="stellerator-canvas"></canvas>
+            <div class="metaconsole">
+                    <div id="keyboard">
+                        <canvas id="stellerator-keyboard" tabindex=0></canvas>
+                    </div>  
+                    <div class="row">
+                        <div class="ide_ops" onclick="window.ide.saveProject(event)">SAVE</div>
+                        <div class="ide_ops"> 
+                            <label>LOAD</label>
+                            <input type="file" style="opacity: 0" onchange="window.ide.loadProject(event)"></input>
+                        </div>
                     </div>
-                    <div id="console">
-                        <div class="console_switch" id="console_switch_power">Power</div>
-                        <div class="console_switch" id="console_switch_color">Color/BW</div>        
-                        <div class="console_switch" id="console_switch_a">Difficulty A</div>        
-                        <div class="console_switch" id="console_switch_b">Difficulty B</div>        
-                        <div class="console_toggle" id="console_switch_select">Select</div>        
-                        <div class="console_toggle" id="console_switch_reset">Reset</div> 
+                    <div class="row">
+                        <div class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</div>
+                        <div class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</div>
+                        <div class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</div>
+                        <div class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</div>
+                        <div class="ide_ops" onclick="window.ide.eval(event)">EVAL</div>
                     </div>
-                </div>
-                <div class="sidebar">
-                        <div id="keyboard">
-                            <canvas id="stellerator-keyboard"></canvas>
-                        </div>  
-                        <div class="row">
-                            <button class="ide_ops" onclick="window.ide.saveProject(event)">SAVE</button>
-                            <button class="ide_ops" onclick="window.ide.loadProject(event)">LOAD</button>        
-                        </div>
-                        <div class="row">
-                            <button class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</button>
-                            <button class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</button>
-                            <button class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</button>
-                            <button class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</button>
-                            <button class="ide_ops" onclick="window.ide.eval(event)">EVAL</button>
-                        </div>
-                        <div class="row">
-                            <button class="ide_ops" onclick="window.ide.recallMemory(event)">RCL</button>
-                            <button class="ide_ops" onclick="window.ide.storeMemory(event)">STO</button>
-                            <button class="ide_ops" onclick="window.ide.clearMemory(event)">CLR</button>
-                        </div>
+                    <div class="row">
+                        <div class="ide_ops" onclick="window.ide.recallMemory(event)">RCL</div>
+                        <div class="ide_ops" onclick="window.ide.storeMemory(event)">STO</div>
+                        <div class="ide_ops" onclick="window.ide.clearMemory(event)">CLR</div>
+                    </div>
 
-                        <div class="ide" id="ide">
-                            <div class="row">
-                                <button class="ide_links" className=" active" onclick="window.ide.openWindow(event, 'repl')">REPL</button>
-                                <button class="ide_links" onclick="window.ide.openWindow(event, 'f0')">&#x1D77A;</button>
-                                <button class="ide_links" onclick="window.ide.openWindow(event, 'f1')">&#x1084B;</button>
-                                <button class="ide_links" onclick="window.ide.openWindow(event, 'f2')">&#x1D453;</button>
-                            </div>
-                            <div id="repl" class="ide_content" style="display: block" className=" active"></div>
-                            <div id="f0" class="ide_content"></div>
-                            <div id="f1" class="ide_content"></div>        
-                            <div id="f2" class="ide_content"></div>
+                    <div class="ide" id="ide">
+                        <div class="row">
+                            <div class="ide_links active"  onclick="window.ide.openWindow(event, 'repl')">REPL</div>
+                            <div class="ide_links" onclick="window.ide.openWindow(event, 'f0')">&#x1D77A;</div>
+                            <div class="ide_links" onclick="window.ide.openWindow(event, 'f1')">&#x1084B;</div>
+                            <div class="ide_links" onclick="window.ide.openWindow(event, 'f2')">&#x1D453;</div>
                         </div>
-                </div>
+                        <div id="repl" class="ide_content active" style="display: block" contenteditable="true" spellcheck="false"></div>
+                        <div id="f0" class="ide_content" contenteditable="true" spellcheck="false"></div>
+                        <div id="f1" class="ide_content" contenteditable="true" spellcheck="false"></div>        
+                        <div id="f2" class="ide_content" contenteditable="true" spellcheck="false"></div>
+                    </div>
             </div>
         </div>
-
+        <div id="ide_dialog" class="modal">
+            <div class="modal-body"></div>
+            <div class="modal-footer"></div>
+        </div>
         <script src="js/stellerator-embedded.js"></script>
         <script src="js/lisp.js"></script>
         <script>
@@ -76,6 +80,8 @@
                 const response = await fetch("./roms/lisp_NTSC.bin");//study/keypad.bin");/
                 const rom = new Uint8Array(await response.arrayBuffer());
 
+                const keyboardTarget = document.getElementById('stellerator-canvas');
+
                 // Create the stellerator instance
                 const stellerator = new $6502.Stellerator(
                     // The canvas element
@@ -86,6 +92,7 @@
                         gamma: 1,
                         scalingMode: Stellerator.ScalingMode.qis,
                         tvEmulation: Stellerator.TvEmulation.none, // disable TV emulation mode
+                        keyboardTarget: keyboardTarget,
                         phosphorLevel: 0.5,
                         scanlineLevel: 0.0
                     }
@@ -110,8 +117,8 @@
                     rom, 
                     Stellerator.TvMode.ntsc,
                     { 
-                        controllerPort0: Stellerator.ControllerType.keypad,
-                        controllerPort1: Stellerator.ControllerType.keypad
+                        controllerPort0: Stellerator.ControllerType.joystick,
+                        controllerPort1: Stellerator.ControllerType.joystick
                     }
                 );
 

@@ -8,14 +8,8 @@
 
 #stellerator-keyboard {
   height: 300px;
-  width: 300px;
   background-color: antiquewhite;
 
-}
-
-.root {
-  display: flex;
-  flex-direction: column;
 }
 
 .main {
@@ -24,30 +18,58 @@
   flex-grow: 1;
 }
 
-.outlet {
+.console {
   display: flex;
+  padding: 10px;
+  flex-direction: column;
+}
+
+.metaconsole {
+  display: flex;
+  padding: 10px;
   flex-direction: column;
   flex-grow: 1;
 }
 
-.sidebar {
-  display: flex;
-  flex-direction: column;
-}
 
-.ide {
-  overflow: hidden;
-  border: 1px solid #ccc;
-  background-color: #f1f1f1;
-}
 
 .row {
   display: flex;
   flex-direction: row;
 }
 
-/* Style the buttons that are used to open the tab content */
-.ide button {
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 1; 
+}
+
+.ide {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+
+/* Style the control buttons */
+
+.ide_ops {
+  background-color: #f2f2f2;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.ide_ops:hover {
+  background-color: #e6e6e6;
+}
+
+/* Style the tab buttons */
+.ide_links {
   background-color: inherit;
   float: left;
   border: none;
@@ -58,12 +80,12 @@
 }
 
 /* Change background color of buttons on hover */
-.ide button:hover {
+.ide_links:hover {
   background-color: #ddd;
 }
 
 /* Create an active/current tablink class */
-.ide button.active {
+.ide_links.active {
   background-color: #ccc;
 }
 
@@ -72,6 +94,6 @@
   display: none;
   padding: 6px 12px;
   border: 1px solid #ccc;
-  border-top: none;
-  min-height: 300px;
+  background-color: white;
+  flex-grow: 1;
 }

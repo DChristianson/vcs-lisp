@@ -1,4 +1,6 @@
-
+/**
+ * VCS-Lisp Machine debugger
+ */
 
 Null = 0;
 
@@ -472,10 +474,10 @@ LispIde = function (lisp) {
     };
 
     this.clearMemory = async function() {
-        if (await self._yesno("CLR?")) {
+        self._okcancel("Clear Memory?", async () => {
             await lisp.clear();
             this.recallMemory();    
-        }
+        });
     };
 
     this.saveProject = async function() {
@@ -501,18 +503,33 @@ LispIde = function (lisp) {
         document.body.removeChild(element);
     };
 
-    this.loadProject = async function() {
-        let filename = self.project + '.js';
+    this.loadProject = async function(event) {
+        var input = event.target;
         var reader = new FileReader();
         reader.onload = function(){
             console.log(reader.result);
         };
-        reader.readAsDataURL(filename);
+        reader.readAsDataURL(input.files[0]);
     };
 
-    this._yesno = async function(text) {
-        // BUGBUG: dialog
-        return false;
+    this._okcancel = async function(text, accept) {
+        let modal = document.getElementById("ide_dialog");
+        modal.getElementsByClassName("modal-body")?.[0].replaceChildren(text);
+        let closeModal = async function() {
+            modal.style.display = 'none';
+        };
+        let cancelButton = document.createElement('button');
+        cancelButton.onclick = closeModal;
+        let okButton = document.createElement('button');
+        okButton.onclick = function() {
+            closeModal();
+            accept();
+        };
+        modal.getElementsByClassName("modal-footer")?.[0].replaceChildren(
+            okButton,
+            cancelButton
+        )
+        modal.style.display = 'block';
     };
 
     /**
