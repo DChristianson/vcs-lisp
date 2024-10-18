@@ -2,7 +2,7 @@
  * VCS-Lisp Machine debugger
  */
 
-Null = 0;
+NullRef = 0;
 
 Symbolic = function(ref, name) {
 
@@ -57,7 +57,7 @@ Pair = function(ref, car, cdr) {
         do {
             s += current.head().toString();
             current = current.tail();
-            if (current === Null) break;
+            if (current === NullRef) break;
             s += ' ';
         } while (true);
         s += ')';
@@ -158,15 +158,13 @@ LispMachine = function (ram) {
             case REF_TYPE_SYMBOL_PREFIX:
                 var index = ref & SYMBOL_INDEX_MASK;
                 var symbol = SYMBOLS[index];
-                console.log(`symbol ${ref} ${symbol} ${index}`)
                 return new Symbolic(ref, symbol);
             case 0:
-                return Null;
+                return NullRef;
         };
         var cell = ram.readWord(ref);
         switch (cell & CELL_TYPE_PREFIX_MASK) {
             case CELL_TYPE_DECIMAL_PREFIX:
-                console.log(`numeric ${ref} ${cell}`)
                 return new Numeric(ref, cell);
             case CELL_TYPE_PAIR_PREFIX:
                 var car = self.decodeRef(head(cell));
@@ -176,13 +174,18 @@ LispMachine = function (ram) {
     };
 
     this.freeRef = function(ref) {
+        switch (ref & REF_TYPE_PREFIX_MASK) {
+            case REF_TYPE_SYMBOL_PREFIX:
+            case 0:
+                return;
+        };
+
         var freeRef = ram.read(_registers['free']);
         var cell = ram.readWord(ref);
         switch (cell & CELL_TYPE_PREFIX_MASK) {
             case CELL_TYPE_PAIR_PREFIX:
                 self.freeRef(head(cell));
-            case CELL_TYPE_DECIMAL_PREFIX:
-                self.freeRef(car(cell));
+                self.freeRef(tail(cell));
         };
         ram.write(ref, 0);
         ram.write(ref + 1, freeRef);
@@ -197,14 +200,16 @@ LispMachine = function (ram) {
     }
 
     this.encodeExpression = function(exp) {
+        console.log(`encoding ${exp}`);
+        console.log(exp);
         if (exp instanceof Array) {
-            if (exp.length == 0) {
-                return Null;
+            if (exp.length === 0) {
+                return NullRef;
             }
             var ref = self.allocRef();
-            var car = self.encodeExpression(exp.head());
-            var cdr = self.encodeExpression(exp.tail());
-            ram.write(ref, car.ref());
+            var car = self.encodeExpression(exp[0]);
+            var cdr = self.encodeExpression(exp.slice(1));
+            ram.write(ref, car === 0 ? 0 : car.ref());
             ram.write(ref + 1, cdr === 0 ? 0 : cdr.ref());
             var pair = new Pair(
                 ref,
@@ -212,29 +217,29 @@ LispMachine = function (ram) {
                 cdr
             );
             return pair;
-        } else if (exp instanceof String) {
+        } else if (typeof exp === 'string') {
             var ref = self.symbolRef(exp);
             return new Symbolic(ref, exp);
-        } else if (exp instanceof Number) {
+        } else if (typeof exp === 'number') {
             var ref = self.allocRef();
             var word = self.convertNumber(exp);
             ram.writeWord(ref, word);
             return new Numeric(ref, word);            
         } else {
             // TODO: throw?
-            return Null;
+            return NullRef;
         }
     }
 
     this.symbolRef = function(s) {
-        var i = SYMBOLS.findIndex(s);
-        return i || REF_TYPE_SYMBOL_PREFIX;
+        var i = SYMBOLS.findIndex((value) => value === s);
+        return i | REF_TYPE_SYMBOL_PREFIX;
     }
 
     this.convertNumber = function (n) {
-        var h = (n / 100).trunc();
-        var d = ((n % 100) / 10).trunc();
-        var u = (n % 10).trunc();
+        var h = Math.floor(n / 100);
+        var d = Math.floor((n % 100) / 10);
+        var u = Math.floor(n % 10);
         var word = (h << 8) + (d << 4) + u;
         return n;
     }
@@ -246,13 +251,13 @@ LispMachine = function (ram) {
 
     this.encodeRegister = function (name, expr) {
         var cellRef = this.encodeExpression(expr);
-        ram.write(_registers[name], cellRef);
+        ram.write(_registers[name], cellRef === 0 ? 0 : cellRef.ref());
     };
 
     this.freeRegister = function (name) {
         var cellRef = ram.read(_registers[name]);
         self.freeRef(cellRef);
-        raw.write(_registers[name], 0);
+        ram.write(_registers[name], 0);
     }
 
     this.accumulator = function () {
@@ -274,12 +279,25 @@ LispMachine = function (ram) {
         _functionNames.forEach( (name) => {
             self.encodeRegister(name, exprs[name]);
         });
+        await ram.restore(0x80, 0xc5);
+        return await self.recall();
     }
 
     this.clear = async function() {
+        var i = 128
+        while (i < 196) {
+            ram.write(i, 0);
+            const cdr = i + 1;
+            const cddr = cdr + 1;
+            ram.write(cdr, cddr);
+            i = cddr;
+        }
+        ram.write(195, 0);
+        ram.write(_registers['free'], 128);        
         _functionNames.forEach( (name) => {
-            self.freeRegister(name);
-        });
+            ram.write(_registers[name], 0);
+        })
+        await ram.restore(0x80, 0xc5);
     };
 
 };
@@ -290,16 +308,29 @@ ConsoleRam = function(stellerator) {
     var ram = new Array(128);
 
     this.snapshot = async function() {
-        for (i = 128; i < 256; i++) {
-            ram[i & 0x7f] = await stellerator._emulationService.peek(i);
+        try {
+            await stellerator.pause();
+            for (i = 128; i < 256; i++) {
+                ram[i & 0x7f] = await stellerator._emulationService.peek(i);
+            }
+        } finally {
+            await stellerator.resume();
         }
         return ram;
     }
 
-    this.restore = async function() {
-        for (i = 128; i < 256; i++) {
-            await stellerator._emulationService.poke(i, ram[i & 0x7f]);
+    this.restore = async function(from, to) {
+        try {
+            await stellerator.pause();
+            from = from ?? 128;
+            to = to ?? 256;
+            for (i = from; i < to; i++) {
+                await stellerator._emulationService.poke(i, ram[i & 0x7f]);
+            }
+        } finally {
+            await stellerator.resume();
         }
+        return ram;
     }
 
     this.read = function(address) {
@@ -327,45 +358,44 @@ LispParser = function() {
 
     var self = this;
 
-    var DOUBLEQUOTE = /"/;
-    var WHITESPACE = /\s/;
-    var OPENCLOSE = /()/
-    var COMMENT = /;/;
-    var NUMBER = /\d+/;
+    const DOUBLEQUOTE = /"/;
+    const WHITESPACE = /\s+/;
+    const OPENCLOSE = /[()]/
+    const COMMENT = /;/;
+    const NUMBER = /\d+/;
 
     this.parse = function(s) {
         var tokens = self.tokenize(s);
         var root = [];
         var stack = [root];
-        for (var token in tokens) {
+        for (const token of tokens) {
             if ("(" === token) {
                 var l = []
-                stack[-1].append(l);
-                stack.append(l);
+                stack[stack.length-1].push(l);
+                stack.push(l);
             } else if (")" === token) {
                 stack.pop();
             } else if (token.length > 1 && NUMBER.test(token)) {
-                var n = float(token);
-                stack[-1].append(n);
+                var n = Number(token);
+                stack[stack.length-1].push(n);
             } else {
-                stack[-1].append(token);
+                stack[stack.length-1].push(token);
             }
         }
-        return root;
+        return root[0];
     };
     
     this.tokenize = function*(s) {
         var token = "";
-        for (let i = 0; i < exp.length; i++) {
-            
-            var c = s.charAt(i);
+        for (let i = 0; i < s.length; i++) {
+            var c = s.slice(i, i+1);
 
             if (DOUBLEQUOTE.test(c)) {
                 if (token.length > 0) {
                     yield token;
                     token = "";
                 }
-                for (i++; i < exp.length; i++) {
+                for (i++; i < s.length; i++) {
                     c = s.charAt(i);
                     if ("\\" === c) {
                         i++;
@@ -383,6 +413,7 @@ LispParser = function() {
                 yield c;
 
             } else if (WHITESPACE.test(c)) {
+                console.log("whitespace");
                 // remove whitespace
                 if (token.length > 0) {
                     yield token;
@@ -395,7 +426,7 @@ LispParser = function() {
                     yield token;
                     token = "";
                 }
-                for (i++; i < exp.length; i++) {
+                for (i++; i < s.length; i++) {
                     c = s.charAt(i);
                     if ("\n" === c) {
                         break;
@@ -403,7 +434,7 @@ LispParser = function() {
                 }
 
             } else {
-                token.append(c);
+                token += c;
 
             }
         }
@@ -421,10 +452,10 @@ LispIde = function (lisp) {
 
     this.project = 'vcs_lisp';
     this.functions = {
-        repl: Null,
-        f0: Null,
-        f1: Null,
-        f2: Null
+        repl: NullRef,
+        f0: NullRef,
+        f1: NullRef,
+        f2: NullRef
     };
 
     this.openWindow = function(event, id) {
@@ -467,9 +498,7 @@ LispIde = function (lisp) {
 
     this.storeMemory = async function(register, data) {
         var parsedFunctions = self._parseFunctionExpressions();
-        await lisp.clear();
-        await lisp.store(parsedFunctions);
-        const compiledFunctions = await lisp.recall();
+        const compiledFunctions = await lisp.store(parsedFunctions);
         self.functions = compiledFunctions;
     };
 
@@ -538,7 +567,7 @@ LispIde = function (lisp) {
      */
     this._parseFunctionExpressions = function() {
         var exprs = {};
-        var parser = LispParser();
+        var parser = new LispParser();
         let ide = document.getElementById("ide")
         let tabcontent = ide.getElementsByClassName("ide_content");
         for (let i  = 0; i < tabcontent.length; i++) {
