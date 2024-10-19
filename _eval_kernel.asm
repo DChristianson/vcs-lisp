@@ -217,7 +217,7 @@ _eval_loop_progn
             lda #0,x              ; get the next arg
             txs
             tax                   ; .
-            lda #7                ; we will continue
+            lda #7                ; we will continue READABILITY: meaning 
             jmp _eval_progn_next
 _eval_loop_iter
             sed                   ; increment loop counter
@@ -235,7 +235,7 @@ _eval_loop_iter_test
             lda #5
             jmp _eval_progn_next  ; 
 _eval_progn
-            lda #6                ; we will continue
+            lda #6                ; we will continue READABILITY: meaning 
 _eval_progn_next
             sta eval_next
             lda HEAP_CDR_ADDR,x   ; get cddr to rest of args 
@@ -323,7 +323,7 @@ _apply_tail_call_end_search
             txs
             ldx eval_frame
 _apply_shift_loop
-            lda #0,x
+            lda #0,x ; READABILITY: notation
             pha
             dex
             dey

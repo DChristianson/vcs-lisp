@@ -61,6 +61,7 @@ SYMBOL_GRAPHICS_APPLY_FN ;
     byte $0,$70,$88,$88,$68,$88,$70,$0; 8
 SYMBOL_GRAPHICS_QUOTE
     byte $0,$0,$0,$10,$20,$20,$20,$0; 8
+SYMBOL_HASH = $1b
 SYMBOL_GRAPHICS_HASH
     byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
 SYMBOL_IF = $1c

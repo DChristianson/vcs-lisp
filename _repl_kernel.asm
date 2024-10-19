@@ -48,6 +48,8 @@ _repl_update_edit_head
 _repl_update_keys_move_jmp
             jmp _repl_update_keys_move            
 _repl_update_edit_set_funcar
+            cmp #SYMBOL_HASH 
+            beq _repl_update_edit_number
             ; we are editing the head of a funcall
             ldy HEAP_CAR_ADDR,x
             bmi _repl_update_edit_set_car ; just change symbol
@@ -61,8 +63,6 @@ _repl_update_edit_funcall
             beq _repl_update_edit_delete   ; delete current cell
             cmp #$20 ; BUGBUG: magic number (var versus function)                        
             bcc _repl_update_edit_set_funcar   ; edit funcall operator
-            cmp #$40 ; BUGBUG: hash
-            beq _repl_update_edit_number
             ora #$c0
             ldx repl_curr_cell
             dex
@@ -85,7 +85,7 @@ _repl_update_edit_apply
             ; curr cell is a symbol
             lda repl_edit_sym
             beq _repl_update_edit_delete   ; delete current cell
-            cmp #$40 ; BUGBUG: hash
+            cmp #SYMBOL_HASH 
             bne _repl_update_edit_symbol ; BUGBUG could be simpler?
             dex
             jsr alloc_cdr

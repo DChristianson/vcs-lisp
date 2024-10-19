@@ -140,7 +140,8 @@ LispMachine = function (ram) {
         'f0': 0xc2, 
         'f1': 0xc3,
         'f2': 0xc4,
-        'accumulator': 0xc5
+        'accumulator': 0xc5,
+        'game_state': 0xc8
     };
 
     var _functionNames = ['repl', 'f0', 'f1', 'f2'];
@@ -237,11 +238,12 @@ LispMachine = function (ram) {
     }
 
     this.convertNumber = function (n) {
+        n = n % 1000;
         var h = Math.floor(n / 100);
         var d = Math.floor((n % 100) / 10);
-        var u = Math.floor(n % 10);
+        var u = n % 10;
         var word = (h << 8) + (d << 4) + u;
-        return n;
+        return word;
     }
 
     this.decodeRegister = function (name) {
@@ -300,6 +302,23 @@ LispMachine = function (ram) {
         await ram.restore(0x80, 0xc5);
     };
 
+    this.setGameState = async function(state) {
+        const ref = _registers['game_state'];
+        ram.write(ref, state << 4);
+        // BUGBUG: safety protections
+        // BUGBUG: init game data
+        await ram.restore(ref, ref + 1);
+    }
+
+    this.eval = async function() {
+        await ram.snapshot();
+        const ref = _registers['game_state'];
+        const currentState = ram.read(ref);
+        // BUGBUG: safety protections
+        ram.write(ref, currentState | 0x80);
+        await ram.restore(ref, ref + 1);
+    }
+
 };
 
 ConsoleRam = function(stellerator) {
@@ -347,7 +366,7 @@ ConsoleRam = function(stellerator) {
 
     this.writeWord = function(address, word) {
         self.write(address, word >> 8);
-        self.write(address, word & 0xff);
+        self.write(address + 1, word & 0xff);
     }
 
 };
@@ -483,12 +502,10 @@ LispIde = function (lisp) {
     };
 
     this.changeMode = async function(event, idx) {
-        // BUGBUG: implement
+        lisp.setGameState(idx);
     };
 
-    this.eval = async function() {
-        // BUGBUG: implement
-    };
+    this.eval = lisp.eval;
 
     this.recallMemory = async function() {
         const compiledFunctions = await lisp.recall();
