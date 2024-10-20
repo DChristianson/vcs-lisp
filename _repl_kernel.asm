@@ -71,7 +71,6 @@ _repl_update_edit_funcall
 _repl_update_edit_keys
             lda player_input_latch         ; check button push
             bmi _repl_update_keys_move_jmp  ; no push
-            jsr sub_repl_edit_symbol
             ldx repl_curr_cell
             beq _repl_update_edit_extend   ; curr cell is null
 _repl_update_edit_apply
@@ -682,16 +681,20 @@ _prompt_encode_keys_mod
             tay
             ldx #9 ; fill in 10 addresses
 _prompt_encode_keys_loop
-            lda MENU_PAGE_0_HI,y
-            sta gx_addr,x
-            dex
-            lda MENU_PAGE_0_LO,y
+            tya
+            asl
+            asl
+            asl
+            sta gx_addr-1,x
+            lda #>SYMBOL_GRAPHICS_P0
+            adc #0
             sta gx_addr,x
             iny
             cpy #46
             bne _prompt_encode_keys_roll
             ldy #0
 _prompt_encode_keys_roll
+            dex
             dex
             bpl _prompt_encode_keys_loop
 
@@ -980,23 +983,6 @@ sub_fmt_number
             WRITE_DIGIT_LO HEAP_CAR_ADDR, gx_s2_addr ;16 15
             WRITE_DIGIT_HI HEAP_CDR_ADDR, gx_s3_addr   ;14 29
             WRITE_DIGIT_LO HEAP_CDR_ADDR, gx_s4_addr   ;16 45
-            rts
-
-sub_repl_edit_symbol
-            ldx repl_edit_sym
-            lda MENU_PAGE_0_HI,x            ; convert repl_edit_sym to symbol
-            sec
-            sbc #>SYMBOL_GRAPHICS_P0
-            lsr
-            ror
-            ror
-            sta repl_edit_sym
-            lda MENU_PAGE_0_LO,x
-            lsr
-            lsr
-            ora repl_edit_sym
-            lsr
-            sta repl_edit_sym
             rts
 
 DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe

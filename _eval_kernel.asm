@@ -186,6 +186,8 @@ _eval_old_env
             bmi _eval_continue_args ; if negative, eval next arg cell
             beq _eval_continue_args ; if zero, eval next arg cell (will be nil)
             ; args is 1 = return, 4 = test, 5 = loop test, 6 = progn,  7 = loop eval
+            ldx eval_frame ; pull 
+            txs
             lsr
             beq _eval_return
             bcs _eval_loop_continue
@@ -193,8 +195,6 @@ _eval_old_env
             ; BUGBUG: potentially we can optimize the stack here
             lsr
             sta eval_next ; should be 1 after the lsr
-            ldx eval_frame ; pull 
-            txs
             lda #0,x ; READABILITY: notation ; get pointer at FRAME+0
             beq _eval_return      ; if null we will return 
             tax
@@ -215,13 +215,6 @@ _eval_loop_continue
             beq _eval_loop_return ; assume 0 is false
             ;BUGBUG: need to make sure we return right
             ;BUGBUG: need to advance frame and stack
-_eval_loop_progn
-            lda #0,x              ; get the next arg
-            txs
-            tax                   ; .
-            lda #7                ; we will continue READABILITY: meaning 
-            jmp _eval_progn_next
-_eval_loop_iter
             sed                   ; increment loop counter
             lda #2,x              ; READABILITY
             clc
@@ -236,6 +229,12 @@ _eval_loop_iter_test
             tax
             lda #5
             jmp _eval_progn_next  ; 
+_eval_loop_progn
+            lda #0,x              ; get the next arg
+            beq _eval_return      ; if null we will return 
+            tax                   ; .
+            lda #7                ; we will continue READABILITY: meaning 
+            jmp _eval_progn_next
 _eval_progn
             lda #6                ; we will continue READABILITY: meaning 
 _eval_progn_next

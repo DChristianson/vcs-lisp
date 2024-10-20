@@ -189,7 +189,6 @@ BETA
         - clean up graphics on/offs
       - compaction pass
         - use .byte $2C skip next 2 bytes trick?
-        - 48 unused bytes on last page 
         - multiple ways to repl - can consolidate?
         - multiple ways to draw - can consolidate?
         - 87 bytes of sleeps
