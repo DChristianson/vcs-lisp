@@ -162,11 +162,9 @@ eval_frame = FP+0  prog list ...(arg1 arg2...)  ==> replace with (arg2...)
 Example: evaluating a loop statement 
 --------------------------------------------------
 eval_next  = #5/7 (loop - evaluate test condition, loop until done)
-eval_env   = FP+5  previous eval_next
-             FP+4  previous eval_frame
-             FP+3  loop args (arg0=test arg1 ...)
-             FP+2  iterator counter lsb / cdr
-             FP+1  iterator counter msb / car
+eval_env   = FP+3  previous eval_next
+             FP+2  previous eval_frame
+             FP+1  loop list (arg0 arg1 ...)
 eval_frame = FP+0  prog list ...(arg1 arg2) ==> replace with (arg2...)
         SP = FP-1  ... top of stack
 ```

@@ -9,7 +9,10 @@ eval_wait
             sta game_state
             jmp update_return
 
+
 eval_update
+            lsr SWCHB ; test game reset
+            bcc eval_exit
             lda game_state
             and #$0f
             beq eval_start
@@ -17,6 +20,10 @@ eval_update
             bcs eval_apply
             ; continue
             rts
+
+eval_exit
+            jmp exec_exit_eval ; BUGBUG: SPACE: can make branch?
+
 eval_apply
             ; BUGBUG: PROTECT: we need at least 3 bytes of stack
             jsr alloc_stack
@@ -34,6 +41,7 @@ eval_apply
             tax
             lda function_table,x ; deref function
             jmp eval_iter
+
 eval_start
             ; initial entry
             lda repl
@@ -55,15 +63,11 @@ _eval_test_loop_progn
             lsr                   ; test/loop/progn : dc/dd/de -> 6e/6e/6f
             bcc _eval_no_loop
 _eval_loop_init
-            ; BUGBUG: need 3 stack
+            ; BUGBUG: need 1 stack
             lda HEAP_CDR_ADDR,x   ; push cdr of loop 
             pha                   ; . 
-            lda #0                ; initialize iterator to zero
-            pha                   ;
-            pha                   ;
-            tsx 
-            stx eval_frame
-            jmp _eval_loop_iter_test
+            tsx                   ; push stack up
+            stx eval_frame        ;
 _eval_no_loop
             ; BUGBUG: need 1 more stack
             ; x references a test/progn expression
@@ -109,7 +113,7 @@ _eval_funcall_arg
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_env
-            ; evaluate a local variable (a, b, c, d...)
+            ; evaluate a local variable (a, b, c, d)
             ; compute relative argument offset, then load accumulator and push to stack
             sec
             sbc #SYMBOL_A0
@@ -139,11 +143,6 @@ _eval_funcall_args_expression
             pha
             tya
             jmp eval_iter ; recurse
-_eval_funcall_args_next
-            ; proceed to next arg
-            lda eval_next
-            bmi _eval_funcall_args_loop ; if next is a cell ref, continue
-            bne exec_frame_return       ; otherwise special form, go to return sub
 _eval_funcall_exec
             ; exec frame
             ldx eval_frame
@@ -157,6 +156,13 @@ _eval_funcall_exec
             pha
             rts
 
+_eval_funcall_args_next
+            ; proceed to next arg
+            lda eval_next
+            bmi _eval_funcall_args_loop ; if next is a cell ref, continue
+            beq _eval_funcall
+            lsr                         
+            bne _eval_test_loop_continue ; otherwise special form, go to return sub
 exec_frame_return
             ; called when we've made a funcall or evaluated an expression
             ; clear stack back to current frame
@@ -165,10 +171,14 @@ exec_frame_return
             inx
             bne _eval_pop_frame
             ; done with eval - go back to repl
-            lda #0
-            sta repl_scroll
-            sta repl_edit_line
-            sta repl_edit_col
+exec_exit_eval
+            ldx #0
+            stx repl_scroll
+            stx repl_edit_line
+            stx repl_edit_col
+            stx AUDV0
+            dex
+            txs 
             lda game_state
             and #GAME_TYPE_MASK; #GAME_STATE_EDIT
             sta game_state
@@ -186,10 +196,11 @@ _eval_old_env
             bmi _eval_continue_args ; if negative, eval next arg cell
             beq _eval_continue_args ; if zero, eval next arg cell (will be nil)
             ; args is 1 = return, 4 = test, 5 = loop test, 6 = progn,  7 = loop eval
-            ldx eval_frame ; pull 
-            txs
             lsr
             beq _eval_return
+_eval_test_loop_continue
+            ldx eval_frame ; pull 
+            txs
             bcs _eval_loop_continue
             ; evaluate test/progn expression
             ; BUGBUG: potentially we can optimize the stack here
@@ -209,32 +220,21 @@ _eval_test_true
             jmp _eval_funcall_arg
 _eval_loop_continue
             lsr
-            bcs _eval_loop_progn
+            bcs _eval_loop_iter ; looped
             lda accumulator_lsb   ; check results of loop test
             ora accumulator_msb   ; .
             beq _eval_loop_return ; assume 0 is false
-            ;BUGBUG: need to make sure we return right
-            ;BUGBUG: need to advance frame and stack
-            sed                   ; increment loop counter
-            lda #2,x              ; READABILITY
-            clc
-            adc #1
-            sta #2,x
-            lda #1,x
-            adc #0
-            sta #1,x
-            cld
-_eval_loop_iter_test
-            lda #3,x
+_eval_loop_iter
+            lda #0,x ; READABILITY: notation ; get pointer at FRAME+0
+            beq _eval_loop_end_iter
+            tax
+            lda #7                ; we will continue READABILITY: meaning 
+            jmp _eval_progn_next
+_eval_loop_end_iter
+            lda #1,x ; BUGBUG: READABILITy
             tax
             lda #5
             jmp _eval_progn_next  ; 
-_eval_loop_progn
-            lda #0,x              ; get the next arg
-            beq _eval_return      ; if null we will return 
-            tax                   ; .
-            lda #7                ; we will continue READABILITY: meaning 
-            jmp _eval_progn_next
 _eval_progn
             lda #6                ; we will continue READABILITY: meaning 
 _eval_progn_next

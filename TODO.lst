@@ -15,7 +15,6 @@ INITIAL GOALS
    - https://atariage.com/manual_html_page.php?SoftwareID=852
  See uLisp sample programs
 
-
 DONE
   - basic eval
   - stubbed out math functions
@@ -59,14 +58,6 @@ DONE
   - demo 3
       - fib program
       - eval demo program + 1 99
-  - bugs
-      - blank program is weird
-      - binary to decimal conversion is slow, blows out display
-      - adding removing numbers at end messes up program (probably free memory issues)
-      - beep goes too fast (need to take a beat after we eval)
-      - suspect if the repl begins with an if, we don't evaluate the test properly
-      - in general a const in an if hasn't been tested
-      - if try to delete and recreate fib, crashes (probably free memory issue)
   - display 4 
       - show numbers
       - screen layout is ... better
@@ -100,12 +91,22 @@ DONE
    - game modes 2
       - calc mode
   - bugs
+    - blank program is weird
+    - binary to decimal conversion is slow, blows out display
+    - adding removing numbers at end messes up program (probably free memory issues)
+    - beep goes too fast (need to take a beat after we eval)
+    - suspect if the repl begins with an if, we don't evaluate the test properly
+    - in general a const in an if hasn't been tested
+    - if try to delete and recreate fib, crashes (probably free memory issue)
     - hmove bar in menu
     - music note length too short
     - sprites in display area bleed
     - unstable frame size per mode
     - evaluating empty list has random results
     - fix bug in ?
+    - progn ignoring last entry
+    - ? of non-funcall results in immediate return
+    - loop not tested
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
@@ -128,26 +129,49 @@ DONE
       - modulo function
       - music functions (map... or progn?)
       - game functions
+  - lang 1
+     - loop implemented
+  - dev support
+     - self hosted stellerator page
+       - display and editing of programs as text
+       - allow load/save of programs
+  - virtual keyboard 3
+      - extend to all commands
+   - virtual keyboard 4
+    - too slow to scroll through keys
+  - eval mode
+     - be able to interrupt eval with switch (reset? select?)
 BUGS
-  - ? of non-funcall results in immediate return
-  - progn ignoring last entry
-  - loop not tested
+  - progn doesn't tail recurse
+  - clicky beeps
   - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
   - disks kernel adds extra line in some configirations
   - repl adds +/- 1 line
   - complex program takes too long to analyze in vblank
 BETA
   - lang 1
-     - loop, loopvar implemented
      - cons, car, cdr implemented
      - quote, apply implemented
+  - virtual keyboard 3
+      - keyboard controller support
+        - basic support
+        - use switches to turn keyboard on/off
+      - can only see numbers in number mode
+  - library 1
+      - div functions working
+      - game clear/reset functions
+      - loop exit functions
+  - menu 4
+      - allow for mode selection and reset without switching?
   - dev support
      - self hosted stellerator page
-       - display and editing of programs as text
-       - allow load/save of programs
        - keyboard controller support
      - gitlab deployment
      - some way to do unit tests (stellerator debugger?)
+     - protection against var access?
+  - instruction manual
+    - examples of all programs
+    - award program
   - game modes 2
       - ball game
         - stable framerate both repl and eval
@@ -163,26 +187,6 @@ BETA
       - towers of hanoi
         - read disk positions
         - reset game
-  - instruction manual
-    - examples of all programs
-    - award program
-  - virtual keyboard 3
-      - extend to all commands
-      - can only see numbers in number mode
-      - optimize for context
-      - keyboard controller support
-        - use color switch to turn keyboard on/off
-  - eval mode
-     - minimum eval display time 1 second
-     - be able to interrupt eval with switch (reset? select?)
-     - transition from repl to eval..?
-     - song that plays during eval?
-     - show free mem / stack / heap during eval
-     - real safeties against stack overflow
-  - library 1
-      - div functions working
-  - menu 4
-      - allow for mode selection without actually switching
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -197,6 +201,8 @@ BETA
         - use PF0 to hide HMOVE + switch to std HMOVE..?.
         - use only 4 line repl
 SPRINKLES
+  - eval mode
+     - real safeties against stack overflow
   - font
      - tune font / symbols
      - null display on complex lines no box
@@ -210,7 +216,14 @@ SPRINKLES
       - blinky cursor when in repl
       - no cell boxes on numbers 
       - cancel move undoes changes
-      - too slow to scroll through keys
+      - optimize for context
+  - eval
+     - minimum eval display time 1 second
+     - transition from repl to eval..?
+     - song that plays during eval?
+     - show free mem / stack / heap during eval
+  - lang
+     - loopvar
 BONUS 
   - dedicated executable for steps
   - dedicated music sequencer

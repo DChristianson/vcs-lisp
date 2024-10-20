@@ -107,12 +107,12 @@ LispMachine = function (ram) {
         'ball',
         'j0',
         'j1',
+        'color',
         'quote',
-        'hash',
         'if',
         'loop',
         'progn',
-        ' ',
+        'hash',
         '0',
         '1',
         '2',
@@ -127,8 +127,6 @@ LispMachine = function (ram) {
         'b',
         'c',
         'd',
-        's',
-        'i',
         'cx0b',
         'cx1b',
         'cx01',
@@ -377,11 +375,11 @@ LispParser = function() {
 
     var self = this;
 
-    const DOUBLEQUOTE = /"/;
-    const WHITESPACE = /\s+/;
-    const OPENCLOSE = /[()]/
-    const COMMENT = /;/;
-    const NUMBER = /\d+/;
+    const DOUBLEQUOTE = /^"$/;
+    const WHITESPACE = /^\s+$/;
+    const OPENCLOSE = /^[()]$/
+    const COMMENT = /^;$/;
+    const NUMBER = /^\d+$/;
 
     this.parse = function(s) {
         var tokens = self.tokenize(s);

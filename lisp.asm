@@ -227,12 +227,13 @@ newFrame
             lda #42    ; vblank timer will land us ~ on scanline 34
             sta TIM64T
 
-    ; check reset switches
-            lda #$01
-            bit SWCHB
-            bne _end_switches
-            jmp CleanStart
-_end_switches
+; BUGBUG: soft reset enabled
+;     ; check reset switches
+;             lda #$01
+;             bit SWCHB
+;             bne _end_switches
+;             jmp CleanStart
+; _end_switches
 
 
 ;---------------------

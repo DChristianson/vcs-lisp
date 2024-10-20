@@ -59,11 +59,11 @@ SYMBOL_GRAPHICS_J0
     byte $0,$f8,$f8,$f8,$70,$20,$20,$20; 8
 SYMBOL_GRAPHICS_J1
     byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
+SYMBOL_GRAPHICS_CC
+    byte $0,$f8,$a8,$a8,$f8,$a8,$a8,$f8; 8
+SYMBOL_QUOTE = $1b
 SYMBOL_GRAPHICS_QUOTE
     byte $0,$0,$0,$10,$20,$20,$20,$0; 8
-SYMBOL_HASH = $1b
-SYMBOL_GRAPHICS_HASH
-    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
 SYMBOL_IF = $1c
 SYMBOL_GRAPHICS_IF
     byte $0,$20,$0,$20,$38,$8,$88,$f8; 8
@@ -73,9 +73,9 @@ SYMBOL_GRAPHICS_LOOP
 SYMBOL_PROGN = $1e
 SYMBOL_GRAPHICS_PROGN
     byte $0,$20,$0,$20,$0,$20,$0,$20; 8
-SYMBOL_BLANK = $1f
-SYMBOL_GRAPHICS_BLANK ; pack blank bytes in
-    byte $0,$0,$0,$0,$0,$0,$0,$0
+SYMBOL_HASH = $1f
+SYMBOL_GRAPHICS_HASH
+    byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
 
     align 256
 
@@ -110,16 +110,13 @@ SYMBOL_GRAPHICS_A2
     byte $0,$70,$80,$80,$80,$80,$70,$0; 8
 SYMBOL_GRAPHICS_A3
     byte $0,$78,$88,$88,$88,$78,$8,$8; 8
-SYMBOL_GRAPHICS_STACK_VAR
-    byte $0,$fe,$54,$54,$14,$14,$10,$10; 8
-SYMBOL_GRAPHICS_LOOP_VAR
-    byte $0,$10,$20,$20,$20,$00,$20,$00; 8
-SYMBOL_GRAPHICS_CX0B
-    byte $0,$b8,$a8,$b8,$80,$80,$88,$80; 8
-SYMBOL_GRAPHICS_CX1B
-    byte $0,$b8,$90,$b0,$80,$80,$88,$80; 8
-SYMBOL_GRAPHICS_CX01
-    byte $0,$b8,$90,$b0,$0,$e8,$a8,$e8; 8
+; SYMBOL_GRAPHICS_CX0B
+;     byte $0,$b8,$a8,$b8,$80,$80,$88,$80; 8
+; SYMBOL_GRAPHICS_CX1B
+;     byte $0,$b8,$90,$b0,$80,$80,$88,$80; 8
+; SYMBOL_GRAPHICS_CX01
+;     byte $0,$b8,$90,$b0,$0,$e8,$a8,$e8; 8
+SYMBOL_TABLE_SIZE = $2e
 SYMBOL_GRAPHICS_WORDS
 SYMBOL_GRAPHICS_EV
     byte $0,$64,$84,$8a,$ca,$8a,$8a,$62; 8
@@ -141,8 +138,5 @@ SYMBOL_GRAPHICS_DI
     byte $0,$c4,$24,$24,$44,$84,$84,$6e; 8
 SYMBOL_GRAPHICS_SK
     byte $0,$aa,$aa,$ea,$a4,$aa,$aa,$4a; 8
-SYMBOL_GRAPHICS_MA
-    byte $0,$c4,$24,$24,$44,$84,$84,$6e; 8
-SYMBOL_GRAPHICS_ZE
-    byte $0,$68,$88,$88,$ce,$8a,$8a,$66; 8
-
+SYMBOL_GRAPHICS_BLANK ; pack blank bytes in
+    byte $0,$0,$0,$0,$0,$0,$0,$0

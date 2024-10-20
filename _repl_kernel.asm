@@ -116,8 +116,20 @@ _repl_update_edit_delete
             jsr set_cdr                    ;
             jmp _repl_update_edit_done
 
+_repl_update_edit_number_start
+            ; current cell is a number
+            lda #$20 ; BUGBUG: ZERO
+_repl_update_edit_save_sym
+            and #$3f
+            sta repl_edit_sym ; BUGBUG find right sym
+            jmp _repl_update_skip_move
+
+repl_reset
+            jsr repl_menu_reset_game
 
 repl_update
+            lsr SWCHB ; test game reset
+            bcc repl_reset
             ; disambiguate editor state
             lda game_state
             lsr ; #GAME_STATE_EDIT_KEYS == 1
@@ -143,15 +155,8 @@ _repl_update_edit_keys_start
             lda HEAP_CAR_ADDR,x
             bmi _repl_update_edit_save_sym
             ; we are at the head of a number
-            lda #$1e ; BUGBUG: HASH
+            lda #SYMBOL_HASH 
             jmp _repl_update_edit_save_sym
-_repl_update_edit_number_start
-            ; current cell is a number
-            lda #$20 ; BUGBUG: ZERO
-_repl_update_edit_save_sym
-            and #$3f
-            sta repl_edit_sym ; BUGBUG find right sym
-            jmp _repl_update_skip_move
 
 _repl_update_keys_move
             ; check keyboard movement
@@ -160,7 +165,12 @@ _repl_update_keys_move
             bcs _repl_update_keys_skip_up
             jmp _repl_update_edit_done
 _repl_update_keys_skip_up
-            ror ; skip down 
+            ;down
+            ror  
+            bcs _repl_update_keys_skip_down
+            lda #5
+            jmp _repl_update_keys_set
+_repl_update_keys_skip_down
             ;left
             ror
             bcs _repl_update_keys_skip_left
@@ -176,10 +186,10 @@ _repl_update_keys_set
             adc repl_edit_sym
             bmi _repl_update_check_keys_roll
             sec
-            sbc #46
+            sbc #SYMBOL_TABLE_SIZE
             bcs _repl_update_check_keys_save
 _repl_update_check_keys_roll
-            adc #46
+            adc #SYMBOL_TABLE_SIZE
 _repl_update_check_keys_save
             sta repl_edit_sym
 _repl_update_keys_skip_move
@@ -676,7 +686,7 @@ _prompt_encode_keys
             lda repl_edit_sym
             sbc #2
             bcs _prompt_encode_keys_mod
-            adc #46
+            adc #SYMBOL_TABLE_SIZE
 _prompt_encode_keys_mod
             tay
             ldx #9 ; fill in 10 addresses
@@ -690,7 +700,7 @@ _prompt_encode_keys_loop
             adc #0
             sta gx_addr,x
             iny
-            cpy #46
+            cpy #SYMBOL_TABLE_SIZE
             bne _prompt_encode_keys_roll
             ldy #0
 _prompt_encode_keys_roll
@@ -883,6 +893,8 @@ repl_menu_press_game
             and #$3f
 _menu_press_save_game
             sta game_state
+repl_menu_reset_game
+            lda game_state
             lsr
             lsr
             lsr
