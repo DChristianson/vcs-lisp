@@ -105,6 +105,7 @@ DONE
     - sprites in display area bleed
     - unstable frame size per mode
     - evaluating empty list has random results
+    - fix bug in ?
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
@@ -128,6 +129,10 @@ DONE
       - music functions (map... or progn?)
       - game functions
 BUGS
+  - ? of non-funcall results in immediate return
+  - progn ignoring last entry
+  - loop not tested
+  - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
   - disks kernel adds extra line in some configirations
   - repl adds +/- 1 line
   - complex program takes too long to analyze in vblank

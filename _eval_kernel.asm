@@ -193,9 +193,11 @@ _eval_old_env
             ; BUGBUG: potentially we can optimize the stack here
             lsr
             sta eval_next ; should be 1 after the lsr
-            lda #0,x      ; get pointer at FRAME+0
-            txs           ; reset stack pointer
-            tax           ; .
+            ldx eval_frame ; pull 
+            txs
+            lda #0,x ; READABILITY: notation ; get pointer at FRAME+0
+            beq _eval_return      ; if null we will return 
+            tax
             bcs _eval_progn
             lda accumulator_lsb
             ora accumulator_msb
@@ -239,7 +241,6 @@ _eval_progn
 _eval_progn_next
             sta eval_next
             lda HEAP_CDR_ADDR,x   ; get cddr to rest of args 
-            beq _eval_return      ; if null, we will return 
             pha                   ; else push cddr back 
             jmp _eval_funcall_arg ;  
 _eval_loop_return
