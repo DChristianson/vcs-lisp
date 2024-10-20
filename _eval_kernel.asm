@@ -29,7 +29,7 @@ eval_apply
             and #$7f    ; READABILITY: notation
             pha
             stx eval_env
-            lda 0,x     ; READABILITY: notation
+            lda 0,x     ; READABILITY: notation - this gets the function #
             and #$0f    ; READABILITY: notation - this is the function #
             tax
             lda function_table,x ; deref function

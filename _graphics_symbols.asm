@@ -35,14 +35,16 @@ SYMBOL_GRAPHICS_CAR
     byte $0,$f8,$e0,$a8,$e0,$a8,$e0,$f8; 8
 SYMBOL_GRAPHICS_CDR
     byte $0,$f8,$38,$a8,$38,$a8,$38,$f8; 8
-SYMBOL_F0 = $0f
+SYMBOL_GRAPHICS_APPLY_FN ;
+    byte $0,$70,$88,$88,$68,$88,$70,$0; 8
+SYMBOL_F0 = $10
 SYMBOL_GRAPHICS_F0
     byte $0,$88,$98,$50,$30,$20,$20,$60; 8
 SYMBOL_GRAPHICS_F1
     byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
 SYMBOL_GRAPHICS_F2
     byte $0,$e0,$20,$20,$70,$20,$20,$38; 8
-SYMBOL_BEEP = $12
+SYMBOL_BEEP = $13
 SYMBOL_GRAPHICS_BEEP
     byte $0,$c0,$d8,$d8,$58,$48,$48,$78; 8
 SYMBOL_GRAPHICS_STACK_FN
@@ -57,8 +59,6 @@ SYMBOL_GRAPHICS_J0
     byte $0,$f8,$f8,$f8,$70,$20,$20,$20; 8
 SYMBOL_GRAPHICS_J1
     byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
-SYMBOL_GRAPHICS_APPLY_FN ;
-    byte $0,$70,$88,$88,$68,$88,$70,$0; 8
 SYMBOL_GRAPHICS_QUOTE
     byte $0,$0,$0,$10,$20,$20,$20,$0; 8
 SYMBOL_HASH = $1b

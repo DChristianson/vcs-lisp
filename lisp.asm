@@ -493,6 +493,7 @@ LOOKUP_SYMBOL_FUNCTION
     word $0000 ; CONS
     word $0000 ; CAR
     word $0000 ; CDR
+    word $0000 ; APPLY
     word FUNC_F0-1
     word FUNC_F1-1
     word FUNC_F2-1
