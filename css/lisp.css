@@ -71,16 +71,74 @@ body {
   z-index: 1; 
 }
 
+/* Console toggle switches */
+.console_switch {
+  width: 1em;
+  height: 2.5em;
+  position: relative;
+  border: 1px solid;
+  border-radius: 1em;
+  vertical-align: text-bottom;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: auto;
+  margin-top: 0.5em;
+  margin-bottom: 1.0em;
+}
+
+.console_switch span {
+  margin-left: 1.25em;
+  margin-top: -0.125em;
+  margin-bottom: -0.125em;
+}
+
+.console_switch label {
+  position: absolute;
+  top: 2.75em;
+  left: 0;
+  transform: translate(-1em, 0);
+}
+
+.console_switch::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
+  box-sizing: border-box;
+  width: 0.85em;
+  height: 0.85em;
+  margin: 0.125em 0;
+  border: 1px solid;
+  border-radius: 50%;
+  color: inherit;
+  background-color: white;
+}
+
+.console_switch.toggle::before {
+  top: 1.475em;
+}
+
+
 .ide {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   overflow: hidden;
-  border: 1px solid #ccc;
-  background-color: #c1332c;
 }
 
-/* Style the control buttons */
+.ide_ops_group {
+  display: flex;
+  flex-direction: row;
+}
+
+.ide_ops_group label {
+  position: relative;
+  top: 0;
+  align-self: center;
+}
+
 
 .ide_ops {
   border: 1px solid #ccc;
@@ -88,7 +146,11 @@ body {
   font-size: 16px;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #5d4287;
+  background-color: #000000;
+}
+
+.ide_ops input[type="file"] {
+  display: none;
 }
 
 .ide_ops:hover {
@@ -97,13 +159,28 @@ body {
 
 /* Style the tab buttons */
 .ide_links {
-  background-color: #183f31;
   float: left;
   border: none;
   outline: none;
   cursor: pointer;
   padding: 14px 16px;
   transition: 0.3s;
+}
+
+.ide_links.func_repl {
+  background-color: #5d4287;
+}
+
+.ide_links.func_f {
+  background-color: #40836a;
+}
+
+.ide_links.func_g {
+  background-color: #86713f;
+}
+.ide_links.func_h {
+  border-top-right-radius: 10px;
+  background-color: #874845;
 }
 
 /* Change background color of buttons on hover */
@@ -115,13 +192,30 @@ body {
 .ide_links.active {
   background-color: #ccc;
 }
+
 /* 791661 842712 */
 /* Style the tab content */
 .ide_content {
   display: none;
   padding: 6px 12px;
-  border: 1px solid #ccc;
+  border: 2px solid;
+  border-radius: 0px 10px 10px 10px;
   background-color: #ffffff;
   color: #000000;
   flex-grow: 1;
+}
+
+.ide_content.func_repl {
+  border-color: #5d4287;
+}
+
+.ide_content.func_f {
+  border-color: #40836a;
+}
+
+.ide_content.func_g {
+  border-color: #86713f;
+}
+.ide_content.func_h {
+  border-color: #874845;
 }

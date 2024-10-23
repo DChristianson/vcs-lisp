@@ -18,47 +18,74 @@
                     <canvas id="stellerator-canvas" tabindex=0></canvas>
                 </div>
                 <div id="console_controls" class="row">
-                    <div class="console_switch" id="console_switch_power">Power</div>
-                    <div class="console_switch" id="console_switch_color">Color/BW</div>        
-                    <div class="console_switch" id="console_switch_a">Difficulty A</div>        
-                    <div class="console_switch" id="console_switch_b">Difficulty B</div>        
-                    <div class="console_toggle" id="console_switch_select">Select</div>        
-                    <div class="console_toggle" id="console_switch_reset">Reset</div> 
+                    <div class="console_switch" id="console_switch_power"
+                         onclick="window.togglePower(event)"
+                    >
+                        <span>On</span>
+                        <span>Off</span>
+                        <label>Power</label>
+                    </div>        
+                    <div class="console_switch" id="console_switch_color"
+                         onclick="toggleSwitch(event, window.stellerator.getControlPanel().color())"
+                    >
+                        <span>Joystick</span>
+                        <span>Keyboard</span>
+                        <label>Controllers</label>
+                    </div>        
+                    <div class="console_switch"
+                         id="console_switch_select"
+                         onmousedown="window.stellerator.getControlPanel().select().toggle(true)"
+                         onmouseup="window.stellerator.getControlPanel().select().toggle(false)"
+                    >
+                        <label>Select</label>
+                    </div>        
+                    <div class="console_switch"
+                         id="console_switch_reset"
+                         onmousedown="window.stellerator.getControlPanel().reset().toggle(true)"
+                         onmouseup="window.stellerator.getControlPanel().reset().toggle(false)"
+                    >
+                        <label>Reset</label>
+                    </div> 
                 </div>
             </div>
             <div class="sidepanel">
                 <div class="metaconsole">
-                    <div class="row">
-                        <div class="ide_ops" onclick="window.ide.saveProject(event)">SAVE</div>
+                    <div class="ide_ops_group">
+                        <label>Files</label>
                         <div class="ide_ops"> 
                             <label>LOAD</label>
-                            <input type="file" style="opacity: 0" onchange="window.ide.loadProject(event)"></input>
+                            <input type="file" onchange="window.ide.loadProject(event)"></input>
                         </div>
+                        <div class="ide_ops" onclick="window.ide.saveProject(event)">SAVE</div>
+                        <div class="ide_ops" onclick="window.ide.shareProject(event)">SHARE</div>
                     </div>
+                    <div class="ide_ops" onclick="window.ide.saveProject(event)">HELP</div>
                     <div class="row">
-                        <div class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</div>
-                        <div class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</div>
-                        <div class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</div>
-                        <div class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</div>
-                        <div class="ide_ops" onclick="window.ide.eval(event)">EVAL</div>
-                    </div>
-                    <div class="row">
-                        <div class="ide_ops" onclick="window.ide.recallMemory(event)">RCL</div>
-                        <div class="ide_ops" onclick="window.ide.storeMemory(event)">STO</div>
-                        <div class="ide_ops" onclick="window.ide.clearMemory(event)">CLR</div>
-                    </div>
-
+                        <div class="ide_ops_group">
+                            <label>Game Mode</label>
+                            <div class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</div>
+                            <div class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</div>
+                            <div class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</div>
+                            <div class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</div>
+                        </div>
+                        <div class="ide_ops_group">
+                            <div class="ide_ops" onclick="window.ide.eval(event)">EVAL</div>
+                            <div class="ide_ops" onclick="window.ide.recallMemory(event)">RCL</div>
+                            <div class="ide_ops" onclick="window.ide.storeMemory(event)">STO</div>
+                            <div class="ide_ops" onclick="window.ide.clearMemory(event)">CLR</div>
+                        </div> 
+                    </div>                                                       
                     <div class="ide" id="ide">
                         <div class="row">
-                            <div class="ide_links active"  onclick="window.ide.openWindow(event, 'repl')">REPL</div>
-                            <div class="ide_links" onclick="window.ide.openWindow(event, 'f0')">&#x1D77A;</div>
-                            <div class="ide_links" onclick="window.ide.openWindow(event, 'f1')">&#x1084B;</div>
-                            <div class="ide_links" onclick="window.ide.openWindow(event, 'f2')">&#x1D453;</div>
+                            <div class="ide_links func_repl active"  onclick="window.ide.openWindow(event, 'repl')">LISP - &#x1D77A;</div>
+                            <div class="ide_links func_f" onclick="window.ide.openWindow(event, 'f')">F - &#x2A00;</div>
+                            <div class="ide_links func_g" onclick="window.ide.openWindow(event, 'g')">G - &#x25BD;</div>
+                            <div class="ide_links func_h" onclick="window.ide.openWindow(event, 'h')">H - &#x2734;</div>
                         </div>
-                        <div id="repl" class="ide_content active" style="display: block" contenteditable="true" spellcheck="false"></div>
-                        <div id="f0" class="ide_content" contenteditable="true" spellcheck="false"></div>
-                        <div id="f1" class="ide_content" contenteditable="true" spellcheck="false"></div>        
-                        <div id="f2" class="ide_content" contenteditable="true" spellcheck="false"></div>
+                        <div id="repl" class="ide_content func_repl active" style="display: block" contenteditable="true" spellcheck="false"></div>
+                        <div id="f" class="ide_content func_f" contenteditable="true" spellcheck="false"></div>
+                        <div id="g" class="ide_content func_g" contenteditable="true" spellcheck="false"></div>        
+                        <div id="h" class="ide_content func_h" contenteditable="true" spellcheck="false"></div>
                     </div>
                 </div>
             </div>
@@ -70,6 +97,22 @@
         <script src="js/stellerator-embedded.js"></script>
         <script src="js/lisp.js"></script>
         <script>
+
+            function toggleSwitch(event, controlSwitch) {
+                controlSwitch.toggle(!controlSwitch.read());
+            };
+
+            function registerSwitchStateHandler(targetElement, controlSwitch) {
+                controlSwitch.stateChange.addHandler( state => {
+                    const toggled = targetElement.className.endsWith(" toggle");
+                    if (state && !toggled) {
+                        targetElement.className = targetElement.className += " toggle";
+                    } else if (!state && toggled) {
+                        targetElement.className = targetElement.className.replace(" toggle", "");
+                    }
+                });
+            };
+
              (async function() {
                 // Shortcut to avoid typing out the namespace
                 const Stellerator = $6502.Stellerator;
@@ -78,13 +121,13 @@
                 // and pass that to stellerator instead.
                 const response = await fetch("./roms/lisp_NTSC.bin");//study/keypad.bin");/
                 const rom = new Uint8Array(await response.arrayBuffer());
-
-                const keyboardTarget = document.getElementById('stellerator-canvas');
-
+                const canvas = document.getElementById('stellerator-canvas');
+                const keyboardTarget = canvas;
+                
                 // Create the stellerator instance
                 const stellerator = new $6502.Stellerator(
                     // The canvas element
-                    document.getElementById('stellerator-canvas'),
+                    canvas,
                     // The URL from which the web worker will be loaded
                     'js/stellerator.js',
                     {
@@ -96,7 +139,7 @@
                         scanlineLevel: 0.0
                     }
                 );
-
+            
                 // // The DOM node that displays emulation speed
                 // const speedElement = document.getElementById('speed');
                 // // Subscribe to speed updates and update the DOM node accordingly
@@ -112,14 +155,26 @@
                 window.addEventListener('resize', () => stellerator.isFullscreen() || stellerator.resize());
 
                 // Run the emulator in NTSC mode.
-                await stellerator.run(
-                    rom, 
-                    Stellerator.TvMode.ntsc,
-                    { 
-                        controllerPort0: Stellerator.ControllerType.joystick,
-                        controllerPort1: Stellerator.ControllerType.joystick
+                const run = async () => {
+                    return stellerator.run(
+                        rom, 
+                        Stellerator.TvMode.ntsc,
+                        { 
+                            controllerPort0: Stellerator.ControllerType.joystick,
+                            controllerPort1: Stellerator.ControllerType.joystick
+                        }
+                    );
+                };
+                    
+                window.togglePower = function (event) {
+                    if (stellerator.getState() === Stellerator.State.stopped) {
+                        run();
+                    } else if (stellerator.getState() === Stellerator.State.running) {
+                        stellerator.stop();
                     }
-                );
+                };
+
+                await run();
 
                 // Expose the instance for tinkering.
                 window.stellerator = stellerator;
@@ -127,7 +182,34 @@
                 const ide = await lispInit(stellerator);
                 window.ide = ide;
 
+                // hook up ux
+                stellerator.stateChange.addHandler(
+                    state => {
+                        const targetElement = document.getElementById('console_switch_power');
+                        const toggled = targetElement.className.endsWith(" toggle")
+                        if (state === Stellerator.State.stopped && !toggled) {
+                            targetElement.className = targetElement.className += " toggle";
+                        } else if (state === Stellerator.State.running && toggled) {
+                            targetElement.className = targetElement.className.replace(" toggle", "");
+                        }
+                    }
+                );
+
+                registerSwitchStateHandler(
+                    document.getElementById('console_switch_color'),
+                    stellerator.getControlPanel().color()
+                );
+                registerSwitchStateHandler(
+                    document.getElementById('console_switch_select'),
+                    stellerator.getControlPanel().select()
+                );
+                registerSwitchStateHandler(
+                    document.getElementById('console_switch_reset'),
+                    stellerator.getControlPanel().reset()
+                );
+
             })();
+
         </script>
 
     </body>

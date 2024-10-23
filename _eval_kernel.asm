@@ -73,6 +73,7 @@ _eval_no_loop
             ; x references a test/progn expression
             lda HEAP_CDR_ADDR,x   ; follow cddr of test ; BUGBUG: what if empty
             tax                   ; .
+_eval_test_loop_progn_next
             lda HEAP_CDR_ADDR,x   ; push cddr of test to be rest of args ; BUGBUG: what if empty
             pha                   ; . 
             jmp _eval_funcall_arg ;  
@@ -143,6 +144,11 @@ _eval_funcall_args_expression
             pha
             tya
             jmp eval_iter ; recurse
+_eval_funcall_args_next
+            ; proceed to next arg
+            lda eval_next
+            bmi _eval_funcall_args_loop ; if next is a cell ref, continue
+            bne _eval_funcall_args_end
 _eval_funcall_exec
             ; exec frame
             ldx eval_frame
@@ -155,12 +161,8 @@ _eval_funcall_exec
             lda LOOKUP_SYMBOL_FUNCTION,x
             pha
             rts
-
-_eval_funcall_args_next
-            ; proceed to next arg
-            lda eval_next
-            bmi _eval_funcall_args_loop ; if next is a cell ref, continue
-            beq _eval_funcall
+            
+_eval_funcall_args_end
             lsr                         
             bne _eval_test_loop_continue ; otherwise special form, go to return sub
 exec_frame_return
@@ -229,18 +231,21 @@ _eval_loop_iter
             beq _eval_loop_end_iter
             tax
             lda #7                ; we will continue READABILITY: meaning 
-            jmp _eval_progn_next
+            jmp _eval_loop_next
 _eval_loop_end_iter
             lda #1,x ; BUGBUG: READABILITy
             tax
             lda #5
-            jmp _eval_progn_next  ; 
-_eval_progn
-            lda #6                ; we will continue READABILITY: meaning 
-_eval_progn_next
+_eval_loop_next
             sta eval_next
+            jmp _eval_test_loop_progn_next
+_eval_progn
             lda HEAP_CDR_ADDR,x   ; get cddr to rest of args 
-            pha                   ; else push cddr back 
+            beq _eval_progn_next  ; if eq we will return, eval_next should be 1
+            pha                   ; push cddr back 
+            lda #6                ; we will continue READABILITY: meaning 
+            sta eval_next
+_eval_progn_next
             jmp _eval_funcall_arg ;  
 _eval_loop_return
             dex

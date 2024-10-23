@@ -79,7 +79,7 @@ LispMachine = function (ram) {
     var REF_TYPE_PREFIX_MASK = 0xc0;
     var REF_TYPE_SYMBOL_PREFIX = 0xc0;
     var SYMBOL_INDEX_MASK = 0x3f;
-    
+
     var SYMBOLS = [
         '',
         '*',
@@ -97,9 +97,9 @@ LispMachine = function (ram) {
         'car',
         'cdr',
         'apply',
-        'f0',
-        'f1',
-        'f2',
+        'f',
+        'g',
+        'h',
         'beep',
         'stack',
         'p0',
@@ -135,14 +135,14 @@ LispMachine = function (ram) {
     var _registers = {
         'free': 0xc0,
         'repl': 0xc1, 
-        'f0': 0xc2, 
-        'f1': 0xc3,
-        'f2': 0xc4,
+        'f': 0xc2, 
+        'g': 0xc3,
+        'h': 0xc4,
         'accumulator': 0xc5,
         'game_state': 0xc8
     };
 
-    var _functionNames = ['repl', 'f0', 'f1', 'f2'];
+    var _functionNames = ['repl', 'f', 'g', 'h'];
 
     var head = function(cell) {
         return cell >> 8;

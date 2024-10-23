@@ -107,6 +107,7 @@ DONE
     - progn ignoring last entry
     - ? of non-funcall results in immediate return
     - loop not tested
+    - progn doesn't tail recurse
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
@@ -119,10 +120,12 @@ DONE
       - ball game
         - stable-ish framerate
         - draw players
+        - reset game
       - towers of hanoi
         - stable-ish framerate
         - draw disks
         - move disks
+        - reset game
       - calc
         - stable-ish framerate
   - library 2
@@ -141,13 +144,6 @@ DONE
     - too slow to scroll through keys
   - eval mode
      - be able to interrupt eval with switch (reset? select?)
-BUGS
-  - progn doesn't tail recurse
-  - clicky beeps
-  - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
-  - disks kernel adds extra line in some configirations
-  - repl adds +/- 1 line
-  - complex program takes too long to analyze in vblank
 BETA
   - lang 1
      - cons, car, cdr implemented
@@ -159,6 +155,7 @@ BETA
       - can only see numbers in number mode
   - library 1
       - div functions working
+      - beep function retune?
       - game clear/reset functions
       - loop exit functions
   - menu 4
@@ -166,12 +163,16 @@ BETA
   - dev support
      - self hosted stellerator page
        - keyboard controller support
+       - ide online tips
+       - instruction manual
+        - controls
+         - navigation layout
+         - commands
+         - example programs
+     - challenge award program
      - gitlab deployment
      - some way to do unit tests (stellerator debugger?)
      - protection against var access?
-  - instruction manual
-    - examples of all programs
-    - award program
   - game modes 2
       - ball game
         - stable framerate both repl and eval
@@ -186,7 +187,6 @@ BETA
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
       - towers of hanoi
         - read disk positions
-        - reset game
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -200,6 +200,13 @@ BETA
       - simplify REPL
         - use PF0 to hide HMOVE + switch to std HMOVE..?.
         - use only 4 line repl
+  - bugs
+    - reset in eval corrupts repl display
+    - clicky beeps
+    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
+    - disks kernel adds extra line in some configirations
+    - repl adds +/- 1 line
+    - complex program takes too long to analyze in vblank
 SPRINKLES
   - eval mode
      - real safeties against stack overflow
