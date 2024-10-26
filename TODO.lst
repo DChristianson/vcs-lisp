@@ -134,6 +134,9 @@ DONE
       - game functions
   - lang 1
      - loop implemented
+     - car, cdr implemented
+     - quote, apply implemented
+     - cons implemented
   - dev support
      - self hosted stellerator page
        - display and editing of programs as text
@@ -144,22 +147,25 @@ DONE
     - too slow to scroll through keys
   - eval mode
      - be able to interrupt eval with switch (reset? select?)
+  - dedicated executable for steps game
 BETA
   - lang 1
-     - cons, car, cdr implemented
-     - quote, apply implemented
-  - virtual keyboard 3
-      - keyboard controller support
-        - basic support
-        - use switches to turn keyboard on/off
-      - can only see numbers in number mode
+      - gc of cons implemented
   - library 1
       - div functions working
       - beep function retune?
-      - game clear/reset functions
-      - loop exit functions
-  - menu 4
-      - allow for mode selection and reset without switching?
+      - examples of all functions (make sure all basically work)
+  - game modes 2
+      - ball game
+        - pong-like example
+        - stable framerate both repl and eval
+        - change player graphics
+      - music game (simon?)
+        - ringing changes examples
+        - be able to handle DSS generative examples as demos
+          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
+      - towers of hanoi
+        - joystick / keyboard control example
   - dev support
      - self hosted stellerator page
        - keyboard controller support
@@ -173,20 +179,15 @@ BETA
      - gitlab deployment
      - some way to do unit tests (stellerator debugger?)
      - protection against var access?
-  - game modes 2
-      - ball game
-        - stable framerate both repl and eval
-        - move players
-        - move ball
-        - read joystick
-        - read collision registers
-        - change player graphics
-      - music game (simon?)
-        - ringing changes examples
-        - be able to handle DSS generative examples as demos
-          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
-      - towers of hanoi
-        - read disk positions
+  - virtual keyboard 3
+      - keyboard controller support
+        - basic support
+        - use switches to turn keyboard on/off
+      - quote support
+        - no way to properly quote a function from the editor
+      - can only see numbers in number mode
+  - menu 4
+      - allow for mode selection and reset without switching?
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -202,9 +203,10 @@ BETA
         - use only 4 line repl
   - bugs
     - reset in eval corrupts repl display
-    - clicky beeps
+    - clicky beeps when playing
+    - sound just not right in stellerator
     - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
-    - disks kernel adds extra line in some configirations
+    - disks kernel adds extra line in some configurations
     - repl adds +/- 1 line
     - complex program takes too long to analyze in vblank
 SPRINKLES
@@ -222,6 +224,7 @@ SPRINKLES
       - empty at first
       - blinky cursor when in repl
       - no cell boxes on numbers 
+      - no cell box on quote
       - cancel move undoes changes
       - optimize for context
   - eval
@@ -232,10 +235,9 @@ SPRINKLES
   - lang
      - loopvar
 BONUS 
-  - dedicated executable for steps
-  - dedicated music sequencer
-  - dedicated hanoi
-  - alt/bonus game mode/dedicated 
+  - dedicated music sequencer version
+  - dedicated hanoi version
+  - alt/bonus game modes/dedicated 
     - tictactoe? 
     - mastermind / cows and bulls
     - robot tanks 

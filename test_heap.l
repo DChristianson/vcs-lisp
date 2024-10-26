@@ -13,6 +13,20 @@
        b
       (f2 (+ a b) a (- count 1))))
 
+(car (cdr (cons 1 (cons 2))))
+
+(car (cdr '(1 2)))
+
+(apply
+  (quote + a 1)
+  2)
+
+(define (f a)
+   (if a
+      (progn (beep (car a) 5)
+             (f (cdr a)))))
+      
+
 ;(define (f0 count)
 ;  (f1 1 0 count))
 ;

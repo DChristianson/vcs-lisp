@@ -49,9 +49,7 @@ _music_loop_save_colup1
         dex
         bne _music_loop
 _music_end
-        lda #0
-        sta NUSIZ0
-        sta NUSIZ1
-        ldx #6
+        jsr sub_clr_pf
+        ldx #5
         jsr sub_wsync_loop
         jmp game_draw_return

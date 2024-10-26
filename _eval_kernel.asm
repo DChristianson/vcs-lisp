@@ -36,8 +36,10 @@ eval_apply
             and #$7f    ; READABILITY: notation
             pha
             stx eval_env
-            lda 0,x     ; READABILITY: notation - this gets the function #
-            and #$0f    ; READABILITY: notation - this is the function #
+            lda 0,x     ; READABILITY: notation - this gets the head of the expression
+            cmp #$40    ; check if we are applying a cell reference
+            bpl eval_iter
+            and #$0f    ; READABILITY: notation - else get function # offset
             tax
             lda function_table,x ; deref function
             jmp eval_iter
@@ -53,6 +55,8 @@ eval_iter
             beq _eval_null
             lda HEAP_CAR_ADDR,x   ; .
             bpl _eval_number      ; branch if it's a number
+            cmp #SYMBOL_QUOTE + $c0
+            beq _eval_quote
             and #SYMBOL_IF + $c0  ; 11001100, 
             eor #SYMBOL_IF + $c0  ; special case if we are applying test, loop, progn
             bne _eval_funcall     ; otherwise eval as funcall
@@ -76,10 +80,11 @@ _eval_no_loop
 _eval_test_loop_progn_next
             lda HEAP_CDR_ADDR,x   ; push cddr of test to be rest of args ; BUGBUG: what if empty
             pha                   ; . 
-            jmp _eval_funcall_arg ;  
+            jmp _eval_funcall_arg ; 
+_eval_quote 
 _eval_number
             ; BUGBUG: need 0 stack
-            ; x references a number cell, a is the car
+            ; x references a number or quote cell, a is the car
             sta accumulator_car   ; push number cell into accumulator and return
             lda HEAP_CDR_ADDR,x   ; .
             sta accumulator_cdr   ; .
@@ -161,7 +166,7 @@ _eval_funcall_exec
             lda LOOKUP_SYMBOL_FUNCTION,x
             pha
             rts
-            
+
 _eval_funcall_args_end
             lsr                         
             bne _eval_test_loop_continue ; otherwise special form, go to return sub
@@ -283,6 +288,29 @@ stack_overflow
             stx eval_frame
             jmp exec_frame_return
 
+FUNC_APPLY
+            ; collapse stack
+            tsx
+            inx
+            txa ; move stack pointer to a            
+            eor #$ff ; invert (we need  -sp - 2)
+            clc
+            adc eval_frame
+            tay
+            ldx eval_frame
+            txs
+            lda FRAME_ARG_OFFSET_LSB,x ; get funcall ref
+            pha
+            dex ; advance to rest of args
+            dex ;
+            dex ;
+_apply_collapse_loop
+            lda #0,x ; READABILITY: notation
+            pha
+            dex
+            dey
+            bpl _apply_collapse_loop
+            ; intentional fallthrough
 FUNC_F0
 FUNC_F1
 FUNC_F2

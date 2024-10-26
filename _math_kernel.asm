@@ -217,6 +217,63 @@ _not_return
             sty accumulator_msb
             jmp exec_frame_return
 
+FUNC_CAR
+            ldy eval_frame
+            ldx #FRAME_ARG_OFFSET_LSB,y
+            lda HEAP_CAR_ADDR,x
+            jmp _fun_car_cdr_eval
+FUNC_CDR
+            ldy eval_frame
+            ldx #FRAME_ARG_OFFSET_LSB,y
+            lda HEAP_CDR_ADDR,x
+_fun_car_cdr_eval
+            bpl _fun_car_cdr_exit
+            cmp #$c0
+            bpl _fun_car_cdr_copy_symbol
+            tax
+            lda HEAP_CAR_ADDR,x
+            bpl _fun_car_cdr_copy_number
+            stx accumulator_cdr
+            lda #SYMBOL_QUOTE + $c0
+            sta accumulator_car
+_fun_car_cdr_exit
+            jmp exec_frame_return
+_fun_car_cdr_copy_number
+            sta accumulator_car
+            lda HEAP_CDR_ADDR,x
+            sta accumulator_cdr
+            jmp exec_frame_return
+_fun_car_cdr_copy_symbol
+            and #$0f
+            sta accumulator_lsb
+            lda #0
+            sta accumulator_msb
+            jmp exec_frame_return
+
+FUNC_CONS
+            ; safety: if we have less than two args, make sure last is null ref
+            lda #0
+            pha
+            lda #SYMBOL_QUOTE + $c0
+            pha
+            ldx eval_frame
+            dex
+            dex
+            jsr alloc_cell
+            sty accumulator_car
+            beq _cons_null
+            dex
+            dex
+            jsr alloc_cell
+            sty accumulator_cdr
+            ldx #accumulator_car
+            jsr alloc_cell
+_cons_null
+            sty accumulator_cdr
+            lda #SYMBOL_QUOTE + $c0
+            sta accumulator_car
+            jmp exec_frame_return
+
 FUNC_BEEP
             ; beep
             ;  - we count down from arg1
@@ -282,7 +339,7 @@ _func_stack_illegal_move
 
 FUNC_J0
 FUNC_J1
-FUNC_STEPS
+            ; BUGBUG: implement
             jmp exec_frame_return
 
 FUNC_POS_P0

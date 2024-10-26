@@ -40,9 +40,5 @@ _accumulator_draw_loop    ; 40/41 w page jump
             sta GRP0                    ;3   37 
             dey                         ;2   39  
             bpl _accumulator_draw_loop  ;2   41  
-            lda #0
-            sta NUSIZ0
-            sta NUSIZ1
-            sta VDELP0                  ;3
-            sta VDELP1                  ;3
+            jsr sub_clr_pf
             rts

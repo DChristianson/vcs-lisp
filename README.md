@@ -49,8 +49,8 @@ vλ: starts as (* a a) - if you EVAL (λ 5) you will get 25
        Cell
         |
      --------
-    |        | 
-  Pair     Number
+    |        |       
+  Pair     Number  
 ```
 
 The fundamental data structure in vcs-lisp is the cell. 
@@ -83,7 +83,7 @@ Cell references start at hex value $80. Coincidentally, we locate the cell heap 
 Symbol references start at hex value $C0. Similar to how cell references line up with heap addresses, we try to manipulate the start address of data tables for symbol lookups to start at $C0.
 
 There are some unused bits in these schemes (very wasteful...)
-- We reserve the 6th bit of a cell reference to perform operations on off-heap zeropage data as if it were on heap.
+- We manipulate the 7th bit of a cell reference to allow operations that operate on cells to manipulate off-heap data.
 - We manipulate the 0th bit of a cell reference to perform operations that reference the car of a cell as if it were the cdr (and vice versa).
 
 ### Off-Heap Registers
@@ -168,6 +168,14 @@ eval_env   = FP+3  previous eval_next
 eval_frame = FP+0  prog list ...(arg1 arg2) ==> replace with (arg2...)
         SP = FP-1  ... top of stack
 ```
+
+## Quote and Apply
+
+TODO
+
+## Cons, Car and Cdr
+
+TODO
 
 ## References, Credits and Inspirations
 

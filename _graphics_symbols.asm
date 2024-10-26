@@ -35,6 +35,7 @@ SYMBOL_GRAPHICS_CAR
     byte $0,$f8,$e0,$a8,$e0,$a8,$e0,$f8; 8
 SYMBOL_GRAPHICS_CDR
     byte $0,$f8,$38,$a8,$38,$a8,$38,$f8; 8
+SYMBOL_APPLY = $0f
 SYMBOL_GRAPHICS_APPLY_FN ;
     byte $0,$70,$88,$88,$68,$88,$70,$0; 8
 SYMBOL_F0 = $10

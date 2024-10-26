@@ -286,11 +286,7 @@ endVBlank_loop
             bmi endVBlank_loop
             stx VBLANK
 
-            sta WSYNC ; SL 35
-            lda #0
-            sta COLUBK
-            sta NUSIZ0
-            sta NUSIZ1
+            jsr sub_clr_pf
 
             lda game_state
             and #$70
@@ -318,15 +314,7 @@ _mode_set_colupx
             pha
             lda GAME_STATE_DRAW_JMP_LO,x
             pha
-            lda #0             
-            sta WSYNC
-            sta GRP0     
-            sta GRP1 
-            sta GRP0     
-            sta COLUBK
-            lda #WHITE
-            sta COLUP0
-            sta COLUP1
+            jsr sub_clr_pf
             rts
 game_draw_return
 
@@ -360,6 +348,118 @@ waitOnTimer_loop
             cpx INTIM
             bmi waitOnTimer_loop
             rts
+
+; -------------------
+; Display kernels
+
+    include "_repl_kernel.asm"
+
+    include "_math_kernel.asm"
+
+    include "_eval_kernel.asm"
+
+    include "_calc_kernel.asm"
+
+    include "_music_kernel.asm"
+
+    include "_game_kernel.asm"
+
+    include "_tower_kernel.asm"
+
+    include "_logo_kernel.asm"
+
+    include "_heap_init.asm"
+
+; ----------------------------------
+; data
+
+    include "_graphics_symbols.asm"
+
+sub_clr_pf
+        sta WSYNC
+        lda #0
+        sta GRP0     
+        sta GRP1 
+        sta GRP0     
+        sta COLUBK
+        sta PF0
+        sta PF1
+        sta PF2
+        sta NUSIZ0
+        sta NUSIZ1
+        sta VDELP0
+        sta VDELP1
+        rts
+
+sub_respx_object
+        lda game_p0_x,x
+        sta WSYNC
+        SLEEP 3                  ;3  3 ;---- BUGBUG: SPACE?
+        sec                      ;2  5
+_respx_object_loop
+        sbc #15                  ;2  7
+        bpl _respx_object_loop   ;2  9
+        tay                      ;2 11
+        lda LOOKUP_STD_HMOVE,y   ;4 15 
+        sta HMP0,x               ;4 19
+        sta RESP0,x              ;4 23
+        rts
+
+
+
+    ORG $FF00
+
+    ; standard lookup for hmoves
+STD_HMOVE_BEGIN
+    byte $80, $70, $60, $50, $40, $30, $20, $10, $00, $f0, $e0, $d0, $c0, $b0, $a0, $90
+STD_HMOVE_END
+LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
+
+; interleaved jump table
+; BUGBUG: notation for this?
+GAME_STATE_DRAW_JMP_LO
+GAME_STATE_DRAW_JMP_HI = GAME_STATE_DRAW_JMP_LO + 1
+    word (repl_draw_accumulator-1)
+    word (repl_draw_music-1)
+    word (repl_draw_game-1)
+    word (repl_draw_tower-1)
+
+GAME_STATE_INIT_JMP_LO
+GAME_STATE_INIT_JMP_HI = GAME_STATE_INIT_JMP_LO + 1
+    word (game_state_init_noop-1)
+    word (game_state_init_noop-1)
+    word (repl_init_game-1)
+    word (repl_init_tower-1)
+
+
+    ; eval
+LOOKUP_SYMBOL_FUNCTION
+    word $0000
+    word FUNC_S01_MULT-1
+    word FUNC_S02_ADD-1
+    word FUNC_S03_SUB-1
+    word FUNC_S04_DIV-1
+    word FUNC_MOD-1
+    word FUNC_S05_EQUALS-1
+    word FUNC_S06_GT-1
+    word FUNC_S07_LT-1
+    word FUNC_S08_AND-1
+    word FUNC_S09_OR-1
+    word FUNC_S0A_NOT-1
+    word FUNC_CONS-1 ; CONS
+    word FUNC_CAR-1 ; CAR
+    word FUNC_CDR-1 ; CDR
+    word FUNC_APPLY-1 ; APPLY
+    word FUNC_F0-1
+    word FUNC_F1-1
+    word FUNC_F2-1
+    word FUNC_BEEP-1
+    word FUNC_STACK-1
+    word FUNC_POS_P0-1
+    word FUNC_POS_P1-1
+    word FUNC_POS_BL-1
+    word FUNC_J0-1
+    word FUNC_J1-1
 
 ;--------------------
 ; GC sub
@@ -416,6 +516,23 @@ alloc_cdr
             sta HEAP_CDR_ADDR,x
             rts
 
+alloc_cell
+            ; add a new cell at y with the contents of x
+            lda HEAP_CAR_ADDR,x
+            cmp #SYMBOL_QUOTE + $c0
+            beq _alloc_cell_return
+            ldy free
+            sta HEAP_CAR_ADDR,y 
+            lda HEAP_CDR_ADDR,y
+            sta free
+            lda HEAP_CDR_ADDR,x
+            sta HEAP_CDR_ADDR,y
+            rts
+_alloc_cell_return
+            ldy HEAP_CDR_ADDR,x
+            tax
+            rts
+
 oom
             ; we are out of memory
             ; BUGBUG: need some kind of error display
@@ -425,86 +542,6 @@ oom
             pla
             sta accumulator_cdr
             jmp _repl_update_edit_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
-
-; -------------------
-; Display kernels
-
-    include "_repl_kernel.asm"
-
-    include "_math_kernel.asm"
-
-    include "_eval_kernel.asm"
-
-    include "_calc_kernel.asm"
-
-    include "_music_kernel.asm"
-
-    include "_game_kernel.asm"
-
-    include "_tower_kernel.asm"
-
-    include "_logo_kernel.asm"
-
-    include "_heap_init.asm"
-
-; ----------------------------------
-; data
-
-    include "_graphics_symbols.asm"
-
-    ORG $FF00
-
-
-; interleaved jump table
-; BUGBUG: notation for this?
-GAME_STATE_DRAW_JMP_LO
-GAME_STATE_DRAW_JMP_HI = GAME_STATE_DRAW_JMP_LO + 1
-    word (repl_draw_accumulator-1)
-    word (repl_draw_music-1)
-    word (repl_draw_game-1)
-    word (repl_draw_tower-1)
-
-GAME_STATE_INIT_JMP_LO
-GAME_STATE_INIT_JMP_HI = GAME_STATE_INIT_JMP_LO + 1
-    word (game_state_init_noop-1)
-    word (game_state_init_noop-1)
-    word (repl_init_game-1)
-    word (repl_init_tower-1)
-
-    ; standard lookup for hmoves
-STD_HMOVE_BEGIN
-    byte $80, $70, $60, $50, $40, $30, $20, $10, $00, $f0, $e0, $d0, $c0, $b0, $a0, $90
-STD_HMOVE_END
-LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
-
-    ; eval
-LOOKUP_SYMBOL_FUNCTION
-    word $0000
-    word FUNC_S01_MULT-1
-    word FUNC_S02_ADD-1
-    word FUNC_S03_SUB-1
-    word FUNC_S04_DIV-1
-    word FUNC_MOD-1
-    word FUNC_S05_EQUALS-1
-    word FUNC_S06_GT-1
-    word FUNC_S07_LT-1
-    word FUNC_S08_AND-1
-    word FUNC_S09_OR-1
-    word FUNC_S0A_NOT-1
-    word $0000 ; CONS
-    word $0000 ; CAR
-    word $0000 ; CDR
-    word $0000 ; APPLY
-    word FUNC_F0-1
-    word FUNC_F1-1
-    word FUNC_F2-1
-    word FUNC_BEEP-1
-    word FUNC_STACK-1
-    word FUNC_POS_P0-1
-    word FUNC_POS_P1-1
-    word FUNC_POS_BL-1
-    word FUNC_J0-1
-    word FUNC_J1-1
 
 
 ;-----------------------------------------------------------------------------------

@@ -42,15 +42,12 @@ repl_draw_tower
         sta CTRLPF
         lda #WHITE
         sta COLUPF
-        ldx #11 ; BUGBUG: magic number
+        ldx #10 ; BUGBUG: magic number
         jsr sub_wsync_loop
         lda #$08
         sta tower_tmp_level
 _draw_tower_loop
-        lda #0
-        sta PF0
-        sta PF1
-        sta PF2
+        jsr sub_clr_pf
         ldx #6
 _draw_tower_clear_loop
         sta curr_disc_pf0,x
@@ -107,20 +104,13 @@ _draw_tower_level_half
         asl tower_tmp_level
         bne _draw_tower_loop
 _draw_tower_loop_end
-        sta WSYNC
-        lda #0
-        sta PF0
-        sta PF1
-        sta PF2
+        jsr sub_clr_pf
         sta WSYNC
         lda #$18
         sta PF1
         lda #$80
         sta PF2
-        lda #0
-        sta WSYNC
-        sta PF1
-        sta PF2
+        jsr sub_clr_pf
         jmp game_draw_return
 
         ; y = stack, x will be top disk 0-4

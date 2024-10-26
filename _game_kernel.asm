@@ -67,17 +67,3 @@ _game_skip_bl_gfx
         bpl _draw_game_loop
         sta WSYNC
         jmp game_draw_return
-
-sub_respx_object
-        lda game_p0_x,x
-        sta WSYNC
-        SLEEP 3                  ;3  3 ;---- BUGBUG: SPACE?
-        sec                      ;2  5
-_respx_object_loop
-        sbc #15                  ;2  7
-        bpl _respx_object_loop   ;2  9
-        tay                      ;2 11
-        lda LOOKUP_STD_HMOVE,y   ;4 15 
-        sta HMP0,x               ;4 19
-        sta RESP0,x              ;4 23
-        rts
