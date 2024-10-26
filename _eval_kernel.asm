@@ -9,21 +9,6 @@ eval_wait
             sta game_state
             jmp update_return
 
-
-eval_update
-            lsr SWCHB ; test game reset
-            bcc eval_exit
-            lda game_state
-            and #$0f
-            beq eval_start
-            lsr
-            bcs eval_apply
-            ; continue
-            rts
-
-eval_exit
-            jmp exec_exit_eval ; BUGBUG: SPACE: can make branch?
-
 eval_apply
             ; BUGBUG: PROTECT: we need at least 3 bytes of stack
             jsr alloc_stack
@@ -80,7 +65,19 @@ _eval_no_loop
 _eval_test_loop_progn_next
             lda HEAP_CDR_ADDR,x   ; push cddr of test to be rest of args ; BUGBUG: what if empty
             pha                   ; . 
-            jmp _eval_funcall_arg ; 
+            jmp _eval_funcall_arg ;
+
+eval_update
+            lsr SWCHB ; test game reset
+            bcc exec_exit_eval
+            lda game_state
+            and #$0f
+            beq eval_start
+            lsr
+            bcs eval_apply
+            ; continue
+            rts
+
 _eval_quote 
 _eval_number
             ; BUGBUG: need 0 stack
@@ -186,10 +183,37 @@ exec_exit_eval
             stx AUDV0
             dex
             txs 
+_exec_exit_gc
+            ; do a major gc
+            lda #(heap + HEAP_SIZE)
+_exec_exit_gc_iter
+            sec
+            sbc #2
+            bpl _exec_exit_gc_exit
+            pha
+            jsr eval_wait
+_exec_exit_gc_return
+            pla 
+            ldx #(f2 - heap) ; walk back from f2
+_exec_exit_gc_loop
+            cmp heap,x
+            beq _exec_exit_gc_iter ; found a ref
+            dex
+            bne _exec_exit_gc_loop
+            ; no refs found, free cell
+            tax
+            lda #0
+            sta HEAP_CAR_ADDR,x
+            lda free
+            sta HEAP_CDR_ADDR,x
+            stx free
+            jmp _exec_exit_gc ; brute force: have to start over
+_exec_exit_gc_exit
             lda game_state
             and #GAME_TYPE_MASK; #GAME_STATE_EDIT
             sta game_state
             jmp update_return
+
 _eval_pop_frame
             ; pop up from recursion
             pla ; will get previous env or frame
@@ -270,14 +294,14 @@ _eval_continue_args
             jmp _eval_funcall_args_next
 
 alloc_stack
-            ; BUGBUG: very crude protection against stack overflow
+            ; very crude protection against stack overflow
             tsx
             cpx #STACK_DANGER_ZONE
             bmi stack_overflow
             rts
 
 stack_overflow
-            ; BUGBUG: need some kind of error display
+            ; we hit a stack overflow
             ; for now will pull address we were at from stack and drop in accumulator
             pla
             sta accumulator_car

@@ -463,6 +463,7 @@ LOOKUP_SYMBOL_FUNCTION
 
 ;--------------------
 ; GC sub
+
 gc
             tax
             beq gcDone
