@@ -102,12 +102,11 @@ _div_continue
             sec
             lda FRAME_ARG_OFFSET_LSB,x
             sbc FRAME_ARG_OFFSET_LSB - 2,x
-            sta FRAME_ARG_OFFSET_LSB
+            sta FRAME_ARG_OFFSET_LSB,x
             lda FRAME_ARG_OFFSET_MSB,x
             sbc FRAME_ARG_OFFSET_MSB - 2,x
             bmi _div_return
-            and #$0f
-            sta FRAME_ARG_OFFSET_MSB
+            sta FRAME_ARG_OFFSET_MSB,x
             lda #1
             clc
             adc accumulator_lsb
@@ -120,9 +119,6 @@ _div_continue
             jmp _div_continue
 _div_return            
             cld
-            jmp exec_frame_return
-
-            ; BUGBUG: code as a rational
             jmp exec_frame_return
 
 

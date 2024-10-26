@@ -106,7 +106,7 @@ DONE
     - fix bug in ?
     - progn ignoring last entry
     - ? of non-funcall results in immediate return
-    - loop not tested
+    - loop exiting
     - progn doesn't tail recurse
   - menu 3
       - allow cyclical switching
@@ -129,6 +129,7 @@ DONE
       - calc
         - stable-ish framerate
   - library 2
+      - div functions working
       - modulo function
       - music functions (map... or progn?)
       - game functions
@@ -150,10 +151,6 @@ DONE
      - be able to interrupt eval with switch (reset? select?)
   - dedicated executable for steps game
 BETA
-  - library 1
-      - div functions working
-      - beep function retune?
-      - examples of all functions (make sure all basically work)
   - game modes 2
       - ball game
         - pong-like example
@@ -165,6 +162,9 @@ BETA
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
       - towers of hanoi
         - joystick / keyboard control example
+  - library 3
+      - beep function retune?
+      - examples of all functions (make sure all basically work)
   - dev support
      - self hosted stellerator page
        - keyboard controller support
@@ -186,8 +186,6 @@ BETA
       - quote support
         - no way to properly quote a function from the editor
       - can only see numbers in number mode
-  - menu 4
-      - allow for mode selection and reset without switching?
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -210,6 +208,8 @@ BETA
     - repl adds +/- 1 line
     - complex program takes too long to analyze in vblank
 SPRINKLES
+  - menu 4
+      - allow for mode selection and reset without switching?
   - eval mode
      - real safeties against stack overflow
   - font
