@@ -251,7 +251,7 @@ _eval_test_true
             jmp _eval_funcall_arg
 _eval_loop_continue
             lsr
-            bcs _eval_loop_iter ; looped
+            bcs _eval_loop_iter ; looped : BUGBUG: need?
             lda accumulator_lsb   ; check results of loop test
             ora accumulator_msb   ; .
             beq _eval_loop_return ; assume 0 is false
@@ -262,6 +262,8 @@ _eval_loop_iter
             lda #7                ; we will continue READABILITY: meaning 
             jmp _eval_loop_next
 _eval_loop_end_iter
+            jsr eval_wait         ; we need to start the loop over but first, wait 1 frame
+            ldx eval_frame
             lda #1,x ; BUGBUG: READABILITy
             tax
             lda #5
@@ -277,9 +279,7 @@ _eval_progn
 _eval_progn_next
             jmp _eval_funcall_arg ;  
 _eval_loop_return
-            dex
-            dex
-            dex
+            inx
             stx eval_frame
 _eval_return
             sta eval_next ; SPACE: REDUNDANT? may not be needed?

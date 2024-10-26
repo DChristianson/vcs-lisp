@@ -54,42 +54,40 @@ FUNC_S02_ADD
 
 FUNC_S03_SUB
             ldx eval_frame
-            sed
-            sec
-            lda FRAME_ARG_OFFSET_LSB,x
-            sbc FRAME_ARG_OFFSET_LSB - 2,x
-            sta accumulator_lsb
-            lda FRAME_ARG_OFFSET_MSB,x
-            sbc FRAME_ARG_OFFSET_MSB - 2,x
-            cld
+            jsr _FUNC_SUB_A0_A1
+            sty accumulator_lsb
             and #$0f
             sta accumulator_msb
             jmp exec_frame_return
 
-FUNC_MOD
-            ldx eval_frame
-            lda FRAME_ARG_OFFSET_LSB,x
-            sta accumulator_lsb
-            lda FRAME_ARG_OFFSET_MSB,x
-            sta accumulator_msb
-_mod_continue
-            ldx eval_frame
+_FUNC_SUB_A0_A1
+            ; subtract a0 from a1 return lsb in y, msb in a
             sed
             sec
-            lda accumulator_lsb
+            lda FRAME_ARG_OFFSET_LSB,x
             sbc FRAME_ARG_OFFSET_LSB - 2,x
             tay
-            lda accumulator_msb
-            sbc FRAME_ARG_OFFSET_MSB - 2,x            
+            lda FRAME_ARG_OFFSET_MSB,x
+            sbc FRAME_ARG_OFFSET_MSB - 2,x
+            cld
+            rts
+
+FUNC_MOD
+            ldx eval_frame
+_mod_continue
+            ldx eval_frame
+            jsr _FUNC_SUB_A0_A1         
             bmi _mod_return
             and #$0f
-            sta accumulator_msb
-            sty accumulator_lsb
-            cld
+            sta FRAME_ARG_OFFSET_MSB,x
+            sty FRAME_ARG_OFFSET_LSB,x
             jsr eval_wait
             jmp _mod_continue
 _mod_return            
-            cld
+            lda FRAME_ARG_OFFSET_MSB,x
+            sta accumulator_msb
+            lda FRAME_ARG_OFFSET_LSB,x
+            sta accumulator_lsb
             jmp exec_frame_return
 
 FUNC_S04_DIV
@@ -98,15 +96,10 @@ FUNC_S04_DIV
             sta accumulator_msb
 _div_continue
             ldx eval_frame
-            sed
-            sec
-            lda FRAME_ARG_OFFSET_LSB,x
-            sbc FRAME_ARG_OFFSET_LSB - 2,x
-            sta FRAME_ARG_OFFSET_LSB,x
-            lda FRAME_ARG_OFFSET_MSB,x
-            sbc FRAME_ARG_OFFSET_MSB - 2,x
+            jsr _FUNC_SUB_A0_A1
             bmi _div_return
             sta FRAME_ARG_OFFSET_MSB,x
+            sty FRAME_ARG_OFFSET_LSB,x
             lda #1
             clc
             adc accumulator_lsb
@@ -114,7 +107,6 @@ _div_continue
             lda #0
             adc accumulator_msb
             sta accumulator_msb
-            cld
             jsr eval_wait
             jmp _div_continue
 _div_return            
@@ -334,13 +326,21 @@ _func_stack_illegal_move
             jmp exec_frame_return
 
 FUNC_J0
+            ldx #0
+            byte #$2c ; skip next 2 bytes
 FUNC_J1
-            ; BUGBUG: implement
+            ldx #1
+_func_jx_store
+            lda player_input,x
+            eor #$8f ; invert
+            sta accumulator_lsb
+            lda #0
+            sta accumulator_msb
             jmp exec_frame_return
 
 FUNC_POS_P0
             ldy #game_p0_x
-            jmp _func_pos_store
+            byte #$2c ; skip next 2 bytes
 FUNC_POS_P1
             ldy #game_p1_x
 _func_pos_store

@@ -152,6 +152,8 @@ DONE
   - dedicated executable for steps game
 BETA
   - game modes 2
+      - towers of hanoi
+        - joystick / keyboard control example
       - ball game
         - pong-like example
         - stable framerate both repl and eval
@@ -160,8 +162,6 @@ BETA
         - ringing changes examples
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
-      - towers of hanoi
-        - joystick / keyboard control example
   - library 3
       - beep function retune?
       - examples of all functions (make sure all basically work)
@@ -200,6 +200,7 @@ BETA
         - use PF0 to hide HMOVE + switch to std HMOVE..?.
         - use only 4 line repl
   - bugs
+    - loop can hang indefinitely, maybe recurse instead
     - reset in eval corrupts repl display
     - clicky beeps when playing
     - sound just not right in stellerator

@@ -12,21 +12,6 @@ _header_loop
 
 repl_kernel_start
 
-_repl_update_edit_digit
-            ldy #3
-_repl_update_edit_digit_loop
-            asl HEAP_CDR_ADDR,x
-            rol HEAP_CAR_ADDR,x
-            dey
-            bpl _repl_update_edit_digit_loop
-            lda repl_edit_sym
-            and #$0f
-            ora HEAP_CDR_ADDR,x
-            sta HEAP_CDR_ADDR,x
-            lda #$0f
-            and HEAP_CAR_ADDR,x
-            sta HEAP_CAR_ADDR,x
-            jmp _repl_update_skip_move ; don't exit editor
 _repl_update_edit_number
             ; we've changed to a number using # symbol
             lda HEAP_CAR_ADDR,x
@@ -45,8 +30,6 @@ _repl_update_edit_head
             cmp #$20 ; BUGBUG: magic number (var versus function)
             bcc _repl_update_edit_set_car
             jmp _repl_update_edit_done ; can't replace with symbol
-_repl_update_keys_move_jmp
-            jmp _repl_update_keys_move            
 _repl_update_edit_set_funcar
             cmp #SYMBOL_HASH 
             beq _repl_update_edit_number
@@ -68,27 +51,6 @@ _repl_update_edit_funcall
             dex
             jsr set_cdr
             jmp _repl_update_edit_done
-_repl_update_edit_keys
-            lda player_input_latch         ; check button push
-            bmi _repl_update_keys_move_jmp  ; no push
-            ldx repl_curr_cell
-            beq _repl_update_edit_extend   ; curr cell is null
-_repl_update_edit_apply
-            ldy repl_prev_cell              ; check if we are at head
-            cpy #REPL_CELL_ADDR             ; .
-            bpl _repl_update_edit_head      ; .
-            lda HEAP_CAR_ADDR,x
-            bpl _repl_update_edit_digit     ; we are editing a number
-            cmp #$40
-            bpl _repl_update_edit_funcall  ; curr cell is a funcall
-            ; curr cell is a symbol
-            lda repl_edit_sym
-            beq _repl_update_edit_delete   ; delete current cell
-            cmp #SYMBOL_HASH 
-            bne _repl_update_edit_symbol ; BUGBUG could be simpler?
-            dex
-            jsr alloc_cdr
-            jmp _repl_update_edit_set_number
 _repl_update_edit_symbol
             cmp #$20 ; BUGBUG: magic number (var versus function)                
             bcs _repl_update_edit_set_car  ; edit symbol
@@ -115,6 +77,43 @@ _repl_update_edit_delete
             ldx repl_prev_cell             ; 
             jsr set_cdr                    ;
             jmp _repl_update_edit_done
+_repl_update_edit_keys
+            lda player_input_latch         ; check button push
+            bmi _repl_update_keys_move     ; no push
+            ldx repl_curr_cell
+            beq _repl_update_edit_extend   ; curr cell is null
+_repl_update_edit_apply
+            ldy repl_prev_cell              ; check if we are at head
+            cpy #REPL_CELL_ADDR             ; .
+            bpl _repl_update_edit_head      ; .
+            lda HEAP_CAR_ADDR,x
+            bpl _repl_update_edit_digit     ; we are editing a number
+            cmp #$40
+            bpl _repl_update_edit_funcall  ; curr cell is a funcall
+            ; curr cell is a symbol
+            lda repl_edit_sym
+            beq _repl_update_edit_delete   ; delete current cell
+            cmp #SYMBOL_HASH 
+            bne _repl_update_edit_symbol ; BUGBUG could be simpler?
+            dex
+            jsr alloc_cdr
+            jmp _repl_update_edit_set_number
+
+_repl_update_edit_digit
+            ldy #3
+_repl_update_edit_digit_loop
+            asl HEAP_CDR_ADDR,x
+            rol HEAP_CAR_ADDR,x
+            dey
+            bpl _repl_update_edit_digit_loop
+            lda repl_edit_sym
+            and #$0f
+            ora HEAP_CDR_ADDR,x
+            sta HEAP_CDR_ADDR,x
+            lda #$0f
+            and HEAP_CAR_ADDR,x
+            sta HEAP_CAR_ADDR,x
+            jmp _repl_update_skip_move ; don't exit editor
 
 _repl_update_edit_number_start
             ; current cell is a number
