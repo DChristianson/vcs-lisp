@@ -290,9 +290,9 @@ _repl_update_set_cursor_col
             lda #0
 _repl_update_check_col_limit
             sta repl_edit_col
+
 game_state_init_return
 _repl_update_skip_move
-
             ; calculate visible program
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll

@@ -176,12 +176,13 @@ exec_frame_return
             bne _eval_pop_frame
             ; done with eval - go back to repl
 exec_exit_eval
-            ldx #0
-            stx repl_scroll
-            stx repl_edit_line
-            stx repl_edit_col
-            stx AUDV0
+            lda #0
+            sta AUDV0
+            ldx #(repl_edit_col - gx_s1_addr)
+_exec_exit_clean_stack_top
+            sta gx_s1_addr,x
             dex
+            bpl _exec_exit_clean_stack_top
             txs 
 _exec_exit_gc
             ; do a major gc
@@ -212,7 +213,7 @@ _exec_exit_gc_exit
             lda game_state
             and #GAME_TYPE_MASK; #GAME_STATE_EDIT
             sta game_state
-            jmp update_return
+            jmp repl_update ; we should exit to repl update so it can reclaim the stack
 
 _eval_pop_frame
             ; pop up from recursion

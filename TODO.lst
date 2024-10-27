@@ -108,6 +108,14 @@ DONE
     - ? of non-funcall results in immediate return
     - loop exiting
     - progn doesn't tail recurse
+    - loop can hang indefinitely, maybe recurse instead
+    - reset problems
+     - sometimes nuking 
+     - reset in eval corrupts repl display - fixed with keydown - one of the display vars 
+       - issue is: if graphics display registers are corrupt timing is thrown off
+       - keydown forces rewrite of all registers
+     - (maybe result of stack being trashed)
+     - (f 1) (def (f a) (if (beep a 5) (f (+ a 1))))
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
@@ -151,20 +159,34 @@ DONE
      - be able to interrupt eval with switch (reset? select?)
   - dedicated executable for steps game
 BETA
+  - virtual keyboard 3
+      - keyboard controller support
+        - basic support
+        - use switches to turn keyboard on/off
+      - quote support
+        - no way to properly quote a function from the editor
+      - can only see numbers in number mode
   - game modes 2
       - towers of hanoi
         - joystick / keyboard control example
       - ball game
         - pong-like example
+        - able to change player graphics
         - stable framerate both repl and eval
-        - change player graphics
       - music game (simon?)
         - ringing changes examples
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
+  - bugs
+    - clicky beeps when playing
+    - sound just not right in stellerator
+    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
+    - disks kernel adds extra line in some configurations
+    - repl adds +/- 1 line
+    - complex program takes too long to analyze in vblank
   - library 3
       - beep function retune?
-      - examples of all functions (make sure all basically work)
+      - gauntlet of all functions (make sure all basically work)
   - dev support
      - self hosted stellerator page
        - keyboard controller support
@@ -179,13 +201,6 @@ BETA
      - gitlab deployment
      - some way to do unit tests (stellerator debugger?)
      - protection against var access?
-  - virtual keyboard 3
-      - keyboard controller support
-        - basic support
-        - use switches to turn keyboard on/off
-      - quote support
-        - no way to properly quote a function from the editor
-      - can only see numbers in number mode
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -199,15 +214,6 @@ BETA
       - simplify REPL
         - use PF0 to hide HMOVE + switch to std HMOVE..?.
         - use only 4 line repl
-  - bugs
-    - loop can hang indefinitely, maybe recurse instead
-    - reset in eval corrupts repl display
-    - clicky beeps when playing
-    - sound just not right in stellerator
-    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
-    - disks kernel adds extra line in some configurations
-    - repl adds +/- 1 line
-    - complex program takes too long to analyze in vblank
 SPRINKLES
   - menu 4
       - allow for mode selection and reset without switching?
