@@ -108,7 +108,7 @@ game_state         ds 1
 ; bits: f...rldu
 player_input       ds 2
 ; debounced p0 input
-player_input_latch ds 1
+player_input_latch ds 2
 ; beep frequency and time
 beep_f0            ds 1
 beep_t0            ds 1
@@ -127,7 +127,7 @@ gx_s2_addr         ds 2
 
   SEG.U REPL
 
-    ORG $DA
+    ORG $DB
 
 ; additional graphics addresses
 gx_s1_addr          ds 2
@@ -159,7 +159,7 @@ repl_editor_line ds 1  ; line counter storage during editor display
 ; for expression eval
   SEG.U EVAL
 
-    ORG $DA
+    ORG $DB
 
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
@@ -184,23 +184,17 @@ CleanStart
             sta COLUPF
 
     ; bootstrap heap
-            ldx #(HEAP_SIZE - 1)
-            lda #NULL
-            sta heap,x
-            dex
-            sta heap,x
-            dex
-            ldy #NULL
-            lda #<(heap + HEAP_SIZE - 2)
-            sec
+            ldx #(HEAP_SIZE - 3)
+            ldy #<(heap + HEAP_SIZE - 2)
 _bootstrap_heap_loop
-            sta heap,x
-            sbc #2
-            dex
             sty heap,x
+            dey
+            dey
+            dex
             dex
             bpl _bootstrap_heap_loop
-            jsr heap_init
+            lda #heap
+            sta free
 
 newFrame
 
@@ -244,31 +238,36 @@ newFrame
 
             ; update player input
 jx_update
-            ldx #1
+            bit SWCHB
+            bvs _jx_update_skip
+            ldx #0
+            stx SWACNT
+            inx
             lda SWCHA
             and #$0f
 _jx_update_loop
-            sta player_input,x 
-            lda #$80
-            and INPT4,x        
-            ora player_input,x 
-            sta player_input,x 
-_jx_update_no_signal
-            dex
-            bmi _jx_update_end
+            tay
+            lda JX_KEYS,y
+            ldy INPT4,x
+            bmi _jx_update_skip_fire
+            lda #5
+_jx_update_skip_fire
+            tay
+            cmp player_input,x
+            bne _jx_update_end_debounce
+            lda #0
+_jx_update_end_debounce
+            sty player_input,x
+            sta player_input_latch,x
             lda SWCHA
             lsr
             lsr
             lsr
             lsr
-            ldy player_input   
-            jmp _jx_update_loop
-_jx_update_end
-            tya ; debounce p0 joystick
-            eor #$8f           
-            ora player_input   
-            sta player_input_latch
-            ; 
+            dex
+            bpl _jx_update_loop
+_jx_update_end_update
+_jx_update_skip
             ; do eval and repl updates
             lda game_state ; BUGBUG: make a jump tables?
             bmi _jx_eval_update
@@ -329,15 +328,58 @@ game_state_init_noop
     jmp game_state_init_return
 
 ;--------------------
-; Overscan start
-
+; Read keyboard during overscan
 waitOnOverscan
+kx_update
             ldx #30
-waitOnOverscan_loop
-            sta WSYNC
-            dex
-            bne waitOnOverscan_loop
+            bit SWCHB
+            bvc _kx_update_skip
+            lda #$ff                 ;3   3
+            sta SWACNT               ;3   6
+            tax
+            lda #$77
+            sec
+            ldy #12                  ;2  12
+_kx_update_next_row:
+            sta WSYNC                ;--  0
+            sta SWCHA                
+            ror                      
+            ; wait 135- cycles
+            sta WSYNC                ;59  0
+            sta WSYNC                ;76  0
+            sta WSYNC                ;76  0
+            sta WSYNC                ;76  0
+            sta WSYNC                ;76  0
+            lda INPT5,x              ;3   3
+            bpl _kx_update_keydown   ;
+            dey
+            lda INPT3,x
+            bpl _kx_update_keydown
+            dey
+            lda INPT2,x
+            bpl _kx_update_keydown
+            dey
+            bne _kx_update_next_row
+_kx_update_keydown:
+            tya
+            beq __debug__
+            cmp player_input,x
+            bne _kx_update_end_debounce
+            lda #0
+_kx_update_end_debounce
+            sty player_input,x
+            sta player_input_latch,x
+__debug__
+_kx_update_end
+            
+_kx_update_skip
+            ldx #6
+_waitOnOverscan_loop
+            jsr sub_wsync_loop
             jmp newFrame
+
+KX_ROW
+    byte $7f,$f7
 
 ;-------------------
 ; Timer sub
@@ -367,8 +409,6 @@ waitOnTimer_loop
     include "_tower_kernel.asm"
 
     include "_logo_kernel.asm"
-
-    include "_heap_init.asm"
 
 ; ----------------------------------
 ; data
@@ -431,7 +471,6 @@ GAME_STATE_INIT_JMP_HI = GAME_STATE_INIT_JMP_LO + 1
     word (repl_init_game-1)
     word (repl_init_tower-1)
 
-
     ; eval
 LOOKUP_SYMBOL_FUNCTION
     word $0000
@@ -460,6 +499,32 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_POS_BL-1
     word FUNC_J0-1
     word FUNC_J1-1
+
+sub_wsync_loop
+_header_loop
+            sta WSYNC
+            dex
+            bpl _header_loop
+            rts
+
+sub_respxx
+            ; respx both players at once
+            ; a has position
+            sec
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop       ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            NOP                     ;2   19
+            sta.w RESP0             ;4   23
+            sta RESP1               ;3   27
+            sta WSYNC               ;--   0
+            sta HMOVE               ;3    3
+            rts                     ;6    9
 
 ;--------------------
 ; GC sub
@@ -542,9 +607,14 @@ oom
             sta accumulator_car
             pla
             sta accumulator_cdr
-            jmp _repl_update_edit_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
+            jmp _repl_update_edit_keys_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
 
-
+JX_KEYS     ; SPACE: lot of zeros
+            byte 0,0,0,0
+            byte 0,0,0,6
+            byte 0,0,0,4
+            byte 0,8,2,0
+            
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
 
@@ -553,5 +623,3 @@ oom
     .word Reset          ; NMI
     .word Reset          ; RESET
     .word Reset          ; IRQ
-
-    END

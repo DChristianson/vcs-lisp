@@ -3,13 +3,6 @@
 ;; code editor
 ;;
 
-sub_wsync_loop
-_header_loop
-            sta WSYNC
-            dex
-            bpl _header_loop
-            rts
-
 repl_kernel_start
 
 _repl_update_edit_number
@@ -22,14 +15,14 @@ _repl_update_edit_set_number
             sta HEAP_CAR_ADDR,x
             jsr set_cdr
 _repl_update_edit_number_skip
-            jmp _repl_update_edit_done
+            jmp _repl_update_edit_keys_done
 
 _repl_update_edit_head
             lda repl_edit_sym
             beq _repl_update_edit_delete ; edit function or . symbol
             cmp #$20 ; BUGBUG: magic number (var versus function)
             bcc _repl_update_edit_set_car
-            jmp _repl_update_edit_done ; can't replace with symbol
+            jmp _repl_update_edit_keys_done ; can't replace with symbol
 _repl_update_edit_set_funcar
             cmp #SYMBOL_HASH 
             beq _repl_update_edit_number
@@ -50,7 +43,7 @@ _repl_update_edit_funcall
             ldx repl_curr_cell
             dex
             jsr set_cdr
-            jmp _repl_update_edit_done
+            jmp _repl_update_edit_keys_done
 _repl_update_edit_symbol
             cmp #$20 ; BUGBUG: magic number (var versus function)                
             bcs _repl_update_edit_set_car  ; edit symbol
@@ -60,7 +53,8 @@ _repl_update_edit_symbol
 _repl_update_edit_set_car
             ora #$c0
             sta HEAP_CAR_ADDR,x
-_repl_update_edit_done
+repl_update_edit_keys_up
+_repl_update_edit_keys_done
             lda game_state
             and #$f0 ; #GAME_STATE_EDIT
             sta game_state
@@ -68,7 +62,7 @@ _repl_update_edit_done
 _repl_update_edit_extend
             ldx repl_prev_cell
             lda repl_edit_sym
-            beq _repl_update_edit_done     ; extending with null is noop
+            beq _repl_update_edit_keys_done     ; extending with null is noop
             jsr alloc_cdr       
             lda #$c0                       ; put in dummy term symbol 
             sta HEAP_CAR_ADDR,x            ; otherwise we will misinterpret
@@ -76,10 +70,9 @@ _repl_update_edit_extend
 _repl_update_edit_delete
             ldx repl_prev_cell             ; 
             jsr set_cdr                    ;
-            jmp _repl_update_edit_done
-_repl_update_edit_keys
-            lda player_input_latch         ; check button push
-            bmi _repl_update_keys_move     ; no push
+            jmp _repl_update_edit_keys_done
+
+repl_update_edit_keys_ok
             ldx repl_curr_cell
             beq _repl_update_edit_extend   ; curr cell is null
 _repl_update_edit_apply
@@ -98,7 +91,6 @@ _repl_update_edit_apply
             dex
             jsr alloc_cdr
             jmp _repl_update_edit_set_number
-
 _repl_update_edit_digit
             ldy #3
 _repl_update_edit_digit_loop
@@ -115,29 +107,9 @@ _repl_update_edit_digit_loop
             sta HEAP_CAR_ADDR,x
             jmp _repl_update_skip_move ; don't exit editor
 
-_repl_update_edit_number_start
-            ; current cell is a number
-            lda #$20 ; BUGBUG: ZERO
-_repl_update_edit_save_sym
-            and #$3f
-            sta repl_edit_sym ; BUGBUG find right sym
-            jmp _repl_update_skip_move
-
-repl_reset
-            jsr repl_menu_reset_game
-
-repl_update
-            lsr SWCHB ; test game reset
-            bcc repl_reset
-            ; disambiguate editor state
-            lda game_state
-            lsr ; #GAME_STATE_EDIT_KEYS == 1
-            bcs _repl_update_edit_keys ; in keyboard
-            ; moving cursor
-            lda repl_edit_line
-            bmi _repl_update_menu_move
-            lda player_input_latch     ; check button push
-            bmi _repl_update_edit_move ; no push, moving cursor
+repl_update_edit_ok
+            ldx repl_edit_line
+            bmi _repl_update_menu_ok
 _repl_update_edit_keys_start
             ; button was pushed, so we need to display keyboard
             lda game_state
@@ -156,143 +128,66 @@ _repl_update_edit_keys_start
             ; we are at the head of a number
             lda #SYMBOL_HASH 
             jmp _repl_update_edit_save_sym
-
-_repl_update_keys_move
-            ; check keyboard movement
-            ;up
-            ror 
-            bcs _repl_update_keys_skip_up
-            jmp _repl_update_edit_done
-_repl_update_keys_skip_up
-            ;down
-            ror  
-            bcs _repl_update_keys_skip_down
-            lda #5
-            jmp _repl_update_keys_set
-_repl_update_keys_skip_down
-            ;left
-            ror
-            bcs _repl_update_keys_skip_left
-            lda #-1
-            jmp _repl_update_keys_set
-_repl_update_keys_skip_left
-            ;right
-            ror
-            bcs _repl_update_keys_skip_move
-            lda #1
-_repl_update_keys_set
-            clc
-            adc repl_edit_sym
-            bmi _repl_update_check_keys_roll
-            sec
-            sbc #SYMBOL_TABLE_SIZE
-            bcs _repl_update_check_keys_save
-_repl_update_check_keys_roll
-            adc #SYMBOL_TABLE_SIZE
-_repl_update_check_keys_save
-            sta repl_edit_sym
-_repl_update_keys_skip_move
+_repl_update_edit_number_start
+            ; current cell is a number
+            lda #$20 ; BUGBUG: ZERO
+_repl_update_edit_save_sym
+            and #$3f
+            sta repl_edit_sym ; BUGBUG find right sym
             jmp _repl_update_skip_move
-
-_repl_update_menu_move
-            ldx repl_edit_line
+_repl_update_menu_ok
             inx 
-            bmi _repl_update_mode_move
-            ; check cursor movement
-            lda player_input_latch         
-            bmi _repl_update_menu_skip_press
-            jmp repl_menu_press_eval
-_repl_update_menu_skip_press
-            ror ; up
-            bcc _repl_update_up
-            ror ; down
-            bcc _repl_update_down
-            ror
-            bcs _repl_update_menu_skip_left
-            lda #-1
-            jmp _repl_update_set_menu
-_repl_update_menu_skip_left
-            ror
-            bcs _repl_update_skip_move
-            lda #1
-_repl_update_set_menu
-            adc repl_menu_tab ; should be carry clear
-            and #$03
-_repl_update_save_menu_tab
-            sta repl_menu_tab
-            jmp _repl_update_skip_move
+            bmi _repl_update_mode_ok
+            lda repl_menu_tab
+            bne repl_menu_press_noop
+            ; eval
+            lda game_state
+            ora #GAME_STATE_EVAL
+            sta game_state
+repl_menu_press_noop
+            jmp _repl_update_skip_move 
+_repl_update_mode_ok
+            ; inc game
+            lda game_state
+            clc
+            adc #$10
+            and #$3f
+            sta game_state
+repl_menu_reset_game
+            lda game_state
+            lsr
+            lsr
+            lsr
+            tax
+            lda GAME_STATE_INIT_JMP_HI,x
+            pha
+            lda GAME_STATE_INIT_JMP_LO,x
+            pha
+            rts    
+
+repl_update
+            lsr SWCHB ; test editor reset
+            bcc repl_menu_reset_game
+            ; disambiguate editor state
+            lda game_state
+            lsr ; #GAME_STATE_EDIT_KEYS == 1
+            lda player_input_latch
+            beq _repl_update_skip_move
+            bcc _repl_update_edit_move ; moving cursor
+            adc #11
+_repl_update_edit_move 
+            tax
+            dex
+            ; moving cursor
+            lda REPL_EDIT_K0_TABLE_HI,x
+            pha
+            lda REPL_EDIT_K0_TABLE_LO,x
+            pha
+            rts ; jump away
             
-_repl_update_mode_skip_game
-            ; check cursor movement
-            ror ; up
-            ror ; down
-            bcc _repl_update_down
-            jmp _repl_update_skip_move
-
-_repl_update_edit_move
-            ; check cursor movement
-            ror
-            bcs _repl_update_skip_up
-_repl_update_up
-            lda #-1
-            jmp _repl_update_set_cursor_line
-
-_repl_update_mode_move
-            ; check button push
-            lda player_input_latch         
-            bmi _repl_update_mode_skip_game
-            jmp repl_menu_press_game
-
-_repl_update_skip_up
-            ror
-            bcs _repl_update_skip_updown
-_repl_update_down
-            lda #1
-_repl_update_set_cursor_line
-            clc
-            adc repl_edit_line
-            bmi _repl_update_above_limit
-            ; check if we are past last line
-            cmp repl_last_line
-            bcc _repl_update_check_limit
-            lda repl_last_line
-_repl_update_check_limit
-            sta repl_edit_line
-            cmp repl_scroll
-            bpl _repl_update_check_scroll_down
-            sta repl_scroll
-            jmp _repl_update_skip_move
-_repl_update_above_limit            
-            sta repl_edit_line
-            lda #0
-            sta repl_scroll
-            jmp _repl_update_skip_move
-_repl_update_check_scroll_down
-            sec 
-            sbc #(EDITOR_LINES-2)
-            cmp repl_scroll
-            bmi _repl_update_skip_move
-            sta repl_scroll
-            jmp _repl_update_skip_move
-_repl_update_skip_updown
-            ror
-            bcs _repl_update_skip_left
-            lda #-1
-            jmp _repl_update_set_cursor_col
-_repl_update_skip_left
-            ror
-            bcs _repl_update_skip_move
-            lda #1
-_repl_update_set_cursor_col
-            clc
-            adc repl_edit_col
-            bpl _repl_update_check_col_limit
-            lda #0
-_repl_update_check_col_limit
-            sta repl_edit_col
-
-game_state_init_return
+            ; end of moves
 _repl_update_skip_move
+game_state_init_return
             ; calculate visible program
             ldy #(EDITOR_LINES - 1)
             lda repl_scroll
@@ -514,6 +409,143 @@ _prep_repl_end
             ldx #$ff ; clean stack
             txs      ;
             jmp update_return
+
+
+repl_update_edit_up
+            lda #-1
+            byte $2c
+repl_update_edit_down
+            lda #1
+_repl_update_set_cursor_line
+            clc
+            adc repl_edit_line
+            bmi _repl_update_above_limit
+            ; check if we are past last line
+            cmp repl_last_line
+            bcc _repl_update_check_limit
+            lda repl_last_line
+_repl_update_check_limit
+            sta repl_edit_line
+            cmp repl_scroll
+            bpl _repl_update_check_scroll_down
+            sta repl_scroll
+            jmp _repl_update_skip_move
+_repl_update_above_limit            
+            sta repl_edit_line
+            lda #0
+            sta repl_edit_col
+            sta repl_scroll
+            jmp _repl_update_skip_move
+_repl_update_check_scroll_down
+            sec 
+            sbc #(EDITOR_LINES-2)
+            cmp repl_scroll
+            bmi _repl_update_skip_save_scroll
+            sta repl_scroll
+_repl_update_skip_save_scroll
+            jmp _repl_update_skip_move
+
+repl_update_edit_left
+            lda #-1
+            byte $2c ; skip next 2 bytes
+repl_update_edit_right
+            lda #1
+            clc
+            adc repl_edit_col
+            bpl _repl_update_check_col_limit
+            lda #0
+_repl_update_check_col_limit
+            sta repl_edit_col
+            ldx repl_edit_line
+            bmi _repl_update_menu_game_tab
+            jmp _repl_update_skip_move
+_repl_update_menu_game_tab
+            and #$03
+            inx 
+            bmi _repl_update_game_mode
+            sta repl_menu_tab
+            jmp _repl_update_skip_move
+_repl_update_game_mode
+            jmp _repl_update_skip_move
+
+repl_update_edit_keys_down
+            ;down
+            lda #5
+            jmp _repl_update_keys_set
+repl_update_edit_keys_left
+            lda #-1
+            byte $2c
+repl_update_edit_keys_right
+            ;right
+            lda #1
+_repl_update_keys_set
+            clc
+            adc repl_edit_sym
+            bmi _repl_update_check_keys_roll
+            sec
+            sbc #SYMBOL_TABLE_SIZE
+            bcs _repl_update_check_keys_save
+_repl_update_check_keys_roll
+            adc #SYMBOL_TABLE_SIZE
+_repl_update_check_keys_save
+            sta repl_edit_sym
+_repl_update_keys_skip_move
+            jmp _repl_update_skip_move
+
+
+REPL_EDIT_K0_TABLE_LO
+            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_edit_up - 1)
+            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_edit_left - 1)
+            byte <(repl_update_edit_ok - 1)
+            byte <(repl_update_edit_right - 1)
+            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_edit_down - 1)
+            byte <(_repl_update_skip_move -1)
+            byte <(_repl_update_skip_move -1)
+            byte <(_repl_update_skip_move -1)
+            byte <(_repl_update_skip_move -1)
+REPL_EDIT_KEYS_K0_TABLE_LO
+            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_edit_keys_up - 1)
+            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_edit_keys_left - 1)
+            byte <(repl_update_edit_keys_ok - 1)
+            byte <(repl_update_edit_keys_right - 1)
+            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_edit_keys_down - 1)
+            byte <(_repl_update_skip_move -1)
+            byte <(_repl_update_skip_move -1)
+            byte <(_repl_update_skip_move -1)
+            byte <(_repl_update_skip_move -1)
+
+REPL_EDIT_K0_TABLE_HI
+            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_edit_up - 1)
+            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_edit_left - 1)
+            byte >(repl_update_edit_ok - 1)
+            byte >(repl_update_edit_right - 1)
+            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_edit_down - 1)
+            byte >(_repl_update_skip_move -1)
+            byte >(_repl_update_skip_move -1)
+            byte >(_repl_update_skip_move -1)
+            byte >(_repl_update_skip_move -1)
+REPL_EDIT_KEYS_K0_TABLE_HI
+            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_edit_keys_up - 1)
+            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_edit_keys_left - 1)
+            byte >(repl_update_edit_keys_ok - 1)
+            byte >(repl_update_edit_keys_right - 1)
+            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_edit_keys_down - 1)
+            byte >(_repl_update_skip_move -1)
+            byte >(_repl_update_skip_move -1)
+            byte >(_repl_update_skip_move -1)
+            byte >(_repl_update_skip_move -1)
 
 ;----------------------
 ; Repl display
@@ -884,77 +916,6 @@ _menu_set_colupx
 
             jmp waitOnOverscan
 
-repl_menu_press_game
-            ; inc game
-            lda game_state
-            clc
-            adc #$10
-            and #$3f
-_menu_press_save_game
-            sta game_state
-repl_menu_reset_game
-            lda game_state
-            lsr
-            lsr
-            lsr
-            tax
-            lda GAME_STATE_INIT_JMP_HI,x
-            pha
-            lda GAME_STATE_INIT_JMP_LO,x
-            pha
-            rts
-
-repl_menu_press_eval
-            lda repl_menu_tab
-            bne repl_menu_press_noop
-            ; eval
-            lda game_state
-            ora #GAME_STATE_EVAL
-            sta game_state
-repl_menu_press_noop
-            jmp _repl_update_skip_move     
-
-    ; line width X sprite arrangement
-    ; we use the same display kernel for all 
-    ; code, but manipulate respx and nusizex 
-    ; to ensire p1/m1 are always written last
-    ;         - S0 S1  0  1  0  1  0  1  0
-    ; 1 - 0 0 - 30 00             30 00 00  
-    ; 2 - 2 0 - 30 31          31 30 01 00 
-    ; 3 - 2 2 - 31 31       31 31 31 01 01
-    ; 4 - 3 2 - 31 33    33 31 33 31 03 01 
-    ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03  
-
-DISPLAY_COLS_INDENT
-    byte 80,88,96,104,112
-DISPLAY_COLS_NUSIZ0_A
-    byte $30,$30,$31,$31,$33
-DISPLAY_COLS_NUSIZ1_A
-    byte $00,$31,$31,$33,$33
-DISPLAY_COLS_NUSIZ0_B
-    byte $00,$00,$01,$01,$03
-DISPLAY_COLS_NUSIZ1_B
-    byte $00,$01,$01,$03,$03
-
-sub_respxx
-            ; respx both players at once
-            ; a has position
-            sec
-            sta WSYNC               ; --
-_respxx_loop
-            sbc #15                 ;2    2
-            sbcs _respxx_loop       ;2/3  4
-            tax                     ;2    6
-            lda LOOKUP_STD_HMOVE,x  ;5   11
-            sta HMP0                ;3   14
-            sta HMP1                ;3   17
-            NOP                     ;2   19
-            sta.w RESP0             ;4   23
-            sta RESP1               ;3   27
-            sta WSYNC               ;--   0
-            sta HMOVE               ;3    3
-            rts                     ;6    9
-
 sub_draw_glyph_16px ; draw p0 and p1, using y and a registers
             ldy #CHAR_HEIGHT - 1
 _glyph_loop
@@ -996,6 +957,30 @@ sub_fmt_number
             WRITE_DIGIT_LO HEAP_CDR_ADDR, gx_s4_addr   ;16 45
             rts
 
+
+    ; line width X sprite arrangement
+    ; we use the same display kernel for all 
+    ; code, but manipulate respx and nusizex 
+    ; to ensire p1/m1 are always written last
+    ;         - S0 S1  0  1  0  1  0  1  0
+    ; 1 - 0 0 - 30 00             30 00 00  
+    ; 2 - 2 0 - 30 31          31 30 01 00 
+    ; 3 - 2 2 - 31 31       31 31 31 01 01
+    ; 4 - 3 2 - 31 33    33 31 33 31 03 01 
+    ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03  
+
+DISPLAY_COLS_INDENT
+    byte 80,88,96,104,112
+DISPLAY_COLS_NUSIZ0_A
+    byte $30,$30,$31,$31,$33
+DISPLAY_COLS_NUSIZ1_A
+    byte $00,$31,$31,$33,$33
+DISPLAY_COLS_NUSIZ0_B
+    byte $00,$00,$01,$01,$03
+DISPLAY_COLS_NUSIZ1_B
+    byte $00,$01,$01,$03,$03
+
+
 DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
     byte $60,$B0,$50,$30
 DISPLAY_REPL_COLOR_SHADES
@@ -1028,5 +1013,6 @@ DISPLAY_REPL_COLOR_SHADES
             lda HEAP_CDR_ADDR,x
             tax
     ENDM
+
 
 
