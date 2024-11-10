@@ -152,41 +152,19 @@ DONE
        - display and editing of programs as text
        - allow load/save of programs
   - virtual keyboard 3
-      - extend to all commands
+    - extend to all commands
+    - keyboard controller support
+      - ultra basic support (use left controller to do joystick commands)
+      - use switches to turn keyboard on/off
+    - advance cursor after entering symbol
+    - stabilize framerate
+    - limit up movement
    - virtual keyboard 4
     - too slow to scroll through keys
   - eval mode
      - be able to interrupt eval with switch (reset? select?)
   - dedicated executable for steps game
 BETA
-  - virtual keyboard 3
-      - keyboard controller support
-        - basic support
-        - use switches to turn keyboard on/off
-      - quote support
-        - no way to properly quote a function from the editor
-      - can only see numbers in number mode
-  - game modes 2
-      - towers of hanoi
-        - joystick / keyboard control example
-      - ball game
-        - pong-like example
-        - able to change player graphics
-        - stable framerate both repl and eval
-      - music game (simon?)
-        - ringing changes examples
-        - be able to handle DSS generative examples as demos
-          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
-  - bugs
-    - clicky beeps when playing
-    - sound just not right in stellerator
-    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
-    - disks kernel adds extra line in some configurations
-    - repl adds +/- 1 line
-    - complex program takes too long to analyze in vblank
-  - library 3
-      - beep function retune?
-      - gauntlet of all functions (make sure all basically work)
   - dev support
      - self hosted stellerator page
        - keyboard controller support
@@ -201,6 +179,39 @@ BETA
      - gitlab deployment
      - some way to do unit tests (stellerator debugger?)
      - protection against var access?
+  - bugs
+    - clicky beeps when playing
+    - sound just not right in stellerator
+    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
+    - disks kernel adds extra line in some configurations
+    - repl adds +/- 1 line
+    - complex program takes too long to analyze in vblank
+  - virtual keyboard 3
+    - get stella to auto-recognize... (not working as expected)?
+  - library 3
+      - beep function retune?
+      - gauntlet of all functions (make sure all basically work)
+  - virtual keyboard 4
+    - advanced keyboard (both keyboards)
+      - use right keyboard for symbols
+      - paging through different symbols
+      - feedback on screen for what page you are on
+      - special cancel, etc keys on left keyboard
+    - quote support
+      - no way to properly quote a function from the editor
+  - game modes 2
+      - towers of hanoi
+        - joystick / keyboard control example
+      - ball game
+        - pong-like example
+        - able to change player graphics
+        - stable framerate both repl and eval
+      - music game (simon?)
+        - ringing changes examples
+        - be able to handle DSS generative examples as demos
+          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
+  - font
+     - tune font / symbols
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -212,15 +223,17 @@ BETA
         - 87 bytes of sleeps
         - 24 zp y offset lookups
       - simplify REPL
-        - use PF0 to hide HMOVE + switch to std HMOVE..?.
         - use only 4 line repl
 SPRINKLES
+  - repl mode
+    - can use PF0 to hide HMOVE + switch to std HMOVE..?.
+    - indent menus more? 
+    - sidebars aesthetics
   - menu 4
       - allow for mode selection and reset without switching?
   - eval mode
      - real safeties against stack overflow
   - font
-     - tune font / symbols
      - null display on complex lines no box
   - title screen
      - logo 

@@ -1,7 +1,7 @@
 
 
 logo_draw
-	ldx #68
+	ldx #128
 	jsr sub_wsync_loop
 	
 ;

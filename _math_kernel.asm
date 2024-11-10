@@ -332,7 +332,10 @@ FUNC_J1
             ldx #1
 _func_jx_store
             lda player_input,x
-            eor #$8f ; invert
+            sed
+            clc
+            adc #$0
+            cld
             sta accumulator_lsb
             lda #0
             sta accumulator_msb

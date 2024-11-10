@@ -9,6 +9,13 @@ PAL60 = 1
 SYSTEM = NTSC
     ENDIF
 
+JOYSTICK = 0
+KEYBOARD = 1
+
+    IFNCONST CONTROLS
+CONTROLS = KEYBOARD
+    ENDIF
+
 ; ----------------------------------
 ; constants
 
@@ -116,6 +123,7 @@ beep_t0            ds 1
 game_data          ds 6
 
 ; player graphics
+tmp_kx_swcha
 gx_addr
 gx_s4_addr         ds 2
 gx_s3_addr         ds 2
@@ -179,6 +187,12 @@ CleanStart
     ; do the clean start macro
             CLEAN_START
 
+#if CONTROLS = KEYBOARD
+    ; keyboard
+            ldx #$ff
+            stx SWACNT
+#endif
+
     ; one PF color
             lda #WHITE
             sta COLUPF
@@ -202,21 +216,21 @@ newFrame
 
             ldx #%00000010
             stx VSYNC               ; turn ON VSYNC bit 1
-            ldx #0
+            lda #0
 
             sta WSYNC               ; wait a scanline
             sta WSYNC               ; another
             sta WSYNC               ; another = 3 lines total
 
-            stx VSYNC               ; turn OFF VSYNC bit 1
+            sta VSYNC               ; turn OFF VSYNC bit 1
 
     ; 37 scanlines of vertical blank to follow
 
 ;--------------------
 ; VBlank start
 
-            lda #%00000010
-            sta VBLANK
+            ;lda #%00000010 ; SPACE: x is already #%00000010
+            stx VBLANK
 
             lda #42    ; vblank timer will land us ~ on scanline 34
             sta TIM64T
@@ -236,13 +250,10 @@ newFrame
             ; update clock
             inc clock
 
+#if CONTROLS = JOYSTICK
             ; update player input
 jx_update
-            bit SWCHB
-            bvs _jx_update_skip
-            ldx #0
-            stx SWACNT
-            inx
+            ldx #1
             lda SWCHA
             and #$0f
 _jx_update_loop
@@ -267,12 +278,13 @@ _jx_update_end_debounce
             dex
             bpl _jx_update_loop
 _jx_update_end_update
-_jx_update_skip
+#endif
+
             ; do eval and repl updates
             lda game_state ; BUGBUG: make a jump tables?
-            bmi _jx_eval_update
+            bmi _gx_eval_update
             jmp repl_update
-_jx_eval_update
+_gx_eval_update
             jmp eval_update
 update_return
 
@@ -325,61 +337,74 @@ _jmp_repl_draw
 
 
 game_state_init_noop
-    jmp game_state_init_return
+            jmp game_state_init_return
 
 ;--------------------
 ; Read keyboard during overscan
 waitOnOverscan
+            sta WSYNC                ;--  0
+            lda #33    ; vblank timer to drive us 30 scanlines
+            sta TIM64T
 kx_update
-            ldx #30
-            bit SWCHB
-            bvc _kx_update_skip
-            lda #$ff                 ;3   3
-            sta SWACNT               ;3   6
+#if CONTROLS = KEYBOARD
+            lda #0
+            sta player_input_latch
+            sta player_input_latch + 1
+            clc
+            lda clock
+            and #$01
             tax
+            adc #$7f ; force overflow
             lda #$77
+            sta tmp_kx_swcha
             sec
             ldy #12                  ;2  12
 _kx_update_next_row:
             sta WSYNC                ;--  0
+            lda tmp_kx_swcha
             sta SWCHA                
-            ror                      
+            ror
+            sta tmp_kx_swcha                      
             ; wait 135- cycles
             sta WSYNC                ;59  0
             sta WSYNC                ;76  0
             sta WSYNC                ;76  0
             sta WSYNC                ;76  0
             sta WSYNC                ;76  0
-            lda INPT5,x              ;3   3
+            bvs _kx_right
+            lda INPT4                ;3   3
             bpl _kx_update_keydown   ;
             dey
-            lda INPT3,x
+            lda INPT1
             bpl _kx_update_keydown
             dey
-            lda INPT2,x
+            lda INPT0
+            jmp _kx_end
+_kx_right
+            lda INPT5                ;3   3
+            bpl _kx_update_keydown   ;
+            dey
+            lda INPT3
+            bpl _kx_update_keydown
+            dey
+            lda INPT2
+_kx_end
             bpl _kx_update_keydown
             dey
             bne _kx_update_next_row
 _kx_update_keydown:
             tya
-            beq __debug__
             cmp player_input,x
             bne _kx_update_end_debounce
             lda #0
 _kx_update_end_debounce
             sty player_input,x
             sta player_input_latch,x
-__debug__
 _kx_update_end
-            
-_kx_update_skip
-            ldx #6
-_waitOnOverscan_loop
-            jsr sub_wsync_loop
+#endif
+            jsr waitOnTimer
+            sta WSYNC 
             jmp newFrame
-
-KX_ROW
-    byte $7f,$f7
 
 ;-------------------
 ; Timer sub
@@ -609,11 +634,13 @@ oom
             sta accumulator_cdr
             jmp _repl_update_edit_keys_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
 
+#if CONTROLS = JOYSTICK
 JX_KEYS     ; SPACE: lot of zeros
             byte 0,0,0,0
             byte 0,0,0,6
             byte 0,0,0,4
             byte 0,8,2,0
+#endif 
             
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors

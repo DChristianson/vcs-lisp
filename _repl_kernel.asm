@@ -53,8 +53,9 @@ _repl_update_edit_symbol
 _repl_update_edit_set_car
             ora #$c0
             sta HEAP_CAR_ADDR,x
-repl_update_edit_keys_up
 _repl_update_edit_keys_done
+            inc repl_edit_col ; move cursor over
+repl_update_edit_keys_up
             lda game_state
             and #$f0 ; #GAME_STATE_EDIT
             sta game_state
@@ -430,7 +431,8 @@ _repl_update_check_limit
             bpl _repl_update_check_scroll_down
             sta repl_scroll
             jmp _repl_update_skip_move
-_repl_update_above_limit            
+_repl_update_above_limit
+            ora #$fe ; limit to -2 : BUGBUG: moving up from -2 will move back to -1 ... janky?          
             sta repl_edit_line
             lda #0
             sta repl_edit_col
