@@ -124,6 +124,7 @@ game_data          ds 6
 
 ; player graphics
 tmp_kx_swcha
+tmp_kx_player = tmp_kx_swcha + 1
 gx_addr
 gx_s4_addr         ds 2
 gx_s3_addr         ds 2
@@ -343,35 +344,32 @@ game_state_init_noop
 ; Read keyboard during overscan
 waitOnOverscan
             sta WSYNC                ;--  0
-            lda #33    ; vblank timer to drive us 30 scanlines
+            lda #34    ; vblank timer to drive us 30 scanlines
             sta TIM64T
 kx_update
 #if CONTROLS = KEYBOARD
             lda #0
             sta player_input_latch
             sta player_input_latch + 1
-            clc
             lda clock
             and #$01
-            tax
-            adc #$7f ; force overflow
+            sta tmp_kx_player
             lda #$77
             sta tmp_kx_swcha
-            sec
             ldy #12                  ;2  12
 _kx_update_next_row:
-            sta WSYNC                ;--  0
-            lda tmp_kx_swcha
-            sta SWCHA                
-            ror
-            sta tmp_kx_swcha                      
-            ; wait 135- cycles
-            sta WSYNC                ;59  0
-            sta WSYNC                ;76  0
-            sta WSYNC                ;76  0
-            sta WSYNC                ;76  0
-            sta WSYNC                ;76  0
-            bvs _kx_right
+            lda tmp_kx_swcha         ;3   3
+            sta SWCHA                ;3   6        
+            sec                      ;2   8
+            ror                      ;2  10
+            sta tmp_kx_swcha         ;3  13       
+            ; wait 400ms
+            ldx #100
+_kx_update_wait_loop
+            dex
+            bne _kx_update_wait_loop ;2/3 
+            cpx tmp_kx_player
+            bne _kx_right
             lda INPT4                ;3   3
             bpl _kx_update_keydown   ;
             dey
@@ -394,6 +392,7 @@ _kx_end
             bne _kx_update_next_row
 _kx_update_keydown:
             tya
+            ldx tmp_kx_player
             cmp player_input,x
             bne _kx_update_end_debounce
             lda #0
