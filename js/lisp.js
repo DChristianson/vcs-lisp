@@ -199,8 +199,6 @@ LispMachine = function (ram) {
     }
 
     this.encodeExpression = function(exp) {
-        console.log(`encoding ${exp}`);
-        console.log(exp);
         if (exp instanceof Array) {
             if (exp.length === 0) {
                 return NullRef;
@@ -430,7 +428,6 @@ LispParser = function() {
                 yield c;
 
             } else if (WHITESPACE.test(c)) {
-                console.log("whitespace");
                 // remove whitespace
                 if (token.length > 0) {
                     yield token;
@@ -481,22 +478,28 @@ LispIde = function (lisp) {
         let contentClass = classPrefix + "_content";
         let linkClass = classPrefix + "_links";
 
-        // Get all elements with class and hide them
+        // hide links
         let tabcontent = document.getElementsByClassName(contentClass);
         for (let i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
+            if (tabcontent[i].id == id) {
+                if (!tabcontent[i].className.endsWith(" active")) {
+                    tabcontent[i].className = tabcontent[i].className + " active";
+                }
+            } else {
+                tabcontent[i].className = tabcontent[i].className.replace(" active", "");
+            }
         }
 
-        // Get all elements with class="tablinks" and remove the class "active"
+        // hide tabs
         let tablinks = document.getElementsByClassName(linkClass);
         for (let i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
+            if (tablinks[i] == event.currentTarget) {
+                tablinks[i].className = tablinks[i].className + " active";
+            } else {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
         }
 
-        // Show the current tab, and add an "active" class to the button that opened the tab
-        let currenttab = document.getElementById(id);
-        currenttab.style.display = "flex";
-        event.currentTarget.className += " active";
     };
 
     this.changeMode = async function(event, idx) {
@@ -550,9 +553,6 @@ LispIde = function (lisp) {
     this.loadProject = async function(event) {
         var input = event.target;
         var reader = new FileReader();
-        reader.onload = function(){
-            console.log(reader.result);
-        };
         reader.readAsDataURL(input.files[0]);
     };
 

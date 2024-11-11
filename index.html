@@ -6,11 +6,20 @@
         <title>VCS Lisp</title>
         <meta name="description" content="VCS Lisp - LISP programming on the Atari 2600">
         <link rel="stylesheet" href="css/lisp.css"/>
+        <link rel="stylesheet" href="css/keypads.css"/>
     </head>
 
     <body>
         <div class="header">
-            <span>VCS Lisp - Web IDE</span>
+            <div class="header_app_title">VCS Lisp</div>
+            <div class="header_menu_item"> 
+                <label>Load</label>
+                <input type="file" onchange="window.ide.loadProject(event)"></input>
+            </div>
+            <div class="header_menu_item" onclick="window.ide.saveProject(event)">Save</div>
+            <div class="header_menu_item" onclick="window.ide.shareProject(event)">Share</div>
+            <div class="header_menu_item" onclick="window.ide.selectExample(event)">Examples</div>
+            <div class="header_menu_item" onclick="window.ide.selectExample(event)">Help</div>
         </div>
         <div class="main">
             <div class="console">
@@ -24,13 +33,6 @@
                         <span>On</span>
                         <span>Off</span>
                         <label>Power</label>
-                    </div>        
-                    <div class="console_switch" id="console_switch_color"
-                         onclick="toggleSwitch(event, window.stellerator.getControlPanel().color())"
-                    >
-                        <span>Joystick</span>
-                        <span>Keyboard</span>
-                        <label>Controllers</label>
                     </div>        
                     <div class="console_switch"
                          id="console_switch_select"
@@ -48,45 +50,56 @@
                     </div> 
                 </div>
             </div>
-            <div class="sidepanel">
-                <div class="metaconsole">
-                    <div class="ide_ops_group">
-                        <label>Files</label>
-                        <div class="ide_ops"> 
-                            <label>LOAD</label>
-                            <input type="file" onchange="window.ide.loadProject(event)"></input>
-                        </div>
-                        <div class="ide_ops" onclick="window.ide.saveProject(event)">SAVE</div>
-                        <div class="ide_ops" onclick="window.ide.shareProject(event)">SHARE</div>
-                    </div>
-                    <div class="ide_ops" onclick="window.ide.saveProject(event)">HELP</div>
+            <div id="sidepanel">
+                <div class="panel_content column active" id="keypads">
                     <div class="row">
-                        <div class="ide_ops_group">
-                            <label>Game Mode</label>
-                            <div class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</div>
-                            <div class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</div>
-                            <div class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</div>
-                            <div class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</div>
+                        <div class="keypad column" id="keypad0">
+                            <label>L</label>
                         </div>
-                        <div class="ide_ops_group">
-                            <div class="ide_ops" onclick="window.ide.eval(event)">EVAL</div>
-                            <div class="ide_ops" onclick="window.ide.recallMemory(event)">RCL</div>
-                            <div class="ide_ops" onclick="window.ide.storeMemory(event)">STO</div>
-                            <div class="ide_ops" onclick="window.ide.clearMemory(event)">CLR</div>
-                        </div> 
-                    </div>                                                       
-                    <div class="ide" id="ide">
+                        <div class="keypad column" id="keypad1">
+                            <label>R</label>
+                        </div>
+                    </div>
+                    <div class="logo"></div>
+                </div>
+                <div class="panel_content" id="ide">
+                    <div class="ide" id="ide_editor">
                         <div class="row">
                             <div class="ide_links func_repl active"  onclick="window.ide.openWindow(event, 'repl')">LISP - &#x1D77A;</div>
                             <div class="ide_links func_f" onclick="window.ide.openWindow(event, 'f')">F - &#x2A00;</div>
                             <div class="ide_links func_g" onclick="window.ide.openWindow(event, 'g')">G - &#x25BD;</div>
                             <div class="ide_links func_h" onclick="window.ide.openWindow(event, 'h')">H - &#x2734;</div>
                         </div>
-                        <div id="repl" class="ide_content func_repl active" style="display: block" contenteditable="true" spellcheck="false"></div>
+                        <div id="repl" class="ide_content func_repl active" contenteditable="true" spellcheck="false"></div>
                         <div id="f" class="ide_content func_f" contenteditable="true" spellcheck="false"></div>
                         <div id="g" class="ide_content func_g" contenteditable="true" spellcheck="false"></div>        
                         <div id="h" class="ide_content func_h" contenteditable="true" spellcheck="false"></div>
                     </div>
+                    <div class="row">
+                        <div id="eval" class="ide_ops" onclick="window.ide.eval(event)">EVAL</div>
+                        <div class="ide_ops_group">
+                            <label>RAM</label>
+                            <div class="row">
+                                <div class="ide_ops" onclick="window.ide.recallMemory(event)">RCL</div>
+                                <div class="ide_ops" onclick="window.ide.storeMemory(event)">STO</div>
+                                <div class="ide_ops" onclick="window.ide.clearMemory(event)">CLR</div>
+                            </div>
+                        </div>
+                        <div class="ide_ops_group">
+                            <label>Game Mode</label>
+                            <div class="row">
+                                <div class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</div>
+                                <div class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</div>
+                                <div class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</div>
+                                <div class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel_links_group">
+                    <div class="panel_links active" onclick="window.ide.openWindow(event, 'keypads')">Keypad</div>
+                    <span>|</span>
+                    <div class="panel_links"  onclick="window.ide.openWindow(event, 'ide')">Inspect</div>        
                 </div>
             </div>
         </div>
@@ -112,6 +125,24 @@
                     }
                 });
             };
+
+            function bindKeypad(targetElement, stellerator) {
+                const keypadName = targetElement.id;
+                for (var row = 0; row < 4; row++) {
+                    const rowElement = document.createElement("div");
+                    rowElement.className = 'row'
+                    for (var column = 0; column < 3; column++) {
+                        const actionName = `${keypadName}r${row}c${column}`;
+                        const button = document.createElement("button");
+                        button.className = "keypad";
+                        button.id = actionName;
+                        button.onmousedown = () => { stellerator.triggerKeydownAction(actionName); }
+                        button.onmouseup = () => { stellerator.triggerKeyupAction(actionName); }
+                        rowElement.appendChild(button);
+                    }
+                    targetElement.appendChild(rowElement)
+                }
+            }
 
              (async function() {
                 // Shortcut to avoid typing out the namespace
@@ -140,6 +171,9 @@
                     }
                 );
             
+                bindKeypad(document.getElementById('keypad0'), stellerator);
+                bindKeypad(document.getElementById('keypad1'), stellerator);
+
                 // // The DOM node that displays emulation speed
                 // const speedElement = document.getElementById('speed');
                 // // Subscribe to speed updates and update the DOM node accordingly
@@ -160,8 +194,8 @@
                         rom, 
                         Stellerator.TvMode.ntsc,
                         { 
-                            controllerPort0: Stellerator.ControllerType.joystick,
-                            controllerPort1: Stellerator.ControllerType.joystick
+                            controllerPort0: Stellerator.ControllerType.keypad,
+                            controllerPort1: Stellerator.ControllerType.keypad
                         }
                     );
                 };

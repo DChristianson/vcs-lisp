@@ -1,0 +1,119 @@
+
+div.keypad {
+    display: grid;
+    margin: 0.5em 1.5em;
+    justify-content: space-evenly;
+}
+
+div.keypad label {
+    justify-self: center;
+    margin-bottom: 0.5em;
+}
+
+button.keypad {
+    border-radius: 2em;
+    width: 4em;
+    height: 4em;
+    margin: 0.5em;
+    color: white;
+    background-color: black;
+    border-color: white;
+    border-width: 1px;
+}
+
+#keypad0r0c0::before {
+    content: "";
+}
+
+#keypad0r0c1::before {
+    content: "up";
+}
+
+#keypad0r0c2::before {
+    content: "";
+}
+
+#keypad0r1c0::before {
+    content: "left";
+}
+
+#keypad0r1c1::before {
+    content: "ok";
+}
+
+#keypad0r1c2::before {
+    content: "right";
+}
+
+#keypad0r2c0::before {
+    content: "";
+}
+
+#keypad0r2c1::before {
+    content: "down";
+}
+
+#keypad0r2c2::before {
+    content: "";
+}
+
+#keypad0r3c0::before {
+    content: "";
+}
+
+#keypad0r3c1::before {
+    content: "";
+}
+
+#keypad0r3c2::before {
+    content: "";
+}
+
+
+#keypad1r0c0::before {
+    content: "1";
+}
+
+#keypad1r0c1::before {
+    content: "2";
+}
+
+#keypad1r0c2::before {
+    content: "3";
+}
+
+#keypad1r1c0::before {
+    content: "4";
+}
+
+#keypad1r1c1::before {
+    content: "5";
+}
+
+#keypad1r1c2::before {
+    content: "6";
+}
+
+#keypad1r2c0::before {
+    content: "7";
+}
+
+#keypad1r2c1::before {
+    content: "8";
+}
+
+#keypad1r2c2::before {
+    content: "9";
+}
+
+#keypad1r3c0::before {
+    content: "";
+}
+
+#keypad1r3c1::before {
+    content: "";
+}
+
+#keypad1r3c2::before {
+    content: "";
+}

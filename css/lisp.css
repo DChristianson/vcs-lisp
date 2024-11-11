@@ -6,6 +6,10 @@
   max-width: 100vw;
 }
 
+#console-controls {
+  position: absolute;
+}
+
 #stellerator-keyboard {
   height: 300px;
   background-color: antiquewhite;
@@ -19,12 +23,33 @@ body {
 }
 
 .header {
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
   padding: 10px;
   background-color: #000000;
   border-color: #f4d410;
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
   border-style: solid;
+}
+
+.header_app_title {
+  flex-grow: 1;
+}
+
+.header_menu_item {
+  margin-left: 1em;
+}
+
+.header_menu_item:hover {
+  margin-left: 1em;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.header_menu_item input[type="file"] {
+  display: none;
 }
 
 .main {
@@ -45,24 +70,21 @@ body {
   flex-direction: column;
 }
 
-.sidepanel {
+#sidepanel {
   display: flex;
   flex-grow: 1;
-  padding: 10px;
-}
-
-.metaconsole {
-  display: flex;
-  padding: 10px;
   flex-direction: column;
-  flex-grow: 1;
-  background-color: #f4d410;
-  border-radius: 10px;
+  padding: 10px;
 }
 
 .row {
   display: flex;
   flex-direction: row;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
 }
 
 .modal {
@@ -120,6 +142,48 @@ body {
   top: 1.475em;
 }
 
+.panel_links {
+  transition: 0.3s;
+  opacity: 50%;
+}
+
+.panel_links.active {
+  text-decoration: bold;
+  opacity: 100%;
+}
+
+.panel_links:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.panel_links_group {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  margin: .5em;
+}
+
+/* Style the panel content */
+.panel_content {
+  display: none;
+  padding: 6px 12px;
+  border: 2px solid;
+  border-radius: 0px 10px 10px 10px;
+  flex-grow: 1;
+}
+
+.panel_content.active {
+  display: flex;
+}
+
+#ide {
+  padding: 10px;
+  flex-direction: column;
+  flex-grow: 1;
+  background-color: #f4d410;
+  border-radius: 10px;
+}
 
 .ide {
   display: flex;
@@ -130,27 +194,36 @@ body {
 
 .ide_ops_group {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  align-items: center;
+  margin: 0.125em;
+}
+
+.ide_ops_group div.row {
+  border: 2px solid red;
+  border-radius: 0.5em;
+  padding: 0.125em;
 }
 
 .ide_ops_group label {
-  position: relative;
-  top: 0;
-  align-self: center;
+  color: red;
 }
-
 
 .ide_ops {
   border: 1px solid #ccc;
   padding: 10px;
   font-size: 16px;
   border-radius: 5px;
+  max-width: 5em;
   cursor: pointer;
   background-color: #000000;
+  align-content: center;
 }
 
-.ide_ops input[type="file"] {
-  display: none;
+#eval {
+  margin: 0.125em 0;
+  background-color: red;
+  border-color: black;
 }
 
 .ide_ops:hover {
@@ -203,6 +276,10 @@ body {
   background-color: #ffffff;
   color: #000000;
   flex-grow: 1;
+}
+
+.ide_content.active {
+  display: flex;
 }
 
 .ide_content.func_repl {
