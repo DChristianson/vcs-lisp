@@ -474,6 +474,9 @@ LispIde = function (lisp) {
 
     this.openWindow = function(event, id) {
 
+        // hide/show content
+        // based on: https://www.w3schools.com/howto/howto_js_tabs.asp
+
         let classPrefix = event.currentTarget.className.split("_")[0];
         let contentClass = classPrefix + "_content";
         let linkClass = classPrefix + "_links";
@@ -529,6 +532,41 @@ LispIde = function (lisp) {
 
     this.saveProject = async function() {
         let filename = self.project + '.js';
+        const data = await self._exportProjectJson();
+        const pdata = encodeURIComponent(JSON.stringify(data));
+        // execute download
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,', pdata);
+        element.setAttribute('download', filename);
+        element.style.visibility = 'hidden';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    };
+
+    this.shareProject = async function() {
+        const data = await self._exportProjectJson();
+        const pdata = btoa(JSON.stringify(data));
+        const href = location.href + '#' + pdata;
+        navigator.clipboard.writeText(href);
+        // Alert the copied text
+        alert("Copied the text: " + href);
+    };
+
+    this.loadProject = async function(event) {
+        const input = event.target;
+        const reader = new FileReader();
+        reader.addEventListener(
+            "load",
+            () => {
+                self._bindProjectData(reader.result);
+            },
+            false,
+        );
+        reader.readAsDataURL(input.files[0]);
+    };
+
+    this._exportProjectJson = async function() {
         let data = {
             project: self.project,
             editors: {}
@@ -540,21 +578,32 @@ LispIde = function (lisp) {
             let textContent = tabcontent[i].textContent;
             data.editors[name] = textContent;
         }
-        // execute download
-        var element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(data)));
-        element.setAttribute('download', filename);
-        element.style.visibility = 'hidden';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+        return data;
     };
 
-    this.loadProject = async function(event) {
-        var input = event.target;
-        var reader = new FileReader();
-        reader.readAsDataURL(input.files[0]);
-    };
+    this._bindProjectData = async function(pdata) {
+        var data;
+        if (typeof pdata === 'object') {
+            data = pdata;
+        } else if (pdata.startsWith('data:')) {
+            const encoded = pdata.split(/[;,]/)[2];
+            data = JSON.parse(atob(encoded));
+        } else if (pdata.startsWith('#')) {
+            data = JSON.parse(decodeURIComponent(atob(pdata.slice(1, pdata.length))));
+        } else {
+            data = JSON.parse(atob(pdata));
+        }
+        self.project = data.project;
+        let title = document.getElementById("project")
+        title.textContent = self.project;
+        for (const [key, value] of Object.entries(data.editors)) {
+            const tabcontent = document.getElementById(key);
+            if (tabcontent) {
+                tabcontent.textContent = value;
+            }
+        }
+        self.storeMemory();
+    }
 
     this._okcancel = async function(text, accept) {
         let modal = document.getElementById("ide_dialog");
@@ -603,6 +652,15 @@ LispIde = function (lisp) {
             }
         }
     }
+
+    // bind up 
+    window.setTimeout(() => {
+        if (location.hash) {
+            self._bindProjectData(location.hash);
+        } else {
+            self._bindProjectData({ project: "VCS Lisp", editors: {repl: "(+ 1 2)"}});
+        }
+    }, 1000);
 
 };
 

@@ -11,15 +11,15 @@
 
     <body>
         <div class="header">
-            <div class="header_app_title">VCS Lisp</div>
-            <div class="header_menu_item"> 
-                <label>Load</label>
+            <div class="header_app_title" id="project"></div>
+            <div class="header_menu_item" onclick="window.forwardClick(event)"> 
+                <label>Upload</label>
                 <input type="file" onchange="window.ide.loadProject(event)"></input>
             </div>
-            <div class="header_menu_item" onclick="window.ide.saveProject(event)">Save</div>
+            <div class="header_menu_item" onclick="window.ide.saveProject(event)">Download</div>
             <div class="header_menu_item" onclick="window.ide.shareProject(event)">Share</div>
             <div class="header_menu_item" onclick="window.ide.selectExample(event)">Examples</div>
-            <div class="header_menu_item" onclick="window.ide.selectExample(event)">Help</div>
+            <div class="header_menu_item" onclick="window.ide.help(event)">Help</div>
         </div>
         <div class="main">
             <div class="console">
@@ -97,9 +97,9 @@
                     </div>
                 </div>
                 <div class="panel_links_group">
-                    <div class="panel_links active" onclick="window.ide.openWindow(event, 'keypads')">Keypad</div>
+                    <div class="panel_links active" onclick="window.ide.openWindow(event, 'keypads')">KeypadControllers</div>
                     <span>|</span>
-                    <div class="panel_links"  onclick="window.ide.openWindow(event, 'ide')">Inspect</div>        
+                    <div class="panel_links"  onclick="window.ide.openWindow(event, 'ide')">Inspector/Debugger</div>        
                 </div>
             </div>
         </div>
@@ -113,6 +113,11 @@
 
             function toggleSwitch(event, controlSwitch) {
                 controlSwitch.toggle(!controlSwitch.read());
+            };
+
+            function forwardClick(event) {
+                const inputs = event.currentTarget.getElementsByTagName("input");
+                inputs?.[0]?.dispatchEvent(new PointerEvent('click'));
             };
 
             function registerSwitchStateHandler(targetElement, controlSwitch) {
@@ -174,18 +179,7 @@
                 bindKeypad(document.getElementById('keypad0'), stellerator);
                 bindKeypad(document.getElementById('keypad1'), stellerator);
 
-                // // The DOM node that displays emulation speed
-                // const speedElement = document.getElementById('speed');
-                // // Subscribe to speed updates and update the DOM node accordingly
-                // stellerator.frequencyUpdate.addHandler(
-                //     speed => speedElement.innerText = `Emulation running at ${(speed / 1000000).toFixed(2)}MHz`
-                // );
-
-                // We are using a responsive layout and resize the canvas as the window
-                // size changes -> notify the video driver of the size changes.
-                //
-                // Note that no action needs to be taken in fullscreen mode --- the fullscreen
-                // drivers takes care of window resizes itself.
+                // Respond to size changes
                 window.addEventListener('resize', () => stellerator.isFullscreen() || stellerator.resize());
 
                 // Run the emulator in NTSC mode.

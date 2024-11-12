@@ -93,7 +93,10 @@ body {
   z-index: 1; 
 }
 
-/* Console toggle switches */
+/**
+ * Console toggle switches 
+ *  https://alvaromontoro.com/blog/68017/creating-a-css-only-toggle-switch
+ */
 .console_switch {
   width: 1em;
   height: 2.5em;
@@ -142,13 +145,15 @@ body {
   top: 1.475em;
 }
 
+/**
+ * Keypad and Inspector panel controls
+ */
 .panel_links {
-  transition: 0.3s;
   opacity: 50%;
 }
 
+
 .panel_links.active {
-  text-decoration: bold;
   opacity: 100%;
 }
 
@@ -164,12 +169,16 @@ body {
   margin: .5em;
 }
 
+.panel_links_group span {
+  opacity: 50%;
+}
+
 /* Style the panel content */
 .panel_content {
   display: none;
   padding: 6px 12px;
   border: 2px solid;
-  border-radius: 0px 10px 10px 10px;
+  border-radius: 10px;
   flex-grow: 1;
 }
 
@@ -230,7 +239,10 @@ body {
   background-color: #e6e6e6;
 }
 
-/* Style the tab buttons */
+/**
+ * Inspector tabs
+ */
+
 .ide_links {
   float: left;
   border: none;
@@ -266,7 +278,6 @@ body {
   background-color: #ccc;
 }
 
-/* 791661 842712 */
 /* Style the tab content */
 .ide_content {
   display: none;

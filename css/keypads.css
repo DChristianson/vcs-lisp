@@ -11,14 +11,13 @@ div.keypad label {
 }
 
 button.keypad {
-    border-radius: 2em;
+    border-radius: 50%;
     width: 4em;
     height: 4em;
     margin: 0.5em;
     color: white;
     background-color: black;
-    border-color: white;
-    border-width: 1px;
+    border: 1px white solid;
 }
 
 #keypad0r0c0::before {
@@ -71,39 +70,39 @@ button.keypad {
 
 
 #keypad1r0c0::before {
-    content: "1";
+    content: "";
 }
 
 #keypad1r0c1::before {
-    content: "2";
+    content: "";
 }
 
 #keypad1r0c2::before {
-    content: "3";
+    content: "";
 }
 
 #keypad1r1c0::before {
-    content: "4";
+    content: "";
 }
 
 #keypad1r1c1::before {
-    content: "5";
+    content: "";
 }
 
 #keypad1r1c2::before {
-    content: "6";
+    content: "";
 }
 
 #keypad1r2c0::before {
-    content: "7";
+    content: "";
 }
 
 #keypad1r2c1::before {
-    content: "8";
+    content: "";
 }
 
 #keypad1r2c2::before {
-    content: "9";
+    content: "";
 }
 
 #keypad1r3c0::before {
