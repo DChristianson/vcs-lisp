@@ -52,6 +52,27 @@ body {
   display: none;
 }
 
+.menu_dropdown {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  background-color: black;
+  border: 1px white solid;
+  transform: translate(0, 10px);
+}
+
+.menu_dropdown.active {
+  display: flex;
+}
+
+.menu_dropdown_item {
+  padding: 0.125em;
+}
+
+.menu_dropdown_item:hover {
+  text-decoration: underline;
+}
+
 .main {
   display: flex;
   flex-direction: row;
@@ -173,7 +194,6 @@ body {
   opacity: 50%;
 }
 
-/* Style the panel content */
 .panel_content {
   display: none;
   padding: 6px 12px;
@@ -185,6 +205,8 @@ body {
 .panel_content.active {
   display: flex;
 }
+
+/* Inspector */
 
 #ide {
   padding: 10px;

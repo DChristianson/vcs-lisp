@@ -1,0 +1,54 @@
+[
+    {
+        "name": "Simple Expression",
+        "mode": "calc",
+        "functions": {
+            "repl": "(+ 1 2)"
+        }
+    },
+    {
+        "name": "Complex Expressions",
+        "mode": "calc",
+        "functions": {
+            "repl": "(/ (+ (* 3 5) (- 2 1)) 4)"
+        }
+    },
+    {
+        "name": "Function Calls",
+        "mode": "calc",
+        "functions": {
+            "repl": "(f 3)",
+            "f": "(* a 2)"
+        }
+    },
+    {
+        "name": "Fibonacci Sequence",
+        "mode": "calc",
+        "functions": {
+            "repl": "(f 13)",
+            "f": "(g 1 0 a)",
+            "g": "(if (= c 0) b (g (+ a b) a (- c 1)))",
+            "h": ""
+        }
+    },
+    {
+        "name": "Musical Scale",
+        "mode": "song",
+        "functions": {
+            "repl": "(f 1)",
+            "f": "(progn (beep a 3) (f (+ a 1)))",
+            "g": "",
+            "h": ""
+        }
+    },
+    {
+        "name": "Read Controller",
+        "mode": "calc",
+        "functions": {
+            "repl": "(loop 1 (j0))",
+            "f": "",
+            "g": "",
+            "h": ""
+        }
+    }
+]

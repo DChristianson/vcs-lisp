@@ -484,23 +484,13 @@ LispIde = function (lisp) {
         // hide links
         let tabcontent = document.getElementsByClassName(contentClass);
         for (let i = 0; i < tabcontent.length; i++) {
-            if (tabcontent[i].id == id) {
-                if (!tabcontent[i].className.endsWith(" active")) {
-                    tabcontent[i].className = tabcontent[i].className + " active";
-                }
-            } else {
-                tabcontent[i].className = tabcontent[i].className.replace(" active", "");
-            }
+            tabcontent[i].classList.toggle("active", tabcontent[i].id == id);
         }
 
         // hide tabs
         let tablinks = document.getElementsByClassName(linkClass);
         for (let i = 0; i < tablinks.length; i++) {
-            if (tablinks[i] == event.currentTarget) {
-                tablinks[i].className = tablinks[i].className + " active";
-            } else {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
+            tablinks[i].classList.toggle("active", tablinks[i] == event.currentTarget);
         }
 
     };
@@ -531,12 +521,12 @@ LispIde = function (lisp) {
     };
 
     this.saveProject = async function() {
-        let filename = self.project + '.js';
+        let filename = self.project + '.json';
         const data = await self._exportProjectJson();
         const pdata = encodeURIComponent(JSON.stringify(data));
         // execute download
         var element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,', pdata);
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + pdata);
         element.setAttribute('download', filename);
         element.style.visibility = 'hidden';
         document.body.appendChild(element);
@@ -576,7 +566,7 @@ LispIde = function (lisp) {
         for (let i  = 0; i < tabcontent.length; i++) {
             let name = tabcontent[i].id;
             let textContent = tabcontent[i].textContent;
-            data.editors[name] = textContent;
+            data.functions[name] = textContent;
         }
         return data;
     };
@@ -596,7 +586,7 @@ LispIde = function (lisp) {
         self.project = data.project;
         let title = document.getElementById("project")
         title.textContent = self.project;
-        for (const [key, value] of Object.entries(data.editors)) {
+        for (const [key, value] of Object.entries(data.functions)) {
             const tabcontent = document.getElementById(key);
             if (tabcontent) {
                 tabcontent.textContent = value;
@@ -653,14 +643,51 @@ LispIde = function (lisp) {
         }
     }
 
-    // bind up 
+    this._bindExamples = async function(examples) {
+        self.examples = examples;
+        const examplesDropdown = document.getElementById("examples_dropdown");
+        for (const [key, value] of Object.entries(examples)) {
+            const item = document.createElement("div");
+            item.onclick = () => { self.loadExample(key); };
+            item.className = "menu_dropdown_item";
+            item.textContent = value.name;
+            examplesDropdown.appendChild(item);
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches("div.header_menu_item label")) {
+                examplesDropdown.classList.toggle("active", false);
+            }
+        }
+
+    };
+
+    this.showExamples = async function(event) {
+        let examplesDropdown = document.getElementById("examples_dropdown");
+        examplesDropdown.classList.toggle("active", true);
+
+    }
+
+    this.loadExample = async function(key) {
+        let examplesDropdown = document.getElementById("examples_dropdown");
+        examplesDropdown.classList.toggle("active", false);
+        const example = self.examples[key];
+        self._bindProjectData(example);
+    };
+
+    // bind hash function
     window.setTimeout(() => {
         if (location.hash) {
             self._bindProjectData(location.hash);
         } else {
-            self._bindProjectData({ project: "VCS Lisp", editors: {repl: "(+ 1 2)"}});
+            self._bindProjectData({ project: "VCS Lisp", functions: {repl: "(+ 1 2)"}});
         }
     }, 1000);
+
+    // bind examples
+    fetch("assets/examples.json")
+        .then((response) => response.json())
+        .then((json) => self._bindExamples(json));
 
 };
 

@@ -12,13 +12,16 @@
     <body>
         <div class="header">
             <div class="header_app_title" id="project"></div>
+            <div class="header_menu_item" onclick="window.ide.showExamples(event)">
+                <label>Examples</label>
+                <div id="examples_dropdown" class="menu_dropdown"></div>
+            </div>
             <div class="header_menu_item" onclick="window.forwardClick(event)"> 
                 <label>Upload</label>
                 <input type="file" onchange="window.ide.loadProject(event)"></input>
             </div>
             <div class="header_menu_item" onclick="window.ide.saveProject(event)">Download</div>
             <div class="header_menu_item" onclick="window.ide.shareProject(event)">Share</div>
-            <div class="header_menu_item" onclick="window.ide.selectExample(event)">Examples</div>
             <div class="header_menu_item" onclick="window.ide.help(event)">Help</div>
         </div>
         <div class="main">
