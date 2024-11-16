@@ -464,7 +464,7 @@ LispIde = function (lisp) {
 
     var self = this;
 
-    this.project = 'vcs_lisp';
+    this.project = "";
     this.functions = {
         repl: NullRef,
         f0: NullRef,
@@ -517,11 +517,11 @@ LispIde = function (lisp) {
         self._okcancel("Clear Memory?", async () => {
             await lisp.clear();
             this.recallMemory();    
-        });
+        }, true);
     };
 
     this.saveProject = async function() {
-        let filename = self.project + '.json';
+        let filename = (self.project || 'vcs-lisp') + '.json';
         const data = await self._exportProjectJson();
         const pdata = encodeURIComponent(JSON.stringify(data));
         // execute download
@@ -539,8 +539,7 @@ LispIde = function (lisp) {
         const pdata = btoa(JSON.stringify(data));
         const href = location.href + '#' + pdata;
         navigator.clipboard.writeText(href);
-        // Alert the copied text
-        alert("Copied the text: " + href);
+        self._okcancel("Copied link to clipboard!", () => {}, false);
     };
 
     this.loadProject = async function(event) {
@@ -559,7 +558,7 @@ LispIde = function (lisp) {
     this._exportProjectJson = async function() {
         let data = {
             project: self.project,
-            editors: {}
+            functions: {}
         };
         let ide = document.getElementById("ide")
         let tabcontent = ide.getElementsByClassName("ide_content");
@@ -584,8 +583,10 @@ LispIde = function (lisp) {
             data = JSON.parse(atob(pdata));
         }
         self.project = data.project;
-        let title = document.getElementById("project")
-        title.textContent = self.project;
+        const projectElement = document.getElementById("project")
+        if (projectElement) {
+            projectElement.textContent = self.project;
+        }
         for (const [key, value] of Object.entries(data.functions)) {
             const tabcontent = document.getElementById(key);
             if (tabcontent) {
@@ -595,24 +596,22 @@ LispIde = function (lisp) {
         self.storeMemory();
     }
 
-    this._okcancel = async function(text, accept) {
+    this._okcancel = async function(text, accept, yesNo) {
         let modal = document.getElementById("ide_dialog");
-        modal.getElementsByClassName("modal-body")?.[0].replaceChildren(text);
+        document.getElementById("ide_dialog_body")?.replaceChildren(text);
         let closeModal = async function() {
-            modal.style.display = 'none';
+            modal.classList.toggle('active', false)
         };
-        let cancelButton = document.createElement('button');
+        let cancelButton = document.getElementById('ide_dialog_cancel');
+        let okButton = document.getElementById('ide_dialog_ok');
         cancelButton.onclick = closeModal;
-        let okButton = document.createElement('button');
+        cancelButton.classList.toggle("active", yesNo);
+        okButton.classList.toggle("active", true);
         okButton.onclick = function() {
             closeModal();
             accept();
         };
-        modal.getElementsByClassName("modal-footer")?.[0].replaceChildren(
-            okButton,
-            cancelButton
-        )
-        modal.style.display = 'block';
+        modal.classList.toggle('active', true);
     };
 
     /**
@@ -675,19 +674,20 @@ LispIde = function (lisp) {
         self._bindProjectData(example);
     };
 
-    // bind hash function
-    window.setTimeout(() => {
-        if (location.hash) {
-            self._bindProjectData(location.hash);
-        } else {
-            self._bindProjectData({ project: "VCS Lisp", functions: {repl: "(+ 1 2)"}});
-        }
-    }, 1000);
 
-    // bind examples
-    fetch("assets/examples.json")
+
+    // bind examples then load project
+    var initEnv = fetch("assets/examples.json")
         .then((response) => response.json())
         .then((json) => self._bindExamples(json));
+    if (location.hash) {
+        // dropoff link
+        initEnv.then(() => {
+            window.setTimeout(() => {
+                self._bindProjectData(location.hash);
+            }, 1000);
+        });
+    };
 
 };
 

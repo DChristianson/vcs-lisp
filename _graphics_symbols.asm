@@ -40,11 +40,11 @@ SYMBOL_GRAPHICS_APPLY_FN ;
     byte $0,$70,$88,$88,$68,$88,$70,$0; 8
 SYMBOL_F0 = $10
 SYMBOL_GRAPHICS_F0
-    byte $0,$88,$98,$50,$30,$20,$20,$60; 8
+    byte $0,$40,$40,$40,$70,$40,$40,$78; 8
 SYMBOL_GRAPHICS_F1
-    byte $0,$f8,$88,$40,$40,$20,$20,$10; 8
+    byte $0,$70,$88,$88,$b8,$80,$80,$78; 8
 SYMBOL_GRAPHICS_F2
-    byte $0,$e0,$20,$20,$70,$20,$20,$38; 8
+    byte $0,$48,$48,$48,$78,$48,$48,$48; 8
 SYMBOL_BEEP = $13
 SYMBOL_GRAPHICS_BEEP
     byte $0,$c0,$d8,$d8,$58,$48,$48,$78; 8
@@ -119,10 +119,10 @@ SYMBOL_GRAPHICS_A3
 ;     byte $0,$b8,$90,$b0,$0,$e8,$a8,$e8; 8
 SYMBOL_TABLE_SIZE = $2e
 SYMBOL_GRAPHICS_WORDS
-SYMBOL_GRAPHICS_EV
-    byte $0,$64,$84,$8a,$ca,$8a,$8a,$62; 8
-SYMBOL_GRAPHICS_AL
-    byte $0,$a6,$a8,$a8,$e8,$a8,$a8,$48; 8 
+SYMBOL_GRAPHICS_LI
+    byte $0,$88,$98,$50,$30,$20,$20,$60; 8
+SYMBOL_GRAPHICS_SP
+    byte $0,$0,$0,$0,$0,$0,$0,$0; 8
 SYMBOL_GRAPHICS_CA
     byte $0,$6a,$8a,$8a,$8e,$8a,$8a,$64; 8
 SYMBOL_GRAPHICS_LC
@@ -141,3 +141,4 @@ SYMBOL_GRAPHICS_SK
     byte $0,$aa,$aa,$ea,$a4,$aa,$aa,$4a; 8
 SYMBOL_GRAPHICS_BLANK ; pack blank bytes in
     byte $0,$0,$0,$0,$0,$0,$0,$0
+

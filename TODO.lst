@@ -154,6 +154,7 @@ DONE
        - allow load/save of programs
        - keyboard controller support
        - sharing
+       - alert dropdown
   - virtual keyboard 3
     - extend to all commands
     - keyboard controller support
@@ -176,9 +177,10 @@ BETA
       - commands
     - self hosted stellerator page
       - example programs
-      - display version
+       - change mode for example
+       - description?
+      - display version for example
       - help - ide online tips
-      - alert dropdown
       - favicon
       - load/save is wacky
     - challenge award program

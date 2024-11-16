@@ -1,4 +1,12 @@
 
+#keypads {
+    background-color: #262626;
+}
+
+.logo {
+    flex-grow: 1;
+}
+
 div.keypad {
     display: grid;
     margin: 0.5em 1.5em;

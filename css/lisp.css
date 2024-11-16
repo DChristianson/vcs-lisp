@@ -96,6 +96,7 @@ body {
   flex-grow: 1;
   flex-direction: column;
   padding: 10px;
+  max-width: fit-content;
 }
 
 .row {
@@ -110,8 +111,49 @@ body {
 
 .modal {
   display: none; 
-  position: fixed; 
-  z-index: 1; 
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  background-color: black;
+  border: 1px white solid;
+  border-radius: 0.5em;
+  padding: 0.5em;
+}
+
+.modal.active {
+  display: block;
+}
+
+.modal button {
+  display: none;
+  color: white;
+  background-color: black;
+  border: 1px white solid;
+}
+
+.modal button.active {
+  display: flex;
+}
+
+.modal_footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  padding: 0.25em;
+}
+
+.tooltip {
+  position: absolute;
+  display: none;
+  color: black;
+  background-color: white;
+  border: 1px dotted black;
+  transform: translate(2em, 1.5em);
+}
+
+.tooltip_container:hover span.tooltip {
+  display: flex;
 }
 
 /**
@@ -236,7 +278,7 @@ body {
   padding: 0.125em;
 }
 
-.ide_ops_group label {
+.ide_ops_group > label {
   color: red;
 }
 

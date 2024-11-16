@@ -1,19 +1,19 @@
-[
-    {
-        "name": "Simple Expression",
+{
+    "plus2": {
+        "name": "Simple Expressions",
         "mode": "calc",
         "functions": {
             "repl": "(+ 1 2)"
         }
     },
-    {
+    "equation": {
         "name": "Complex Expressions",
         "mode": "calc",
         "functions": {
             "repl": "(/ (+ (* 3 5) (- 2 1)) 4)"
         }
     },
-    {
+    "times2": {
         "name": "Function Calls",
         "mode": "calc",
         "functions": {
@@ -21,7 +21,7 @@
             "f": "(* a 2)"
         }
     },
-    {
+    "fibonacci": {
         "name": "Fibonacci Sequence",
         "mode": "calc",
         "functions": {
@@ -31,8 +31,18 @@
             "h": ""
         }
     },
-    {
-        "name": "Musical Scale",
+    "beep": {
+        "name": "Play Note",
+        "mode": "song",
+        "functions": {
+            "repl": "(beep 4 3)",
+            "f": "",
+            "g": "",
+            "h": ""
+        }
+    },
+    "scale": {
+        "name": "Musical Loop",
         "mode": "song",
         "functions": {
             "repl": "(f 1)",
@@ -41,7 +51,7 @@
             "h": ""
         }
     },
-    {
+    "controllers": {
         "name": "Read Controller",
         "mode": "calc",
         "functions": {
@@ -51,4 +61,4 @@
             "h": ""
         }
     }
-]
+}
