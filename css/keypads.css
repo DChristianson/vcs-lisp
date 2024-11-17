@@ -53,7 +53,7 @@ button.keypad {
 }
 
 #keypad0r2c0::before {
-    content: "";
+    content: "cancel";
 }
 
 #keypad0r2c1::before {
@@ -65,7 +65,7 @@ button.keypad {
 }
 
 #keypad0r3c0::before {
-    content: "";
+    content: "eval";
 }
 
 #keypad0r3c1::before {
@@ -73,7 +73,7 @@ button.keypad {
 }
 
 #keypad0r3c2::before {
-    content: "";
+    content: "E/F G/H";
 }
 
 

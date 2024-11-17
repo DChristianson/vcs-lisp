@@ -176,6 +176,29 @@ DONE
   - font
     - tune font / symbols
 BETA
+  - virtual keyboard 4
+    - select switch can change games?
+    - eval button for convenience
+    - select defn
+    - cancel button for convenience
+    - advanced keyboard (both keyboards)
+      - use right keyboard for symbols
+      - paging through different symbols
+      - feedback on screen for what page you are on
+      - special cancel, etc keys on left keyboard
+    - quote support
+  - game modes 2
+      - towers of hanoi
+        - joystick / keyboard control example
+          - need latched key input
+      - ball game
+        - pong-like example
+        - able to change player graphics
+        - stable framerate both repl and eval
+      - music game (simon?)
+        - ringing changes examples
+        - be able to handle DSS generative examples as demos
+          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
   - dev support
     - instruction manual
       - commands
@@ -189,29 +212,10 @@ BETA
     - gitlab auto deployment
     - some way to do unit tests (stellerator debugger?)
     - protection against var access?
-  - game modes 2
-      - towers of hanoi
-        - joystick / keyboard control example
-      - ball game
-        - pong-like example
-        - able to change player graphics
-        - stable framerate both repl and eval
-      - music game (simon?)
-        - ringing changes examples
-        - be able to handle DSS generative examples as demos
-          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
   - library 3
     - beep function retune?
     - gauntlet of all functions (make sure all basically work)
       - no way to properly quote a function from the editor
-  - virtual keyboard 4
-    - select switch can change games?
-    - advanced keyboard (both keyboards)
-      - use right keyboard for symbols
-      - paging through different symbols
-      - feedback on screen for what page you are on
-      - special cancel, etc keys on left keyboard
-    - quote support
   - bugs
     - clicky beeps when playing sounds
     - browser warnings about audio

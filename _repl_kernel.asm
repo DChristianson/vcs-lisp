@@ -55,7 +55,7 @@ _repl_update_edit_set_car
             sta HEAP_CAR_ADDR,x
 _repl_update_edit_keys_done
             inc repl_edit_col ; move cursor over
-repl_update_edit_keys_up
+repl_update_edit_keys_cancel
             lda game_state
             and #$f0 ; #GAME_STATE_EDIT
             sta game_state
@@ -109,8 +109,6 @@ _repl_update_edit_digit_loop
             jmp _repl_update_skip_move ; don't exit editor
 
 repl_update_edit_ok
-            ldx repl_edit_line
-            bmi _repl_update_menu_ok
 _repl_update_edit_keys_start
             ; button was pushed, so we need to display keyboard
             lda game_state
@@ -136,23 +134,25 @@ _repl_update_edit_save_sym
             and #$3f
             sta repl_edit_sym ; BUGBUG find right sym
             jmp _repl_update_skip_move
-_repl_update_menu_ok
-            inx 
-            bmi _repl_update_mode_ok
-            lda repl_menu_tab
-            bne repl_menu_press_noop
+repl_update_eval
             ; eval
             lda game_state
             ora #GAME_STATE_EVAL
+_repl_update_save_state
             sta game_state
-repl_menu_press_noop
             jmp _repl_update_skip_move 
-_repl_update_mode_ok
+
+repl_menu_select_game
+            lda game_state
+            ora #GAME_STATE_EDIT_SELECT
+            bpl _repl_update_save_state ; SPACE: take advantage of saving state
+
+repl_menu_update_game
             ; inc game
             lda game_state
             clc
             adc #$10
-            and #$3f
+            and #$31
             sta game_state
 repl_menu_reset_game
             lda game_state
@@ -167,11 +167,16 @@ repl_menu_reset_game
             rts    
 
 repl_update
-            lsr SWCHB ; test editor reset
-            bcc repl_menu_reset_game
+            lda SWCHB
+            lsr
+            bcc repl_menu_reset_game ; game reset
+            lsr
+            bcc repl_menu_select_game; game reset
             ; disambiguate editor state
             lda game_state
+            and #$0f
             lsr ; #GAME_STATE_EDIT_KEYS == 1
+            bne repl_menu_update_game
             lda player_input_latch
             beq _repl_update_skip_move
             bcc _repl_update_edit_move ; moving cursor
@@ -302,8 +307,6 @@ _prep_repl_line_end
             lda #$ff
             sta repl_edit_y 
             sta repl_keys_y
-            lda repl_edit_line           ; check if we are at -1
-            bmi _prep_repl_key_end       ; if so, skip (that's the menu)
 _prep_repl_line_adjust 
             lda repl_scroll              ; get edit line y index
             sec                          ; .
@@ -420,7 +423,9 @@ repl_update_edit_down
 _repl_update_set_cursor_line
             clc
             adc repl_edit_line
-            bmi _repl_update_above_limit
+            bpl _repl_update_above_limit
+            lda #0
+_repl_update_above_limit
             ; check if we are past last line
             cmp repl_last_line
             bcc _repl_update_check_limit
@@ -429,13 +434,6 @@ _repl_update_check_limit
             sta repl_edit_line
             cmp repl_scroll
             bpl _repl_update_check_scroll_down
-            sta repl_scroll
-            jmp _repl_update_skip_move
-_repl_update_above_limit
-            ora #$fe ; limit to -2 : BUGBUG: moving up from -2 will move back to -1 ... janky?          
-            sta repl_edit_line
-            lda #0
-            sta repl_edit_col
             sta repl_scroll
             jmp _repl_update_skip_move
 _repl_update_check_scroll_down
@@ -458,23 +456,27 @@ repl_update_edit_right
             lda #0
 _repl_update_check_col_limit
             sta repl_edit_col
-            ldx repl_edit_line
-            bmi _repl_update_menu_game_tab
-            jmp _repl_update_skip_move
-_repl_update_menu_game_tab
-            and #$03
-            inx 
-            bmi _repl_update_game_mode
-            sta repl_menu_tab
-            jmp _repl_update_skip_move
-_repl_update_game_mode
             jmp _repl_update_skip_move
 
+repl_update_menu_tab
+            ; inc tab
+            lda repl_menu_tab
+            clc 
+            adc #1
+            and #$03
+            sta repl_menu_tab
+            jmp _repl_update_skip_move
+
+repl_update_edit_keys_up
+            ;up
+            lda #-5
+            bmi _repl_update_keys_set ; SPACE: use bmi instead of jmp
 repl_update_edit_keys_down
             ;down
             lda #5
-            jmp _repl_update_keys_set
+            bpl _repl_update_keys_set ; SPACE: use bpl instead of jmp
 repl_update_edit_keys_left
+            ; left
             lda #-1
             byte $2c
 repl_update_edit_keys_right
@@ -505,9 +507,9 @@ REPL_EDIT_K0_TABLE_LO
             byte <(_repl_update_skip_move -1)
             byte <(repl_update_edit_down - 1)
             byte <(_repl_update_skip_move -1)
+            byte <(repl_update_eval -1)
             byte <(_repl_update_skip_move -1)
-            byte <(_repl_update_skip_move -1)
-            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_menu_tab -1)
 REPL_EDIT_KEYS_K0_TABLE_LO
             byte <(_repl_update_skip_move -1)
             byte <(repl_update_edit_keys_up - 1)
@@ -515,7 +517,7 @@ REPL_EDIT_KEYS_K0_TABLE_LO
             byte <(repl_update_edit_keys_left - 1)
             byte <(repl_update_edit_keys_ok - 1)
             byte <(repl_update_edit_keys_right - 1)
-            byte <(_repl_update_skip_move -1)
+            byte <(repl_update_edit_keys_cancel -1)
             byte <(repl_update_edit_keys_down - 1)
             byte <(_repl_update_skip_move -1)
             byte <(_repl_update_skip_move -1)
@@ -532,9 +534,9 @@ REPL_EDIT_K0_TABLE_HI
             byte >(_repl_update_skip_move -1)
             byte >(repl_update_edit_down - 1)
             byte >(_repl_update_skip_move -1)
+            byte >(repl_update_eval -1)
             byte >(_repl_update_skip_move -1)
-            byte >(_repl_update_skip_move -1)
-            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_menu_tab -1)
 REPL_EDIT_KEYS_K0_TABLE_HI
             byte >(_repl_update_skip_move -1)
             byte >(repl_update_edit_keys_up - 1)
@@ -542,7 +544,7 @@ REPL_EDIT_KEYS_K0_TABLE_HI
             byte >(repl_update_edit_keys_left - 1)
             byte >(repl_update_edit_keys_ok - 1)
             byte >(repl_update_edit_keys_right - 1)
-            byte >(_repl_update_skip_move -1)
+            byte >(repl_update_edit_keys_cancel -1)
             byte >(repl_update_edit_keys_down - 1)
             byte >(_repl_update_skip_move -1)
             byte >(_repl_update_skip_move -1)
@@ -895,11 +897,6 @@ _menu_draw_start
         	sta WSYNC
             sta COLUBK
             lda #WHITE     
-            ldy repl_edit_line 
-            iny
-            bne _menu_set_colupx
-            lda #CURSOR_COLOR
-_menu_set_colupx
         	sta WSYNC
             sta COLUP0     
             sta COLUP1    
