@@ -1,0 +1,196 @@
+{
+    "*": {
+        "name": "multiply",
+        "type": "function",
+        "usage": "(* a b)",
+        "description": "The * function computes the value of a * b.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAiAAAANgAAABwAAAAIAAAAHAAAADYAAAAiAAAAA=="
+    },
+    "+": {
+        "name": "add",
+        "type": "function",
+        "usage": "(+ a b)",
+        "description": "The + function computes the value of a + b.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAIAAAACAAAAAgAAAA+AAAACAAAAAgAAAAIAAAAA=="
+    },
+    "-": {
+        "name": "subtract",
+        "type": "function",
+        "usage": "(- a b)",
+        "description": "The - function computed the value of a - b.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAAAAAAAAAAAAAAAAA+AAAAAAAAAAAAAAAAAAAAA=="
+    },
+    "/": {
+        "name": "divide",
+        "type": "function",
+        "usage": "(- a b)",
+        "description": "The / function dividesvide the first argument by the second.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAgAAAAMAAAADgAAAAcAAAADgAAAAYAAAACAAAAA=="
+    },
+    "%": {
+        "name": "modulo",
+        "type": "function",
+        "usage": "(% a b)",
+        "description": "The % function returns the remainder of a divided by b.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAGAAAAJgAAABIAAAAIAAAAJAAAADIAAAAwAAAAA=="
+    },
+    "=": {
+        "name": "equals",
+        "type": "function",
+        "usage": "(= a b)",
+        "description": "The equals function turns 1 if a and b are equal to each other, otherwise returns 0.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAAAAAAAAAAADwAAAAAAAAAPAAAAAAAAAAAAAAAA=="
+    },
+    ">": {
+        "name": "greater than",
+        "type": "function",
+        "usage": "(> a b)",
+        "description": "Returns 1 if a is a value strictly greater than b, otherwise returns 0.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAwAAAAGAAAAAwAAAAGAAAADAAAABgAAAAwAAAAA=="
+    },
+    "<": {
+        "name": "less than",
+        "type": "function",
+        "usage": "(< a b)",
+        "description": "Returns 1 if a is a value strictly less than b, otherwise returns 0.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAGAAAADAAAABgAAAAwAAAAGAAAAAwAAAAGAAAAA=="
+    },
+    "&": {
+        "name": "boolean and",
+        "type": "function",
+        "usage": "(& a b)",
+        "description": "Returns 1 if both a and b are greater than 0, otherwise returns 0.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAIAAAAPAAAACAAAAAYAAAAIAAAADwAAAAIAAAAA=="
+    },
+    "|": {
+        "name": "boolean or",
+        "type": "function",
+        "usage": "(| a b)",
+        "description": "Returns 1 if either a or b are greater than 0, otherwise returns 0.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAIAAAACAAAAAgAAAAIAAAACAAAAAgAAAAIAAAAA=="
+    },
+    "!": {
+        "name": "boolean not",
+        "type": "function",
+        "usage": "(! a)",
+        "description": "Returns 0 if a is greater than 0. Returns 1 if a is equal to 0.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAIAAAACAAAAAAAAAAIAAAACAAAAAgAAAAIAAAAA=="
+    },
+    "cons": {
+        "name": "construct list pair",
+        "type": "function",
+        "usage": "(cons a b?)",
+        "description": "This operation is used to build lists by creating list pairs. The first argument can be any data type: number, symbol, or even another list. The second argument is optional. If provided it should be another list - either the result of a cons, or a quoted list.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAA+AAAACAAAACoAAAAIAAAAKgAAAAgAAAA+AAAAA=="
+    },
+    "car": {
+        "name": "car",
+        "type": "function",
+        "usage": "(car a)",
+        "description": "Return the first element of the first list pair.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAA+AAAAOAAAACoAAAA4AAAAKgAAADgAAAA+AAAAA=="
+    },
+    "cdr": {
+        "name": "cdr",
+        "type": "function",
+        "usage": "(cdr a)",
+        "description": "Return the second list pair of a list, or null if there are no more pairs in the list.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAA+AAAADgAAACoAAAAOAAAAKgAAAA4AAAA+AAAAA=="
+    },
+    "@": {
+        "name": "apply",
+        "type": "function",
+        "usage": "(apply a b c d)",
+        "description": "Apply the list referenced by the first argument as if it were a function",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAcAAAAIgAAACIAAAAaAAAAIgAAABwAAAAAAAAAA=="
+    },
+    "beep": {
+        "name": "beep",
+        "type": "function",
+        "usage": "(beep a b)",
+        "description": "Play a musical note. The first argument is a number from 0-8 and represents a note on the musical scale. The second argument defines the duration of the note in clock ticks and can be any number from 0-999.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAwAAAANgAAADYAAAAWAAAAEgAAABIAAAAeAAAAA=="
+    },
+    "stack": {
+        "name": "stack",
+        "type": "function",
+        "mode": "stax",
+        "usage": "(stack a b)",
+        "description": "Move a disk from stack a to stack b.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAA+AAAAHAAAAAgAAAAAAAAAFAAAADYAAAAUAAAAA=="
+    },
+    "position": {
+        "name": "move object",
+        "type": "function",
+        "mode": "game",
+        "usage": "(position a b c d?)",
+        "description": "Move player or ball. b = direction (up, down, left, right, xy), c = value (amount, x), d = value (momentum, y)",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAuAAAAKgAAAC4AAAAwAAAAKAAAACgAAAA4AAAAA=="
+    },
+    "shape": {
+        "name": "change player shape and color",
+        "type": "function",
+        "mode": "game",
+        "usage": "(player a b? c?)",
+        "description": "Modify shape and color of player or ball. b = shape, c = color",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAmAAAABgAAACoAAAAKAAAAKgAAAAYAAAAmAAAAA=="
+    },
+    "score": {
+        "name": "change player score",
+        "type": "function",
+        "mode": "game",
+        "usage": "(score a)",
+        "description": "Modify score for given player.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAuAAAAJAAAACwAAAAAAAAAOgAAACoAAAA6AAAAA=="
+    },
+    "joystick": {
+        "name": "read joystick direction",
+        "type": "function",
+        "usage": "(joystick a)",
+        "description": "Read joystick/keypad directions. Returns a value from 1-12.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAA+AAAAIgAAACIAAAAcAAAACAAAAAgAAAAIAAAAA=="
+    },
+    "keypad": {
+        "name": "keypad input",
+        "type": "function",
+        "usage": "(keypad a)",
+        "description": "Waits until a keypad controller button is pushed. Returns a value from 1-12. ",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAqAAAAAAAAACoAAAAAAAAAKgAAAAAAAAAqAAAAA=="
+    },
+    "cx": {
+        "name": "detect collision",
+        "type": "function",
+        "mode": "game",
+        "usage": "(cx)",
+        "description": "Detects collisions. Returns collision type (0 = p0/ball, 1 = p1/ball, 2 = p0/p1).",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAgAAAAIAAAACIAAAAqAAAAKgAAAAIAAAACAAAAA=="
+    },
+    "'": {
+        "name": "quote",
+        "type": "special",
+        "usage": "'(...)",
+        "description": "The quote symbol is used to create static lists without evaluating them as code.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAAAAAAAAAAAAQAAAAIAAAACAAAAAgAAAAAAAAAA=="
+    },
+    "if": {
+        "name": "if",
+        "type": "special",
+        "usage": "(if a b c)",
+        "description": "If is a special function. If the first argument is true will return the result of evaluating the second argument. Otherwise it will return the result of evaluating the third argument.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAIAAAAAAAAAAgAAAAOAAAAAgAAACIAAAA+AAAAA=="
+    },
+    "loop": {
+        "name": "loop",
+        "type": "special",
+        "usage": "(loop a ...)",
+        "description": "Loop is a special function the repeatedly evaluates its arguments in a loop. It will only exit if the first argument returns false.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAIAAAAAAAAAAgAAAAAAAAACAAAAAAAAAAIAAAAA=="
+    },
+    "progn": {
+        "name": "progn",
+        "type": "special",
+        "usage": "(progn a b ...)",
+        "description": "Progn evaluates its arguments in order and returns the value of the last argument.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAOAAAACgAAAAoAAAA+AAAAKAAAACgAAAA4AAAAA=="
+    }
+}

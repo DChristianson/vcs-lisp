@@ -120,9 +120,9 @@ player_input_latch ds 2
 beep_f0            ds 1
 beep_t0            ds 1
 ; reserve for game data
-game_data          ds 6
+game_data          ds 10
 
-; player graphics
+; reserved area for graphics
 tmp_kx_swcha
 tmp_kx_player = tmp_kx_swcha + 1
 gx_addr
@@ -136,31 +136,31 @@ gx_s2_addr         ds 2
 
   SEG.U REPL
 
-    ORG $DB
+    ORG $DF
 
-; additional graphics addresses
+; additional graphics addresses for repl
 gx_s1_addr          ds 2
 gx_s0_addr          ds 2
 
-repl_menu_tab       ds 1 ; which menu tab is active BUGBUG: collapse with game state?
+repl_menu_tab       ds 1 ; which menu tab is active SPACE: collapse with game state?
 repl_scroll         ds 1 ; lines to scroll
-repl_edit_line      ds 1 ; editor line BUGBUG: collapse with col?
-repl_edit_col       ds 1 ; editor column BUGBUG: collapse with line?
+repl_edit_line      ds 1 ; editor line SPACE: collapse with col?
+repl_edit_col       ds 1 ; editor column SPACE: collapse with line?
 repl_edit_sym       ds 1 ; editor symbol
 repl_prev_cell      ds 1
 repl_curr_cell      ds 1
-repl_last_line      ds 1 ; last line in BUGBUG: can be tmp?
+repl_last_line      ds 1 ; last line in SPACE: can be tmp?
 
 repl_display_cursor ds 1 ; cursor position for display
-repl_display_list   ds EDITOR_LINES ; 5 line display, cell to display on each line
-repl_display_indent ds EDITOR_LINES ; 5 line display, 4 bits indent level + 4 bits line width
+repl_display_list   ds EDITOR_LINES ; cell to display on each line
+repl_display_indent ds EDITOR_LINES ; 4 bits indent level + 4 bits line width
 
-repl_keys_y       ds 1 ; y index of keys
-repl_edit_y        ds 1 ;y index of edit line
-repl_tmp_width   ds 1 ; ds 1  temporary NUSIZ storage during layout BUGBUG: need?
-repl_tmp_indent       ; ds 1  temporary indent storage during layout BUGBUG: need?
-repl_tmp_cell_count ds 1  ; ds 1 temporary cell countdown during layout BUGBUG: need?
-repl_tmp_scroll        ; ds 1temporary cell storage during layout BUGBUG: need?
+repl_keys_y         ds 1 ; y index of keys
+repl_edit_y         ds 1 ;y index of edit line
+repl_tmp_width      ds 1 ; temporary NUSIZ storage during layout SPACE: need?
+repl_tmp_indent       ; ds 1  temporary indent storage during layout SPACE: need?
+repl_tmp_cell_count ds 1  ; ds 1 temporary cell countdown during layout SPACE: need?
+repl_tmp_scroll        ; ds 1 temporary cell storage during layout SPACE: need?
 repl_editor_line ds 1  ; line counter storage during editor display
 
 ; ----------------------------------
@@ -168,7 +168,7 @@ repl_editor_line ds 1  ; line counter storage during editor display
 ; for expression eval
   SEG.U EVAL
 
-    ORG $DB
+    ORG $DF
 
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame

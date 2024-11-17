@@ -50,18 +50,18 @@ SYMBOL_GRAPHICS_BEEP
     byte $0,$c0,$d8,$d8,$58,$48,$48,$78; 8
 SYMBOL_GRAPHICS_STACK
     byte $0,$f8,$70,$20,$0,$50,$d8,$50; 8
-SYMBOL_GRAPHICS_PLAYER_0
-    byte $0,$b8,$a8,$b8,$c0,$a0,$a0,$e0; 8
-SYMBOL_GRAPHICS_PLAYER_1
-    byte $0,$b8,$90,$b0,$c0,$a0,$a0,$e0; 8
-SYMBOL_GRAPHICS_BALL
-    byte $0,$0,$20,$70,$0,$70,$20,$0; 8
-SYMBOL_GRAPHICS_J0
-    byte $0,$f8,$f8,$f8,$70,$20,$20,$20; 8
-SYMBOL_GRAPHICS_J1
-    byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
-SYMBOL_GRAPHICS_CX
+SYMBOL_GRAPHICS_POSITION
+    byte $0,$80,$b8,$80,$e0,$a8,$a8,$e0; 8
+SYMBOL_GRAPHICS_SHAPE_COLOR
+    byte $0,$98,$18,$a8,$28,$a8,$18,$98; 8
+SYMBOL_GRAPHICS_SCORE
     byte $0,$b8,$90,$b0,$0,$e8,$a8,$e8; 8
+SYMBOL_GRAPHICS_JOYSTICK
+    byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
+SYMBOL_GRAPHICS_KEYPAD
+    byte $0,$a8,$0,$a8,$0,$a8,$0,$a8; 8
+SYMBOL_GRAPHICS_CX
+    byte $0,$80,$80,$88,$a8,$a8,$8,$8; 8
 SYMBOL_QUOTE = $1b
 SYMBOL_GRAPHICS_QUOTE
     byte $0,$0,$0,$10,$20,$20,$20,$0; 8
