@@ -17,7 +17,10 @@ from collections import namedtuple
 import queue
 from dataclasses import dataclass, field
 import argparse
-
+from io import BytesIO
+import base64
+import json
+ 
 explicit_zero = False
 
 def pairwise(iterable):
@@ -49,6 +52,11 @@ def int2bas(i):
 
 def int2asm(i):
     return '$' + hex(i)[2:]
+
+def int2arr(i):
+    for b in range(0, 8):
+        yield i & 1
+        i = i >> 1
 
 def anybits(bits):
     return 1 if sum(bits) > 0 else 0
@@ -187,9 +195,29 @@ def basfmt(name, vars, symbols, fp):
         for i in col:
             fp.write(f'    {int2bas(i)}\n')
 
+def urlfmt(name, vars, symbols, fp):
+    images = []
+    for n, col in enumerate(vars):
+        meta = {}
+        if symbols is not None:
+            meta['symbol'] = symbols[n]
+        buffer = bytes([i.to_bytes(1, 'big')[0] for i in col])
+        image = Image.frombytes('1', (8, len(col)), buffer)
+        mem = BytesIO() 
+        image.save(mem, 'bmp')
+        data64 = str(base64.b64encode(mem.getvalue()), 'UTF-8')
+        meta['img'] = 'data:image/bmp;base64,' + data64
+        images.append(meta)
+    if len(images) > 1:
+        json.dump({'name': name, 'images': images}, fp, indent=4)
+    else:
+        json.dump({'name': name, **images[0]}, fp, indent=4)
+    fp.write('\n')
+
 formats = {
     'asm': asmfmt,
-    'bas': basfmt
+    'bas': basfmt,
+    'url': urlfmt,
 }
 
 # find offsets for a missile (enam)
@@ -301,7 +329,7 @@ def emit_spriteMulti(varname, image, fp, bits=24, fmt=asmfmt, symbols=None):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Generate 6502 assembly for sprite graphics')
-    parser.add_argument('--format', type=str, choices=['asm', 'bas'], default='asm')
+    parser.add_argument('--format', type=str, choices=['asm', 'bas', 'url'], default='asm')
     parser.add_argument('--reverse', type=bool, default=False)
     parser.add_argument('--mirror', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)

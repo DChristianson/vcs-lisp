@@ -107,12 +107,12 @@ LispMachine = function (ram) {
         'ball',
         'j0',
         'j1',
-        'color',
-        'quote',
+        'cx',
+        '\'',
         'if',
         'loop',
         'progn',
-        'hash',
+        '#',
         '0',
         '1',
         '2',
@@ -127,10 +127,14 @@ LispMachine = function (ram) {
         'b',
         'c',
         'd',
-        'cx0b',
-        'cx1b',
-        'cx01',
     ];
+
+    var _modes = {
+        'calc': 0,
+        'song': 1,
+        'game': 2,
+        'stax': 3,
+    }
 
     var _registers = {
         'free': 0xc0,
@@ -139,7 +143,8 @@ LispMachine = function (ram) {
         'g': 0xc3,
         'h': 0xc4,
         'accumulator': 0xc5,
-        'game_state': 0xc8
+        'game_state': 0xc8,
+        'repl_edit_sym': 0xe3,
     };
 
     var _functionNames = ['repl', 'f', 'g', 'h'];
@@ -298,7 +303,23 @@ LispMachine = function (ram) {
         await ram.restore(0x80, 0xc5);
     };
 
+    this.getEditSym = async function() {
+        await ram.snapshot();
+        const gs = ram.read(_registers['game_state']);
+        if ((gs & 0x80) === 1 || (gs & 0x0f) === 0) {
+            // not in editor
+            return;
+        }
+        return ram.read(_registers['repl_edit_sym']);
+    }
+
     this.setGameState = async function(state) {
+        if (typeof state === 'string') {
+            state = _modes[state];
+        }
+        if (typeof state !== 'number') {
+            return;
+        }
         const ref = _registers['game_state'];
         ram.write(ref, state << 4);
         // BUGBUG: safety protections
@@ -507,6 +528,8 @@ LispIde = function (lisp) {
         self._updateEditors();
     };
 
+    this.getEditSym = lisp.getEditSym;
+
     this.storeMemory = async function(register, data) {
         var parsedFunctions = self._parseFunctionExpressions();
         const compiledFunctions = await lisp.store(parsedFunctions);
@@ -593,7 +616,10 @@ LispIde = function (lisp) {
                 tabcontent.textContent = value;
             }
         }
-        self.storeMemory();
+        await self.storeMemory();
+        if (data.mode) {
+            lisp.setGameState(data.mode);
+        }
     }
 
     this._okcancel = async function(text, accept, yesNo) {

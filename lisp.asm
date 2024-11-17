@@ -63,8 +63,8 @@ HEAP_CDR_ADDR       = $0001
 REPL_CELL_ADDR      = #repl - 1 ; virtual cell
 NULL                = $00
 
-HEADER_HEIGHT = 40
-EDITOR_LINES  = 5
+HEADER_HEIGHT = 56
+EDITOR_LINES  = 4
 LINE_HEIGHT = CHAR_HEIGHT + 10
 PROMPT_HEIGHT = EDITOR_LINES * LINE_HEIGHT
 FOOTER_HEIGHT = 26
@@ -344,7 +344,7 @@ game_state_init_noop
 ; Read keyboard during overscan
 waitOnOverscan
             sta WSYNC                ;--  0
-            lda #34    ; vblank timer to drive us 30 scanlines
+            lda #36    ; vblank timer to drive us 30 scanlines
             sta TIM64T
 kx_update
 #if CONTROLS = KEYBOARD

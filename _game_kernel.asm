@@ -43,7 +43,7 @@ _game_respx_loop
         sta HMOVE
         lda #$10
         sta CTRLPF        
-        ldy #23
+        ldy #31
 _draw_game_loop
         sta WSYNC
         ldx #1

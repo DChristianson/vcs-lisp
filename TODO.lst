@@ -90,6 +90,8 @@ DONE
    - bigger symbol table? 
    - game modes 2
       - calc mode
+   - simplify REPL
+      - use only 4 line repl
   - bugs
     - load/save broken?
     - blank program is weird
@@ -155,6 +157,9 @@ DONE
        - keyboard controller support
        - sharing
        - alert dropdown
+       - help - ide online tips
+       - favicon
+       - change mode for example
   - virtual keyboard 3
     - extend to all commands
     - keyboard controller support
@@ -168,46 +173,22 @@ DONE
   - eval mode
      - be able to interrupt eval with switch (reset? select?)
   - dedicated executable for steps game
-BETA
   - font
     - tune font / symbols
+BETA
   - dev support
     - instruction manual
-      - controls
       - commands
+      - controls
     - self hosted stellerator page
       - example programs
-       - change mode for example
        - description?
       - display version for example
-      - help - ide online tips
-      - favicon
       - load/save is wacky
     - challenge award program
     - gitlab auto deployment
     - some way to do unit tests (stellerator debugger?)
     - protection against var access?
-  - virtual keyboard 4
-    - select switch can change games?
-    - advanced keyboard (both keyboards)
-      - use right keyboard for symbols
-      - paging through different symbols
-      - feedback on screen for what page you are on
-      - special cancel, etc keys on left keyboard
-    - quote support
-  - bugs
-    - clicky beeps when playing sounds
-    - sound just not right in stellerator
-    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
-    - disks kernel adds +/-1 line in some configurations
-    - repl adds +/- 1 line
-    - complex program takes too long to analyze in vblank
-  - virtual keyboard 3
-    - get stella to auto-recognize... (not working as expected)?
-  - library 3
-    - beep function retune?
-    - gauntlet of all functions (make sure all basically work)
-      - no way to properly quote a function from the editor
   - game modes 2
       - towers of hanoi
         - joystick / keyboard control example
@@ -219,6 +200,27 @@ BETA
         - ringing changes examples
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
+  - library 3
+    - beep function retune?
+    - gauntlet of all functions (make sure all basically work)
+      - no way to properly quote a function from the editor
+  - virtual keyboard 4
+    - select switch can change games?
+    - advanced keyboard (both keyboards)
+      - use right keyboard for symbols
+      - paging through different symbols
+      - feedback on screen for what page you are on
+      - special cancel, etc keys on left keyboard
+    - quote support
+  - bugs
+    - clicky beeps when playing sounds
+    - browser warnings about audio
+    - sound just not right in stellerator
+    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
+    - disks kernel adds +/-1 line in some configurations
+    - repl adds +/- 1 line
+    - complex program takes too long to analyze in vblank
+    - stella does not auto-recognize keyboard (not working as expected)?
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -229,8 +231,6 @@ BETA
         - multiple ways to draw - can consolidate?
         - 87 bytes of sleeps
         - 24 zp y offset lookups
-      - simplify REPL
-        - use only 4 line repl
 SPRINKLES
   - repl mode
     - can use PF0 to hide HMOVE + switch to std HMOVE..?.

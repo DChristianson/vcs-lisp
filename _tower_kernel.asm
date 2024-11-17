@@ -42,7 +42,7 @@ repl_draw_tower
         sta CTRLPF
         lda #WHITE
         sta COLUPF
-        ldx #9 ; BUGBUG: magic number
+        ldx #25 ; BUGBUG: magic number
         jsr sub_wsync_loop
         lda #$08
         sta tower_tmp_level

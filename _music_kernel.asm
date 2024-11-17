@@ -2,7 +2,7 @@
 repl_draw_music
         ;; BUGBUG: Draw 8 music symbols
         ;; color whichever one is playing
-        ldx #7
+        ldx #13
         jsr sub_wsync_loop
         lda #$40       ; BUGBUG - magic constant screen pos 
         jsr sub_respxx ; position both players at once
@@ -50,6 +50,6 @@ _music_loop_save_colup1
         bne _music_loop
 _music_end
         jsr sub_clr_pf
-        ldx #5
+        ldx #15
         jsr sub_wsync_loop
         jmp game_draw_return
