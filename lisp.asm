@@ -519,11 +519,12 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_F2-1
     word FUNC_BEEP-1
     word FUNC_STACK-1
-    word FUNC_POS_P0-1
-    word FUNC_POS_P1-1
-    word FUNC_POS_BL-1
-    word FUNC_J0-1
-    word FUNC_J1-1
+    word FUNC_POSITION-1
+    word FUNC_SHAPE_COLOR-1
+    word FUNC_SCORE-1
+    word FUNC_JX-1
+    word FUNC_KX-1
+    word FUNC_CX-1
 
 sub_wsync_loop
 _header_loop

@@ -302,36 +302,42 @@ FUNC_STACK
             ldx eval_frame
             ldy FRAME_ARG_OFFSET_LSB,x
             jsr sub_repl_find_tower_top
-            cpx #0
-            bmi _func_stack_illegal_move
             stx accumulator_lsb
             ldx eval_frame
             ldy FRAME_ARG_OFFSET_LSB-2,x
             jsr sub_repl_find_tower_top
-            cpx #0
-            bpl _func_stack_check_base
-            lda #$80
-            jmp _func_stack_save
+            bmi _func_stack_legal_move
 _func_stack_check_base
             cpx accumulator_lsb
-            bmi _func_stack_illegal_move  
+            beq _func_stack_illegal_move  
+            bpl _func_stack_legal_move  
+            txa
+            ldx eval_frame
+            ldy FRAME_ARG_OFFSET_LSB,x
+            ldx accumulator_lsb
+            sta accumulator_lsb
+_func_stack_legal_move
+            txa
+            bmi _func_stack_save
             lda tower_disc_0,x
             lsr
             and #$f8
 _func_stack_save
             ora TOWER_STACK_MASK,y
             ldx accumulator_lsb
+            bmi _func_stack_illegal_move
             sta tower_disc_0,x
+            byte $2C ; SPACE skip next instruction
 _func_stack_illegal_move
-            jmp exec_frame_return
+            lda #0 ; return 0 if illegal move, 1 if legal
+            jmp _func_jkcx_exit
 
-FUNC_J0
-            ldx #0
-            byte #$2c ; skip next 2 bytes
-FUNC_J1
-            ldx #1
-_func_jx_store
+FUNC_JX
+            ldy eval_frame
+            ldx FRAME_ARG_OFFSET_LSB,y
             lda player_input,x
+_func_jkcx_exit
+            ; write a to accumulator
             sed
             clc
             adc #$0
@@ -341,12 +347,37 @@ _func_jx_store
             sta accumulator_msb
             jmp exec_frame_return
 
-FUNC_POS_P0
-            ldy #game_p0_x
-            byte #$2c ; skip next 2 bytes
-FUNC_POS_P1
-            ldy #game_p1_x
-_func_pos_store
+FUNC_KX
+_func_kx_loop
+            ldy eval_frame
+            ldx FRAME_ARG_OFFSET_LSB,y
+            lda player_input_latch,x
+            bne _func_jkcx_exit
+            jsr eval_wait
+            jmp _func_kx_loop
+
+FUNC_CX
+            ldx #3
+            bit CXPPMM
+            bmi _func_cx_save
+            dex
+            bit CXP1FB
+            bvs _func_cx_save
+            dex
+            bit CXP0FB
+            bvs _func_cx_save
+            dex
+_func_cx_save
+            txa
+            bpl _func_jkcx_exit
+
+FUNC_POSITION
+            ; BUGBUG: BROKEN
+            lda eval_frame
+            lda FRAME_ARG_OFFSET_LSB,x
+            clc
+            adc #game_p0_x
+            tay
             ldx eval_frame
             jsr sub_store_acc
             dex
@@ -356,12 +387,12 @@ _func_pos_store
             jsr sub_store_acc            
             jmp exec_frame_return
 
-FUNC_POS_BL
-            ldx eval_frame
-            ldy #game_bl_x
-            jsr sub_store_acc
-            ldy #game_bl_y
-            jsr sub_store_acc            
+FUNC_SHAPE_COLOR
+            ; BUGBUG: BROKEN
+            jmp exec_frame_return
+
+FUNC_SCORE
+            ; BUGBUG: BROKEN
             jmp exec_frame_return
 
 sub_store_acc

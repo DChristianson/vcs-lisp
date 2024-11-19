@@ -123,7 +123,7 @@ _find_top_disc_loop
         inx
         cpx #5
         bne _find_top_disc_loop
-        ldx #$ff
+        ldx #$80
 _find_top_disc
         rts
 
