@@ -276,17 +276,22 @@ FUNC_BEEP
             sta beep_t0
             beq _beep_end
             ; play sound
-            lda #4
-            sta AUDC0
-            lda #8
-            sta AUDV0
             lda FRAME_ARG_OFFSET_MSB,x
             sta accumulator_msb
             lda FRAME_ARG_OFFSET_LSB,x
             sta accumulator_lsb
-            and #$0f ; modulo frequency            
+            beq _func_beep_no_sound
+            sec
+            sbc #1
+            and #$07 ; modulo frequency
+            tax
+            lda BEEPS_TAB,x
             sta AUDF0
-            sta beep_f0            
+            sta beep_f0
+            lda #12
+            sta AUDC0
+_func_beep_no_sound
+            sta AUDV0
 _beep_continue
             dec beep_t0
             beq _beep_end
@@ -297,6 +302,9 @@ _beep_end
             sta AUDV0
             sta beep_f0
             jmp exec_frame_return
+  
+BEEPS_TAB
+            byte 19, 17, 15, 14, 12, 11, 10, 9
 
 FUNC_STACK
             ldx eval_frame
@@ -372,19 +380,23 @@ _func_cx_save
             bpl _func_jkcx_exit
 
 FUNC_POSITION
-            ; BUGBUG: BROKEN
-            lda eval_frame
-            lda FRAME_ARG_OFFSET_LSB,x
-            clc
-            adc #game_p0_x
-            tay
-            ldx eval_frame
-            jsr sub_store_acc
-            dex
-            dex
-            iny
-            iny
-            jsr sub_store_acc            
+            ; ; get player
+            ; ldx eval_frame
+            ; lda FRAME_ARG_OFFSET_LSB,x
+            ; clc
+            ; adc #game_p0_x
+            ; tay
+            ; lda FRAME_ARG_OFFSET_LSB-2,x
+            ; lsr
+            ; and #$07
+            ; tax
+            ; ldx eval_frame
+            ; jsr sub_store_acc
+            ; dex
+            ; dex
+            ; iny
+            ; iny
+            ; jsr sub_store_acc            
             jmp exec_frame_return
 
 FUNC_SHAPE_COLOR

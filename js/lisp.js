@@ -101,12 +101,12 @@ LispMachine = function (ram) {
         'g',
         'h',
         'beep',
-        'stack',
-        'p0',
-        'p1',
-        'ball',
-        'j0',
-        'j1',
+        'swap',
+        'position',
+        'shape',
+        'score',
+        'jx',
+        'kx',
         'cx',
         '\'',
         'if',
@@ -198,6 +198,9 @@ LispMachine = function (ram) {
 
     this.allocRef = function() {
         var freeRef = ram.read(_registers['free']);
+        if (freeRef === 0) {
+            throw new Exception('OOM');
+        }
         var freeCell = ram.readWord(freeRef);
         ram.write(_registers['free'], tail(freeCell));
         return freeRef;

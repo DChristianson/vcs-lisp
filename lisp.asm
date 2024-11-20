@@ -433,8 +433,6 @@ waitOnTimer_loop
 
     include "_tower_kernel.asm"
 
-    include "_logo_kernel.asm"
-
 ; ----------------------------------
 ; data
 
@@ -642,7 +640,9 @@ JX_KEYS     ; SPACE: lot of zeros
             byte 0,0,0,4
             byte 0,8,2,0
 #endif 
-            
+
+    include "_logo_kernel.asm"
+
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
 

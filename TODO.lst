@@ -137,6 +137,8 @@ DONE
         - draw disks
         - move disks
         - reset game
+        - joystick / keyboard control example
+        - iteration stuck on step 17 (bug in stack ops)
       - calc
         - stable-ish framerate
   - library 2
@@ -170,36 +172,46 @@ DONE
     - limit up movement
    - virtual keyboard 4
     - too slow to scroll through keys
+    - select switch can change games?
+    - eval button for convenience
+    - select defn
+    - cancel button for convenience
+    - need latched key input
   - eval mode
      - be able to interrupt eval with switch (reset? select?)
   - dedicated executable for steps game
   - font
     - tune font / symbols
 BETA
-  - virtual keyboard 4
-    - select switch can change games?
-    - eval button for convenience
-    - select defn
-    - cancel button for convenience
-    - advanced keyboard (both keyboards)
-      - use right keyboard for symbols
-      - paging through different symbols
-      - feedback on screen for what page you are on
-      - special cancel, etc keys on left keyboard
-    - quote support
   - game modes 2
-      - towers of hanoi
-        - joystick / keyboard control example
-          - need latched key input
       - ball game
-        - pong-like example
-        - able to change player graphics
-        - stable framerate both repl and eval
-      - music game (simon?)
+        - example of driving players around
+        - example of ball bouncing
+        - pong-like Example
+        - score ?
+        - able to change player graphics?
+        - able to change color
+        - random function?
+      - towers of hanoi
+        - recursion stuck on stack overflow
+            (def (f a b c d) 
+             (if a 
+              (progn (f (- a 1) b d c)
+              (swap b c)
+              (f (- a 1) d b a))))
+        - way to score?
+        - glitchy base disc on stack 1
+        - not a stable framerate 
+      - music game
+        - retune notes
+        - zero note should be silent
         - ringing changes examples
+        - simon example?
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
   - dev support
+    - stack overflow flag + ux
+    - heap full flag + ux
     - instruction manual
       - commands
       - controls
@@ -208,15 +220,23 @@ BETA
        - description?
       - display version for example
       - load/save is wacky
-    - challenge award program
+    - achievements
+      - achievements page w/secrets
     - gitlab auto deployment
     - some way to do unit tests (stellerator debugger?)
     - protection against var access?
+  - virtual keyboard 4
+    - advanced keyboard (both keyboards)
+      - use right keyboard for symbols
+      - paging through different symbols
+      - feedback on screen for what page you are on
+      - special cancel, etc keys on left keyboard
+    - quote support
   - library 3
-    - beep function retune?
     - gauntlet of all functions (make sure all basically work)
       - no way to properly quote a function from the editor
   - bugs
+    - editor freeze when using keypad 1?
     - clicky beeps when playing sounds
     - browser warnings about audio
     - sound just not right in stellerator
