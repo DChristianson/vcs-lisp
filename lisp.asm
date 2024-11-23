@@ -121,7 +121,7 @@ player_input_latch ds 2
 beep_f0            ds 1
 beep_t0            ds 1
 ; reserve for game data
-game_data          ds 10
+game_data          ds 8
 
 ; reserved area for graphics
 tmp_kx_swcha
@@ -137,7 +137,7 @@ gx_s2_addr         ds 2
 
   SEG.U REPL
 
-    ORG $DF
+    ORG $DD
 
 ; additional graphics addresses for repl
 gx_s1_addr          ds 2
@@ -169,7 +169,7 @@ repl_editor_line ds 1  ; line counter storage during editor display
 ; for expression eval
   SEG.U EVAL
 
-    ORG $DF
+    ORG $DD
 
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
@@ -454,22 +454,6 @@ sub_clr_pf
         sta VDELP1
         rts
 
-sub_respx_object
-        lda game_p0_x,x
-        sta WSYNC
-        SLEEP 3                  ;3  3 ;---- BUGBUG: SPACE?
-        sec                      ;2  5
-_respx_object_loop
-        sbc #15                  ;2  7
-        bpl _respx_object_loop   ;2  9
-        tay                      ;2 11
-        lda LOOKUP_STD_HMOVE,y   ;4 15 
-        sta HMP0,x               ;4 19
-        sta RESP0,x              ;4 23
-        rts
-
-
-
     ORG $FF00
 
     ; standard lookup for hmoves
@@ -518,8 +502,8 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_BEEP-1
     word FUNC_STACK-1
     word FUNC_POSITION-1
-    word FUNC_SHAPE_COLOR-1
-    word FUNC_SCORE-1
+    word FUNC_SHAPE-1
+    word FUNC_CLOCK-1
     word FUNC_JX-1
     word FUNC_KX-1
     word FUNC_CX-1
@@ -632,6 +616,18 @@ oom
             pla
             sta accumulator_cdr
             jmp _repl_update_edit_keys_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
+
+Y_DIR
+        byte 0, -1, 0, 0, 1
+X_DIR
+        byte 0, 0, -1, 1, 0
+
+TOWER_STACK_MASK
+        byte $01,$02,$04
+TOWER_DISC_AC_PF1
+        byte $18,$3c,$7e,$ff,$ff
+TOWER_DISC_B_PF2
+        byte $80,$c0,$e0,$f0,$f8
 
 #if CONTROLS = JOYSTICK
 JX_KEYS     ; SPACE: lot of zeros

@@ -126,10 +126,3 @@ _find_top_disc_loop
         ldx #$80
 _find_top_disc
         rts
-
-TOWER_STACK_MASK
-        byte $01,$02,$04
-TOWER_DISC_AC_PF1
-        byte $18,$3c,$7e,$ff,$ff
-TOWER_DISC_B_PF2
-        byte $80,$c0,$e0,$f0,$f8

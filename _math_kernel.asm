@@ -380,57 +380,39 @@ _func_cx_save
             bpl _func_jkcx_exit
 
 FUNC_POSITION
-            ; ; get player
-            ; ldx eval_frame
-            ; lda FRAME_ARG_OFFSET_LSB,x
-            ; clc
-            ; adc #game_p0_x
-            ; tay
-            ; lda FRAME_ARG_OFFSET_LSB-2,x
-            ; lsr
-            ; and #$07
-            ; tax
-            ; ldx eval_frame
-            ; jsr sub_store_acc
-            ; dex
-            ; dex
-            ; iny
-            ; iny
-            ; jsr sub_store_acc            
-            jmp exec_frame_return
-
-FUNC_SHAPE_COLOR
-            ; BUGBUG: BROKEN
-            jmp exec_frame_return
-
-FUNC_SCORE
-            ; BUGBUG: BROKEN
-            jmp exec_frame_return
-
-sub_store_acc
-            lda FRAME_ARG_OFFSET_MSB,x
-            and #$0f
-            sta accumulator_lsb
-            asl
-            asl
-            clc
-            adc accumulator_lsb
-            asl
+            ; get player
+            ldx eval_frame
             lda FRAME_ARG_OFFSET_LSB,x
+            and #$03 ; BUGBUG: possible unsafe access
+            tay
+            lda accumulator_lsb
             lsr
-            lsr
-            lsr
-            lsr
+            and #$07 ; BUGBUG: possible unsafe access
+            tax
+            lda X_DIR,x
             clc
-            adc accumulator_lsb
-            sta accumulator_lsb
-            asl
-            asl
+            adc game_p0_x,y
+            and #$7f
+            sta game_p0_x,y
+            lda Y_DIR,x
             clc
-            adc accumulator_lsb
-            sta accumulator_lsb
+            adc game_p0_y,y
+            and #$1f
+            sta game_p0_y,y          
+            jmp exec_frame_return
+    
+FUNC_SHAPE
+            ; get player and set shape
+            ldx eval_frame
             lda FRAME_ARG_OFFSET_LSB,x
-            and #$0f
-            adc accumulator_lsb
-            sta #0,y
-            rts
+            and #$01
+            tax
+            lda accumulator_lsb
+            and #$03
+            sta game_p0_shape,x
+            jmp exec_frame_return
+
+FUNC_CLOCK
+            ; get the clock
+            lda clock
+            jmp _func_jkcx_exit

@@ -55,8 +55,18 @@
         "name": "Read Controller",
         "mode": "calc",
         "functions": {
-            "repl": "(loop 1 (j0))",
+            "repl": "(loop 1 (jx))",
             "f": "",
+            "g": "",
+            "h": ""
+        }
+    },
+    "game": {
+        "name": "Move Players",
+        "mode": "game",
+        "functions": {
+            "repl": "(loop 1 (f 0) (f 1))",
+            "f": "(move a (jx a))",
             "g": "",
             "h": ""
         }

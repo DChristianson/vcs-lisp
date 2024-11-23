@@ -119,29 +119,28 @@
         "description": "Move a disk from stack a to stack b.",
         "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAA+AAAAHAAAAAgAAAAAAAAAFAAAADYAAAAUAAAAA=="
     },
-    "position": {
+    "move": {
         "name": "move object",
         "type": "function",
         "mode": "game",
-        "usage": "(position a b c d?)",
+        "usage": "(move a b c d?)",
         "description": "Move player or ball. b = direction (up, down, left, right, xy), c = value (amount, x), d = value (momentum, y)",
         "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAuAAAAKgAAAC4AAAAwAAAAKAAAACgAAAA4AAAAA=="
     },
-    "shape": {
-        "name": "change player shape and color",
+    "size": {
+        "name": "change player size",
         "type": "function",
         "mode": "game",
-        "usage": "(player a b? c?)",
-        "description": "Modify shape and color of player or ball. b = shape, c = color",
-        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAmAAAABgAAACoAAAAKAAAAKgAAAAYAAAAmAAAAA=="
+        "usage": "(size a b?)",
+        "description": "Modify size of player",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAACAAAACgAAACoAAAAqAAAAKgAAAAoAAAACAAAAA=="
     },
-    "score": {
-        "name": "change player score",
+    "clock": {
+        "name": "read clock",
         "type": "function",
-        "mode": "game",
-        "usage": "(score a)",
-        "description": "Modify score for given player.",
-        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAuAAAAJAAAACwAAAAAAAAAOgAAACoAAAA6AAAAA=="
+        "usage": "(clock a)",
+        "description": "Read clock.",
+        "img": "data:image/bmp;base64,Qk1eAAAAAAAAAD4AAAAoAAAACAAAAAgAAAABAAEAAAAAACAAAADEDgAAxA4AAAIAAAACAAAAAAAAAP////8AAAAAcAAAAIgAAACIAAAAuAAAAKgAAACoAAAAcAAAAA=="
     },
     "joystick": {
         "name": "read joystick direction",

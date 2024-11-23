@@ -53,9 +53,9 @@ SYMBOL_GRAPHICS_STACK
 SYMBOL_GRAPHICS_POSITION
     byte $0,$80,$b8,$80,$e0,$a8,$a8,$e0; 8
 SYMBOL_GRAPHICS_SHAPE_COLOR
-    byte $0,$98,$18,$a8,$28,$a8,$18,$98; 8
+    byte $0,$8,$28,$a8,$a8,$a8,$28,$8; 8
 SYMBOL_GRAPHICS_SCORE
-    byte $0,$b8,$90,$b0,$0,$e8,$a8,$e8; 8
+    byte $0,$70,$88,$88,$b8,$a8,$a8,$70; 8
 SYMBOL_GRAPHICS_JOYSTICK
     byte $0,$f8,$88,$88,$70,$20,$20,$20; 8
 SYMBOL_GRAPHICS_KEYPAD
