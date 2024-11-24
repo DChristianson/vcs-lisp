@@ -30,6 +30,8 @@ eval_apply
             jmp eval_iter
 
 eval_start
+            ; clear collisions (for game modes)
+            sta CXCLR
             ; initial entry
             lda repl
 eval_iter

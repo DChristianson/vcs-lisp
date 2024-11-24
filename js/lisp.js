@@ -523,6 +523,10 @@ LispIde = function (lisp) {
         lisp.setGameState(idx);
     };
 
+    this.help = async function(event) {
+        window.open('https://github.com/DChristianson/vcs-lisp/wiki');
+    };
+
     this.eval = lisp.eval;
 
     this.recallMemory = async function() {

@@ -377,6 +377,7 @@ FUNC_CX
             dex
 _func_cx_save
             txa
+            sta CXCLR
             bpl _func_jkcx_exit
 
 FUNC_POSITION
@@ -408,7 +409,7 @@ FUNC_SHAPE
             and #$01
             tax
             lda accumulator_lsb
-            and #$03
+            and #$07
             sta game_p0_shape,x
             jmp exec_frame_return
 
