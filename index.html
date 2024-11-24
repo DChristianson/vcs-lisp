@@ -204,7 +204,7 @@
 
                 // We load the ROM file using the fetch API. We could also hardcode the ROM as a base64 encoded string
                 // and pass that to stellerator instead.
-                const response = await fetch("https://github.com/DChristianson/vcs-lisp/releases/download/alpha2/lisp_NTSC_20241123.bin");
+                const response = await fetch("./publish/lisp_NTSC_20241123.bin");
                 const rom = new Uint8Array(await response.arrayBuffer());
                 const canvas = document.getElementById('stellerator-canvas');
                 const keyboardTarget = canvas;
