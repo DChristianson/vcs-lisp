@@ -3,16 +3,17 @@ Play the game at [github.io](https://dchristianson.github.io/vcs-lisp/)!
 
 Documentation in the  [wiki](./wiki)!
 
-<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" height=180></img>
-<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png" height=180></img>
-<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png" height=180></img>
-<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png" height=180></img>
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" width=180></img>
 
 This is an Atari 2600 game from an alternate reality...
 
 - where a [computer language](https://en.wikipedia.org/wiki/Lisp_(programming_language)) from 1960 
 - has been hastily crammed onto a VCS ROM cartridge in 1977
 - so you can learn to program from a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984
+
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png" height=180></img>
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png" height=180></img>
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png" height=180></img>
 
 ## References, Credits and Inspirations
 
