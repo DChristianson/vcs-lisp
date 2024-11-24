@@ -128,10 +128,16 @@ DONE
       - music game (simon?)
         - stable-ish framerate
         - changes color with different beeps
+        - retune notes
+        - zero note should be silent
       - ball game
         - stable-ish framerate
         - draw players
         - reset game
+        - example of driving players around
+        - example of ball bouncing
+        - pong-like Example
+        - able to change player graphics?
       - towers of hanoi
         - stable-ish framerate
         - draw disks
@@ -183,13 +189,16 @@ DONE
   - font
     - tune font / symbols
 BETA
+  - virtual keyboard 4
+    - advanced keyboard (both keyboards)
+      - use right keyboard for symbols
+      - paging through different symbols
+      - feedback on screen for what page you are on
+      - special cancel, etc keys on left keyboard
+    - quote support
   - game modes 2
       - ball game
-        - example of driving players around
-        - example of ball bouncing
-        - pong-like Example
         - score ?
-        - able to change player graphics?
         - able to change color
         - random function?
       - towers of hanoi
@@ -203,8 +212,6 @@ BETA
         - glitchy base disc on stack 1
         - not a stable framerate 
       - music game
-        - retune notes
-        - zero note should be silent
         - ringing changes examples
         - simon example?
         - be able to handle DSS generative examples as demos
@@ -225,13 +232,6 @@ BETA
     - gitlab auto deployment
     - some way to do unit tests (stellerator debugger?)
     - protection against var access?
-  - virtual keyboard 4
-    - advanced keyboard (both keyboards)
-      - use right keyboard for symbols
-      - paging through different symbols
-      - feedback on screen for what page you are on
-      - special cancel, etc keys on left keyboard
-    - quote support
   - library 3
     - gauntlet of all functions (make sure all basically work)
       - no way to properly quote a function from the editor
