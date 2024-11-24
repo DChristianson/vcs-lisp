@@ -365,18 +365,17 @@ _func_kx_loop
             jmp _func_kx_loop
 
 FUNC_CX
-            ldx #3
-            bit CXPPMM
-            bmi _func_cx_save
-            dex
-            bit CXP1FB
-            bvs _func_cx_save
-            dex
+            lda #4
             bit CXP0FB
             bvs _func_cx_save
-            dex
+            lsr
+            bit CXP1FB
+            bvs _func_cx_save
+            lsr
+            bit CXPPMM
+            bmi _func_cx_save
+            lsr
 _func_cx_save
-            txa
             sta CXCLR
             bpl _func_jkcx_exit
 

@@ -195,12 +195,11 @@ BETA
       - paging through different symbols
       - feedback on screen for what page you are on
       - special cancel, etc keys on left keyboard
-    - quote support
+    - quote support (no way to properly quote a function from the editor))
   - game modes 2
       - ball game
-        - score ?
-        - able to change color
-        - random function?
+        - pong demo
+        - not a stable framerate
       - towers of hanoi
         - recursion stuck on stack overflow
             (def (f a b c d) 
@@ -208,7 +207,6 @@ BETA
               (progn (f (- a 1) b d c)
               (swap b c)
               (f (- a 1) d b a))))
-        - way to score?
         - glitchy base disc on stack 1
         - not a stable framerate 
       - music game
@@ -219,22 +217,28 @@ BETA
   - dev support
     - stack overflow flag + ux
     - heap full flag + ux
+    - mode switch perform reset
     - instruction manual
-      - commands
-      - controls
+      - commands w/ icons
+      - controls description
     - self hosted stellerator page
       - example programs
        - description?
       - display version for example
       - load/save is wacky
     - achievements
+      - game
+        - flappy bird?
+        - some other game?
+      - disc solver
+      - music program
+        - simon?
       - achievements page w/secrets
     - gitlab auto deployment
     - some way to do unit tests (stellerator debugger?)
     - protection against var access?
   - library 3
     - gauntlet of all functions (make sure all basically work)
-      - no way to properly quote a function from the editor
   - bugs
     - editor freeze when using keypad 1?
     - clicky beeps when playing sounds
@@ -286,6 +290,14 @@ SPRINKLES
   - lang
      - loopvar
 BONUS 
+  - modes
+    - ball game
+      - score ?
+      - able to change color
+      - random function?
+     - towers of hanoi
+      - way to score?
+
   - dedicated music sequencer version
   - dedicated hanoi version
   - alt/bonus game modes/dedicated 
