@@ -29,9 +29,9 @@ The original concept box art was produced with the help of [DALL-E mini](https:/
  - [uLisp](http://www.ulisp.com/)
 
 ### Atari 2600 Basic
-Although Lisp as a language is very different from Basic, the Atari Basic Programming cartridge has been a huge inspiration in spirit.
+Although Lisp is very different from Basic, Warren Robinette's Atari Basic Programming (1979) has been a huge inspiration.
  - [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
- - [Basic Programming](https://en.wikipedia.org/wiki/BASIC_Programming)
+ - [Basic Programming (1979 Atari Cartridge)](https://en.wikipedia.org/wiki/BASIC_Programming)
 
 ### 6502  
  - David A. Wheeler's [6502 Language Implementation Approaches](https://dwheeler.com/6502/)
