@@ -1,7 +1,7 @@
 # LISP Programming 
 Play the game at [github.io](https://dchristianson.github.io/vcs-lisp/)!
+Documentation in the  [wiki](./wiki)!
 
-For 
 This is an Atari 2600 game from an alternate reality...
 
 - where a [computer language](https://en.wikipedia.org/wiki/Lisp_(programming_language)) from 1960 
