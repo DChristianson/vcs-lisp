@@ -3,7 +3,7 @@ DEFAULT_TARGET: all
 
 ROMDIR = roms
 INCS = $(wildcard _*.asm) $(wildcard include/*.h)
-ASMS = lisp.asm steps.asm discs.asm game.asm stepsold.asm
+ASMS = lisp.asm steps.asm 
 SYSTEMS = NTSC PAL60
 ROMS = $(foreach ASM, $(ASMS), $(foreach SYSTEM,$(SYSTEMS),$(ROMDIR)/$(ASM:.asm=)_$(SYSTEM).bin))
 TIMESTAMP = `date +"%Y%m%d"`

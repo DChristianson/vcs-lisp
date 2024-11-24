@@ -287,7 +287,8 @@ FUNC_BEEP
             tax
             lda BEEPS_TAB,x
             sta AUDF0
-            sta beep_f0
+            inx
+            stx beep_f0
             lda #12
             sta AUDC0
 _func_beep_no_sound
