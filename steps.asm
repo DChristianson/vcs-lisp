@@ -81,6 +81,10 @@ GAME_STATE_SCROLL  = 5
 GAME_STATE_FALL    = 6
 GAME_STATE_WIN     = 7
 
+DIFFICULTY_LEVEL_ARRAY_MASK = $3
+DIFFICULTY_LEVEL_LAVA = $4
+DIFFICULTY_LEVEL_DARK = $8
+
 AUDIO_VOLUME = 8
 
 ; ----------------------------------
@@ -119,6 +123,9 @@ player_score         ds 1 ; decimal score
 player_clock         ds 1 ; for player timer
 player_timer         ds 2 ; game timer
 
+; night_mode
+sky_palette          ds 1 ; 
+
 ; lava control
 lava_speed           ds 1
 lava_clock           ds 1
@@ -128,18 +135,18 @@ lava_height          ds 1
 jump_table           ds JUMP_TABLE_BYTES 
 jump_table_offset    ds 1 ; where to locate jump table for drawing
 jump_table_size      ds 1 ; number of entries in jump table
-jump_solution        ds JUMP_SOLUTION_BYTES
+;jump_solution        ds JUMP_SOLUTION_BYTES
 
 ; steps drawing
 jump_layout_index    ds 1 ; layout index for jump table
 base_layout_index    ds 1 ; layout index for base of stairs
 jump_layout_repeat   ds 1 ; number of repeats left for jump table
 base_layout_repeat   ds 1 ; number of repeats left for base of stairs
+draw_colubk          ds 1
 
 draw_registers_start
 
 ; steps drawing registers
-draw_colubk         ds 1
 draw_steps_respx    ds 1
 draw_steps_dir      ds 1 ; top of steps direction
 draw_steps_mask     ds 1
@@ -273,30 +280,38 @@ draw_t1_data_addr  ds 2
 ;   - optimize title screen
 ;  - sounds 2
 ;   - tuneup sound pass
-; TODO
-;  - code size
-;   - shrink maze size (replace with generation) - 678 bytes data + code
-;   - less data + code for title - 798 bytes data + code
-;   - shrink audio size - 256 bytes + 122 bytes code
-;  - code 
-;   - algorithmic maze gen
-;   - use incremental maze construction to conserve VBLANK
+; RC 1
 ;  - glitches
 ;   - frame rate unstable
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;  - sprinkles 1
 ;   - select screen design, shows lava, etc
+;   - animated squirrels in title and select
 ;   - some kind of celebration on win (fireworks?)
+; RC 2
+;  - sprinkles 2
 ;   - some kind of theme on lose
-;   - some kind of graphic in sky (cloud? bird?)
+;   - gradient/lightened sky background
 ;   - should be no step edge in ground?
+;  - gameplay 4
+;   - dark mode - limited step visibility, double button press "plays" solution musically
+;  - code 
+;   - algorithmic maze gen
+;   - use incremental maze construction to conserve VBLANK
+;   - shrink maze size (replace with generation) - 678 bytes data + code
+;   - less data + code for title - 798 bytes data + code
+;   - shrink audio size - 256 bytes + 122 bytes code
+; CONSIDER
+;  - sprinkles 3
+;   - color flashes in titles
+;   - some kind of graphic in sky (cloud? bird?)
+;   - horizontal screen transitions
 ;  - visual 3
 ;   - jump animation (Q: is that even feasible with this kernel)
 ;   - size 1 stairs no number?
 ;   - addressible colors on stairs
-;  - gameplay 4
-;   - dark mode - limited step visibility, double button press "plays" solution musically
+;  - gameplay 5
 ;   - player builds maze by dropping numbers?
 ;     - player builds maze as numbers drop?
 ;   - zero / missing steps in mazes
@@ -306,11 +321,6 @@ draw_t1_data_addr  ds 2
 ;      **2T3G
 ;   - breakable stairs - 1 or two touches cause break?
 ;   - flight jumping mechanic
-;  - sprinkles 2
-;   - animated squirrels in title and select
-;   - horizontal screen transitions
-;   - gradient sky background
-;   - color flashes in titles
 ; NODO
 ;  - second player
 ;  - flag at goal step?
@@ -383,7 +393,8 @@ _end_switches
 
 
             inc frame
-            lda #SKY_BLUE
+            ldx sky_palette
+            lda SKY_PALETTE,x
             sta draw_colubk
 
 ax_sequencer
@@ -559,10 +570,10 @@ _gx_update_check_right
 _gx_update_rev_left
             jmp gx_go_up
 _gx_update_special_latch
-            rol jump_solution ; BUGBUG: TESTING SOLVE
-            rol jump_solution + 1 ; BUGBUG: TESTING SOLVE
-            bcs _gx_update_rev_left ; BUGBUG: TESTING SOLVE
-            jmp gx_go_down ; BUGBUG: TESTING SOLVE
+            ; rol jump_solution ; SOLVE
+            ; rol jump_solution + 1 ; SOLVE
+            ; bcs _gx_update_rev_left ; SOLVE
+            ; jmp gx_go_down ;  TESTING SOLVE
             and player_special_latch
             sta player_special_latch
             bne gx_update_return
@@ -919,21 +930,23 @@ _reset_game
 ; game control subroutines
 ;
 
+
 sub_vblank_loop
+_end_vblank_loop          
+            cpx INTIM
+            bmi _end_vblank_loop
+            stx VBLANK
+            ; end
+sub_clear_gx 
+            sta WSYNC ; SL 35
+            lda draw_colubk
+            sta COLUBK
             ldx #$00
             stx REFP0
             stx NUSIZ0
             stx NUSIZ1
             stx VDELP0
             stx VDELP1
-_end_vblank_loop          
-            cpx INTIM
-            bmi _end_vblank_loop
-            stx VBLANK
-            ; end
-            sta WSYNC ; SL 35
-            lda draw_colubk
-            sta COLUBK
             rts
 
 sub_wsync_loop
@@ -1109,28 +1122,26 @@ _sub_difficulty_save_level
             stx audio_sequence
             clc
             adc difficulty_level
-            and #$03
+            and #$0f
 gx_difficulty_set
             sta difficulty_level
-            asl ; x 4 for width of levels array
-            asl ; 
-            tay
-            lda LEVELS + 2,y ; BUGBUG: magic number
-            sta draw_steps_respx
-            lda LEVELS + 3,y ; BUGBUG: magic number
-            sta draw_steps_wsync
-            lda LEVELS,y
-            sta base_layout_index
-            sta jump_layout_index
-            tay
-            lda LAYOUTS,y
-            and #LAYOUT_REPEAT_MASK
+            ; setup visuals
             lsr
             lsr
-            lsr
-            lsr
-            sta base_layout_repeat
-            sta jump_layout_repeat            
+            tax
+            ldy SELECT_ROW,x
+            ldx #11
+_gx_select_setup_loop
+            lda #>SELECT_GRAPHICS
+            sta draw_t0,x
+            dex
+            lda SELECT_ROW_0_DATA,y     
+            sta draw_t0,x
+            dey
+            dex 
+            bpl _gx_select_setup_loop
+            lda #>gx_select_return
+            sta draw_t0_jump_addr + 1
             jmp gx_show_select
 
 sub_steps_respxx
@@ -1330,77 +1341,78 @@ _calc_respx_mask
             sty draw_steps_mask
             rts 
 
-sub_solve_puzzle
-            tsx 
-            stx temp_solve_stack
-            ldx #0
-            ldy #0
-            sty jump_solution
-            sty jump_solution + 1
-_sub_solve_iter_down
-            stx temp_solve_current
-            lda jump_table,x
-            and #$0f
-            sta temp_solve_jump
-            clc 
-            adc temp_solve_current
-            cmp player_goal
-            beq _sub_solved
-            bpl _sub_solve_minus
-            tax
-            lda jump_table,x     ; check if we already stored this
-            and #$f0
-            bne _sub_solve_minus
-            sec
-_sub_solve_next
-            rol jump_solution
-            rol jump_solution + 1
-            lda temp_solve_current
-            pha
-            iny
-            tya
-            asl
-            asl
-            asl
-            asl
-            ora jump_table,x
-            sta jump_table,x
-            jmp _sub_solve_iter_down
-_sub_solve_minus
-            lda temp_solve_current
-            sec
-            sbc temp_solve_jump
-            bmi _sub_solve_iter_up
-            tax
-            lda jump_table,x     ; check if we already stored this
-            and #$f0
-            bne _sub_solve_iter_up
-            clc
-            jmp _sub_solve_next
-_sub_solve_iter_up
-            clc
-            ror jump_solution + 1
-            ror jump_solution
-            dey
-            pla
-            beq _sub_solve_failed
-            sta temp_solve_current
-            tax
-            lda jump_table,x
-            and #$0f
-            sta temp_solve_jump
-            jmp _sub_solve_minus
-_sub_solved
-            lda jump_solution + 1
-_sub_solved_rol
-            bmi _sub_solve_failed
-            rol jump_solution
-            rol jump_solution + 1
-            jmp _sub_solved_rol
-_sub_solve_failed
-            ldx temp_solve_stack
-            txs
-            rts
+; solver (NOT USED)
+; sub_solve_puzzle
+;             tsx 
+;             stx temp_solve_stack
+;             ldx #0
+;             ldy #0
+;             sty jump_solution
+;             sty jump_solution + 1
+; _sub_solve_iter_down
+;             stx temp_solve_current
+;             lda jump_table,x
+;             and #$0f
+;             sta temp_solve_jump
+;             clc 
+;             adc temp_solve_current
+;             cmp player_goal
+;             beq _sub_solved
+;             bpl _sub_solve_minus
+;             tax
+;             lda jump_table,x     ; check if we already stored this
+;             and #$f0
+;             bne _sub_solve_minus
+;             sec
+; _sub_solve_next
+;             rol jump_solution
+;             rol jump_solution + 1
+;             lda temp_solve_current
+;             pha
+;             iny
+;             tya
+;             asl
+;             asl
+;             asl
+;             asl
+;             ora jump_table,x
+;             sta jump_table,x
+;             jmp _sub_solve_iter_down
+; _sub_solve_minus
+;             lda temp_solve_current
+;             sec
+;             sbc temp_solve_jump
+;             bmi _sub_solve_iter_up
+;             tax
+;             lda jump_table,x     ; check if we already stored this
+;             and #$f0
+;             bne _sub_solve_iter_up
+;             clc
+;             jmp _sub_solve_next
+; _sub_solve_iter_up
+;             clc
+;             ror jump_solution + 1
+;             ror jump_solution
+;             dey
+;             pla
+;             beq _sub_solve_failed
+;             sta temp_solve_current
+;             tax
+;             lda jump_table,x
+;             and #$0f
+;             sta temp_solve_jump
+;             jmp _sub_solve_minus
+; _sub_solved
+;             lda jump_solution + 1
+; _sub_solved_rol
+;             bmi _sub_solve_failed
+;             rol jump_solution
+;             rol jump_solution + 1
+;             jmp _sub_solved_rol
+; _sub_solve_failed
+;             ldx temp_solve_stack
+;             txs
+;             rts
 
 sub_galois  ; 16 bit lfsr from: https:;github.com/bbbradsmith/prng_6502/tree/master
             lda seed+1
@@ -1533,8 +1545,66 @@ sub_draw_player_step
             lda #$80
             ora draw_table+1,x
             sta draw_table+1,x
-            rts
+            rts ; SPACE: may be able to optimize
 
+; SELECT SYMS
+SELECT_GRAPHICS
+SELECT_SYMBOL_V
+    byte $38,$44,$82,$92,$92,$92,$92,$fe; 8
+SELECT_SYMBOL_T
+    byte $38,$28,$28,$28,$28,$ee,$82;,$fe; 8
+SELECT_SYMBOL_S
+    byte $fe,$82,$e2,$24,$48,$8e,$82;,$fe; 8
+SELECT_SYMBOL_E
+    byte $fe,$82,$9e,$82,$9a,$82,$82;,$fe; 8
+SELECT_SYMBOL_L
+    byte $fe,$82,$82,$9e,$90,$90,$90;,$f0; 8
+SELECT_SYMBOL_P
+    byte $f0,$90,$9e,$82,$9a,$82,$82;,$fe; 8
+SELECT_SYMBOL_A
+    byte $fe,$92,$92,$82,$92,$82,$82;,$fe; 8
+SELECT_SYMBOL_R
+    byte $fe,$92,$92,$86,$9a,$82,$82;,$fe; 8
+SELECT_SYMBOL_K
+    byte $fe,$92,$92,$86,$82,$9a,$9a,$fe; 8
+SELECT_SYMBOL_D
+    byte $fc,$82,$9a,$9a,$9a,$9a,$82,$fc; 8
+
+SELECT_ROW_0_DATA
+    byte <SELECT_SYMBOL_S
+    byte <SELECT_SYMBOL_T
+    byte <SELECT_SYMBOL_E
+    byte <SELECT_SYMBOL_P
+    byte <SELECT_SYMBOL_S
+    byte <gx_select_return
+
+SELECT_ROW_1_DATA
+    byte <SELECT_SYMBOL_L
+    byte <SELECT_SYMBOL_A
+    byte <SELECT_SYMBOL_V
+    byte <SELECT_SYMBOL_A
+    byte <COL_A0_PF0
+    byte <gx_select_return
+
+SELECT_ROW_2_DATA
+    byte <SELECT_SYMBOL_D
+    byte <SELECT_SYMBOL_A
+    byte <SELECT_SYMBOL_R
+    byte <SELECT_SYMBOL_K
+    byte <COL_A0_PF0
+    byte <gx_select_return
+
+SELECT_ROW_3_DATA
+    byte <SELECT_SYMBOL_S
+    byte <SELECT_SYMBOL_K
+    byte <SELECT_SYMBOL_A
+    byte <SELECT_SYMBOL_L
+    byte <SELECT_SYMBOL_D
+    byte <gx_select_return
+
+
+SELECT_ROW
+    byte 5,11,17
 
 ; ----------------------------------
 ; TITLE
@@ -1819,7 +1889,7 @@ _sub_gen_steps_loop
             dex
             dey
             bpl _sub_gen_steps_loop
-            jmp sub_solve_puzzle
+            ;jmp sub_solve_puzzle
             rts
 
    ORG $F800
@@ -1833,6 +1903,20 @@ gx_show_title
             sta COLUP1
             jsr sub_vblank_loop
 
+            ldx #13
+            ldy #6
+_gx_title_setup_loop
+            lda TITLE_ROW_HI,y
+            sta draw_t0,x
+            sta draw_t1,x
+            dex
+            lda TITLE_ROW_0_DATA,y     
+            sta draw_t0,x
+            dex 
+            dey
+            bpl _gx_title_setup_loop
+
+gx_title_start_draw
             sta WSYNC
             lda #32 ; BUGBUG: magic number
             ldy #$ff
@@ -1848,25 +1932,12 @@ gx_show_title
             sta NUSIZ1
             sta NUSIZ0
 
-            ldx #13
-            ldy #6
-_gx_title_setup_loop
-            lda TITLE_ROW_HI,y
-            sta draw_t0,x
-            sta draw_t1,x
-            dex
-            lda TITLE_ROW_0_DATA,y     
-            sta draw_t0,x
-            dex 
-            dey
-            bpl _gx_title_setup_loop
-            lda #$80
-            sta HMP0
-            sta HMP1
-
             ldy #7                       ;2   2
             lda (draw_t0_p0_addr),y      ;5   7
             sta GRP0                     ;3  10
+            lda #$80
+            sta HMP0
+            sta HMP1
             sta WSYNC
             jmp _gx_title_0_loop_1       ;3   3
 
@@ -2064,66 +2135,61 @@ gx_title_11_hmove_7
 gx_show_select
             jsr sub_vblank_loop
 
-            ldx draw_steps_wsync
+            ldx #12; draw_steps_wsync
             jsr sub_wsync_loop
 
-            lda draw_steps_respx
-            ldy #$00
-            sty draw_steps_dir
-            sty REFP0
-            jsr sub_steps_respxx
+            ; select
+            jmp gx_title_start_draw
+gx_select_return
+            jsr sub_clear_gx
 
-            lda #$f0     
-            sta draw_hmove_a 
-            sta HMP0
-            lda #$10         
-            sta draw_hmove_b   
+            lda #3 
+            sta base_layout_repeat
+            ora difficulty_level
+            sta base_layout_index
 
-            ldy base_layout_index
-_gx_show_select_scan_loop
-            iny
-            lda LAYOUTS,y
-            bne _gx_show_select_scan_loop
-            dey
-_gx_show_select_flights_loop
-            lda LAYOUTS,y
-            and #LAYOUT_REPEAT_MASK
-            lsr
-            lsr
-            lsr
-            lsr
-            sta temp_layout_repeat
 _gx_show_select_flights_repeat
-            lda LAYOUTS,y
-            and #LAYOUT_COUNTER_MASK
-            tax
+            ldx base_layout_repeat
+            lda SELECT_FLIGHTS_RESPX,x
+            ldy #$ff
+            jsr sub_steps_respxx
+            lda base_layout_index
+            ldy #0
+            cmp difficulty_level
+            bne _gx_show_select_mask
+            ldy #$ff
+_gx_show_select_mask
+            sty draw_s3_addr
+            sta WSYNC
+            sty GRP0
+            sty GRP1
+            sed
+            clc
+            adc #1
+            cld
+            ldx #0
+            jsr sub_write_digit
+            lda #>SYMBOL_GRAPHICS
+            sta draw_s0_addr + 1
+            sta draw_s1_addr + 1
+            ldy #7
 _gx_show_select_stairs_loop
             sta WSYNC
-            sta HMOVE
-            lda #$18
+            lda (draw_s0_addr),y
+            eor draw_s3_addr
             sta GRP0
-            ; sta WSYNC
-            ; lda #$08
-            ; sta GRP0
-            dex                
-            bpl _gx_show_select_stairs_loop  ;2   7
-            lda draw_steps_dir
-            eor #$ff
-            sta draw_steps_dir
-            sta REFP0
-            lda draw_hmove_a                 ;3  10
-            ldx draw_hmove_b                 ;3  12
-            sta draw_hmove_b                 ;3  15
-            stx draw_hmove_a                 ;3  18
-            stx HMP0                         ;3  21
-            dec temp_layout_repeat
-            bpl _gx_show_select_flights_repeat
+            lda (draw_s1_addr),y
+            eor draw_s3_addr
+            sta GRP1
+            sta WSYNC
             dey
-            cpy base_layout_index
-            bpl _gx_show_select_flights_loop
-_gx_show_select_flights_end
-            lda #0
-            sta GRP0
+            bpl _gx_show_select_stairs_loop  ;2   7
+            iny
+            sty GRP0
+            sty GRP1
+            dec base_layout_index
+            dec base_layout_repeat
+            bpl _gx_show_select_flights_repeat
             lda #3
             sta NUSIZ0
             sta NUSIZ1
@@ -2388,12 +2454,11 @@ STEP_COLOR
     byte $8f,$9f,$af,$bf,$cf,$df,$ef,$ff
     byte $0f,$1f
 
+SKY_PALETTE
+    byte SKY_BLUE, BLACK
 
-LEVELS
-    byte LAYOUT_EASY,0,60,96   ; EASY
-    byte LAYOUT_MED,0,56,76   ; MED
-    byte LAYOUT_HARD,0,56,40   ; HARD
-    byte LAYOUT_EXTRA,0,56,6   ; EXTRA
+SELECT_FLIGHTS_RESPX
+    byte 48,64,80,96
 
     ; layouts
     ; nnnnffff = flight of length 2f, repeat n times (n+1 total)
