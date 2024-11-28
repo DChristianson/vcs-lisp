@@ -1,7 +1,7 @@
 # LISP Programming 
 Play the game at [github.io](https://dchristianson.github.io/vcs-lisp/)!
 
-Documentation in the  [wiki](./wiki)!
+Documentation in the  [wiki](https://github.com/DChristianson/vcs-lisp/wiki)
 
 <img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp-programming1.png" width=180></img>
 
