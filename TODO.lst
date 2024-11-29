@@ -210,8 +210,9 @@ BETA
         - glitchy base disc on stack 1
         - not a stable framerate 
       - music game
+        - simon game example?
+        - ringtone demo example
         - ringing changes examples
-        - simon example?
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
   - dev support
@@ -227,13 +228,6 @@ BETA
       - display version for example
       - load/save is wacky
     - achievements
-      - game
-        - flappy bird?
-        - some other game?
-      - disc solver
-      - music program
-        - simon?
-      - achievements page w/secrets
     - gitlab auto deployment
     - some way to do unit tests (stellerator debugger?)
     - protection against var access?

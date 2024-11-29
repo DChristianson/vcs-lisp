@@ -173,6 +173,7 @@ draw_s4_addr        ds 2
 draw_s5_addr        ds 2
 
 ; temp vars
+temp_select_index
 temp_solve_current
 temp_step_start
 temp_step_offset
@@ -180,10 +181,12 @@ temp_margin
 temp_level_ptr    ; (ds 2)
 temp_maze_ptr     ; (ds 2)
 temp_y  ds 1
+temp_select_repeat
 temp_layout_repeat
 temp_step_end
 temp_solve_jump
 temp_p4 ds 1
+temp_select_mask
 temp_timer_stack
 temp_solve_stack
 temp_rand ds 1
@@ -608,7 +611,7 @@ gx_continue
 _gx_continue_ground_calc
             lda #SKY_BLUE
             sta draw_ground_color
-            lda #255 ; BUGBUG: TODO: actual lava
+            lda lava_height ; BUGBUG: TODO: actual lava
             sta draw_lava_counter
 
 ;---------------------
@@ -656,7 +659,7 @@ sub_write_stair_a
             lda #0 ; BUGBUG: kludge           ;2  20
 ._gx_draw_skip_flip
             sta GRP1                          ;3  23
-            lda #0                            ;2  25
+            lda #0                            ;2  25 
             sta GRP0                          ;3  28
             sty HMP1                          ;3  31
 sub_write_stair_b
@@ -691,7 +694,7 @@ sub_write_stair_b
             sta WSYNC                         ; 
             sta HMOVE                         ;3   3
             sty COLUP1                        ;3   6
-            lda draw_colubk                   ;3  16
+            lda draw_colubk                   ;3  16 ; SPACE could set this earlier and save a byte
             sta COLUBK                        ;3  19
 
             ldy temp_step_start               ;3  22
@@ -932,6 +935,7 @@ _reset_game
 
 
 sub_vblank_loop
+            ldx #$00
 _end_vblank_loop          
             cpx INTIM
             bmi _end_vblank_loop
@@ -971,6 +975,21 @@ sub_write_digit
             rts
 
 sub_steps_init
+            lda difficulty_level
+            and #$03
+            tay
+            lda LEVELS,y
+            sta base_layout_index
+            sta jump_layout_index
+            tay
+            lda LAYOUTS,y
+            and #LAYOUT_REPEAT_MASK
+            lsr
+            lsr
+            lsr
+            lsr
+            sta base_layout_repeat
+            sta jump_layout_repeat           
             lda #0
             ldx #(draw_table - draw_registers_start - 1)
 _steps_blank_zero_loop
@@ -1128,8 +1147,14 @@ gx_difficulty_set
             ; setup visuals
             lsr
             lsr
-            tax
-            ldy SELECT_ROW,x
+            lsr
+            sta sky_palette
+            lda #$ff
+            bcc _gx_select_skip_lava
+            lda #15
+_gx_select_skip_lava
+            sta lava_height
+            ldy #5 ; BUGBUG: magic number
             ldx #11
 _gx_select_setup_loop
             lda #>SELECT_GRAPHICS
@@ -1186,6 +1211,34 @@ _respxx_swap
             lda #$10                ;3   
             sta HMP1                ;3   
             rts                     ;6  
+
+; BUGBUG: alternate?
+;             bmi _respxx_exit
+; _respxx_swap            
+;             sta RESP1               ;3   25
+;             sta RESP0               ;3   28
+;             sta WSYNC
+;             sta HMOVE               ;2    2
+; _respxx_exit
+;             lda RESPXX_HMOVE_A,y    ;4    6
+;             sta draw_hmove_a        ;3    9
+;             lda RESPXX_HMOVE_B,y    ;4   13
+;             sta draw_hmove_b        ;3   16
+;             lda RESPXX_HMP0,y       ;4   20
+;             ldx RESPXX_HMP1,y       ;4   24
+;             sta HMP0                ;3   27   
+;             stx HMP1                ;3   30
+;             rts                     ;6  
+;     byte $70
+; RESPXX_HMOVE_A
+;     byte $90
+; RESPXX_HMOVE_B
+;     byte $70
+;     byte $10
+; RESPXX_HMP0
+;     byte $30
+; RESPXX_HMP1
+;     byte $10
 
 sub_steps_advance
             ldx #0
@@ -1551,60 +1604,18 @@ sub_draw_player_step
 SELECT_GRAPHICS
 SELECT_SYMBOL_V
     byte $38,$44,$82,$92,$92,$92,$92,$fe; 8
-SELECT_SYMBOL_T
-    byte $38,$28,$28,$28,$28,$ee,$82;,$fe; 8
-SELECT_SYMBOL_S
-    byte $fe,$82,$e2,$24,$48,$8e,$82;,$fe; 8
 SELECT_SYMBOL_E
     byte $fe,$82,$9e,$82,$9a,$82,$82;,$fe; 8
 SELECT_SYMBOL_L
     byte $fe,$82,$82,$9e,$90,$90,$90;,$f0; 8
-SELECT_SYMBOL_P
-    byte $f0,$90,$9e,$82,$9a,$82,$82;,$fe; 8
-SELECT_SYMBOL_A
-    byte $fe,$92,$92,$82,$92,$82,$82;,$fe; 8
-SELECT_SYMBOL_R
-    byte $fe,$92,$92,$86,$9a,$82,$82;,$fe; 8
-SELECT_SYMBOL_K
-    byte $fe,$92,$92,$86,$82,$9a,$9a,$fe; 8
-SELECT_SYMBOL_D
-    byte $fc,$82,$9a,$9a,$9a,$9a,$82,$fc; 8
 
 SELECT_ROW_0_DATA
-    byte <SELECT_SYMBOL_S
-    byte <SELECT_SYMBOL_T
+    byte <SELECT_SYMBOL_L
     byte <SELECT_SYMBOL_E
-    byte <SELECT_SYMBOL_P
-    byte <SELECT_SYMBOL_S
-    byte <gx_select_return
-
-SELECT_ROW_1_DATA
-    byte <SELECT_SYMBOL_L
-    byte <SELECT_SYMBOL_A
     byte <SELECT_SYMBOL_V
-    byte <SELECT_SYMBOL_A
-    byte <COL_A0_PF0
-    byte <gx_select_return
-
-SELECT_ROW_2_DATA
-    byte <SELECT_SYMBOL_D
-    byte <SELECT_SYMBOL_A
-    byte <SELECT_SYMBOL_R
-    byte <SELECT_SYMBOL_K
-    byte <COL_A0_PF0
-    byte <gx_select_return
-
-SELECT_ROW_3_DATA
-    byte <SELECT_SYMBOL_S
-    byte <SELECT_SYMBOL_K
-    byte <SELECT_SYMBOL_A
+    byte <SELECT_SYMBOL_E
     byte <SELECT_SYMBOL_L
-    byte <SELECT_SYMBOL_D
     byte <gx_select_return
-
-
-SELECT_ROW
-    byte 5,11,17
 
 ; ----------------------------------
 ; TITLE
@@ -2144,22 +2155,22 @@ gx_select_return
             jsr sub_clear_gx
 
             lda #3 
-            sta base_layout_repeat
+            sta temp_select_repeat
             ora difficulty_level
-            sta base_layout_index
+            sta temp_select_index
 
 _gx_show_select_flights_repeat
-            ldx base_layout_repeat
+            ldx temp_select_repeat
             lda SELECT_FLIGHTS_RESPX,x
             ldy #$ff
             jsr sub_steps_respxx
-            lda base_layout_index
+            lda temp_select_index
             ldy #0
             cmp difficulty_level
             bne _gx_show_select_mask
             ldy #$ff
 _gx_show_select_mask
-            sty draw_s3_addr
+            sty temp_select_mask
             sta WSYNC
             sty GRP0
             sty GRP1
@@ -2176,10 +2187,10 @@ _gx_show_select_mask
 _gx_show_select_stairs_loop
             sta WSYNC
             lda (draw_s0_addr),y
-            eor draw_s3_addr
+            eor temp_select_mask
             sta GRP0
             lda (draw_s1_addr),y
-            eor draw_s3_addr
+            eor temp_select_mask
             sta GRP1
             sta WSYNC
             dey
@@ -2187,8 +2198,8 @@ _gx_show_select_stairs_loop
             iny
             sty GRP0
             sty GRP1
-            dec base_layout_index
-            dec base_layout_repeat
+            dec temp_select_index
+            dec temp_select_repeat
             bpl _gx_show_select_flights_repeat
             lda #3
             sta NUSIZ0
@@ -2458,7 +2469,13 @@ SKY_PALETTE
     byte SKY_BLUE, BLACK
 
 SELECT_FLIGHTS_RESPX
-    byte 48,64,80,96
+    byte 64,80,96,112
+
+LEVELS
+    byte LAYOUT_EASY  ; EASY
+    byte LAYOUT_MED   ; MED
+    byte LAYOUT_HARD  ; HARD
+    byte LAYOUT_EXTRA ; EXTRA
 
     ; layouts
     ; nnnnffff = flight of length 2f, repeat n times (n+1 total)
