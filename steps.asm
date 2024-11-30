@@ -519,7 +519,6 @@ _jx_update_end
             pha
             rts
 
-
 GX_JUMP_LO
     byte <(gx_title-1)
     byte <(gx_select-1)
@@ -611,7 +610,11 @@ gx_continue
 _gx_continue_ground_calc
             lda #SKY_BLUE
             sta draw_ground_color
-            lda lava_height ; BUGBUG: TODO: actual lava
+            lda lava_height
+            asl
+            asl
+            asl
+            adc #255
             sta draw_lava_counter
 
 ;---------------------
@@ -1149,9 +1152,9 @@ gx_difficulty_set
             lsr
             lsr
             sta sky_palette
-            lda #$ff
+            lda #$00
             bcc _gx_select_skip_lava
-            lda #15
+            lda #1
 _gx_select_skip_lava
             sta lava_height
             ldy #5 ; BUGBUG: magic number
@@ -1599,6 +1602,15 @@ sub_draw_player_step
             ora draw_table+1,x
             sta draw_table+1,x
             rts ; SPACE: may be able to optimize
+
+gx_show_select
+            jsr sub_vblank_loop
+
+            ldx #12; draw_steps_wsync
+            jsr sub_wsync_loop
+
+            ; select
+            jmp gx_title_start_draw
 
 ; SELECT SYMS
 SELECT_GRAPHICS
@@ -2075,7 +2087,6 @@ _gx_title_loop_11_jmp
             jmp (draw_t1_jump_addr)      ;5  66
 
 gx_title_end
-
             lda #ZARA_COLOR
             sta COLUP0
             ldx #4
@@ -2093,11 +2104,18 @@ _draw_tx_end_loop
             sta GRP0                     
             sta GRP1   
             dey                 
-            bpl _draw_tx_end_loop    
+            bpl _draw_tx_end_loop
+
             lda #GROUND_COLOR
             sta COLUBK
-
             ldx #11
+            lda lava_height
+            beq _draw_tx_skip_lava
+            sta WSYNC
+            lda #RED
+            sta COLUBK
+            dex
+_draw_tx_skip_lava
             jsr sub_wsync_loop
 
             inx ; cheat and bump x up 1
@@ -2143,14 +2161,6 @@ gx_title_11_hmove_7
 ;--------------------
 ; Select Screen
 
-gx_show_select
-            jsr sub_vblank_loop
-
-            ldx #12; draw_steps_wsync
-            jsr sub_wsync_loop
-
-            ; select
-            jmp gx_title_start_draw
 gx_select_return
             jsr sub_clear_gx
 
