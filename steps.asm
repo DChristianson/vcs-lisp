@@ -285,27 +285,26 @@ draw_t1_data_addr  ds 2
 ;   - tuneup sound pass
 ; RC 1
 ;  - glitches
-;   - frame rate unstable
+;   - frame rate unstable in select
+;   - frame rate unstable at top of tower
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
+;   - dark mode - limited step visibility, double button press "plays" solution musically
 ;  - sprinkles 1
 ;   - select screen design, shows lava, etc
 ;   - animated squirrels in title and select
 ;   - some kind of celebration on win (fireworks?)
-; RC 2
+; CONSIDER
 ;  - sprinkles 2
 ;   - some kind of theme on lose
 ;   - gradient/lightened sky background
 ;   - should be no step edge in ground?
-;  - gameplay 4
-;   - dark mode - limited step visibility, double button press "plays" solution musically
 ;  - code 
 ;   - algorithmic maze gen
 ;   - use incremental maze construction to conserve VBLANK
 ;   - shrink maze size (replace with generation) - 678 bytes data + code
 ;   - less data + code for title - 798 bytes data + code
 ;   - shrink audio size - 256 bytes + 122 bytes code
-; CONSIDER
 ;  - sprinkles 3
 ;   - color flashes in titles
 ;   - some kind of graphic in sky (cloud? bird?)
