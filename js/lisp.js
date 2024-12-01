@@ -289,6 +289,17 @@ LispMachine = function (ram) {
         return await self.recall();
     }
 
+    this.countFreeMem = async function() {
+        var count = 0;
+        var freeRef = ram.read(_registers['free']);
+        while (freeRef !== 0) {
+            var freeCell = ram.readWord(freeRef);
+            freeRef = tail(freeCell);
+            count++;
+        }
+        return count;
+    }
+
     this.clear = async function() {
         var i = 128
         while (i < 196) {
@@ -549,6 +560,8 @@ LispIde = function (lisp) {
             this.recallMemory();    
         }, true);
     };
+
+    this.countFreeMem = lisp.countFreeMem;
 
     this.saveProject = async function() {
         let filename = (self.project || 'vcs-lisp') + '.json';

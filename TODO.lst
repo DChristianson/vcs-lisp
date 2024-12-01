@@ -189,16 +189,10 @@ DONE
   - font
     - tune font / symbols
 BETA
-  - virtual keyboard 4
-    - advanced keyboard (both keyboards)
-      - use right keyboard for symbols
-      - paging through different symbols
-      - feedback on screen for what page you are on
-      - special cancel, etc keys on left keyboard
-    - quote support (no way to properly quote a function from the editor))
   - game modes 2
       - ball game
-        - pong demo
+        - pong demo 
+        - needs diagononal movement
         - not a stable framerate
       - towers of hanoi
         - recursion stuck on stack overflow
@@ -210,11 +204,20 @@ BETA
         - glitchy base disc on stack 1
         - not a stable framerate 
       - music game
-        - simon game example?
         - ringtone demo example
+        - simon game example?
         - ringing changes examples
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
+
+
+  - virtual keyboard 4
+    - advanced keyboard (both keyboards)
+      - use right keyboard for symbols
+      - paging through different symbols
+      - feedback on screen for what page you are on
+      - special cancel, etc keys on left keyboard
+    - quote support (no way to properly quote a function from the editor))
   - dev support
     - stack overflow flag + ux
     - heap full flag + ux
@@ -223,10 +226,13 @@ BETA
       - commands w/ icons
       - controls description
     - self hosted stellerator page
-      - example programs
-       - description?
+      - editors are weird
+      - custom overlays?
+      - program descriptions?
       - display version for example
-      - load/save is wacky
+      - load/save control name?
+      - save game states (all ram?)
+      - draw program?
     - achievements
     - gitlab auto deployment
     - some way to do unit tests (stellerator debugger?)

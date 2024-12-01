@@ -214,10 +214,23 @@ def urlfmt(name, vars, symbols, fp):
         json.dump({'name': name, **images[0]}, fp, indent=4)
     fp.write('\n')
 
+def pngfmt(name, vars, symbols, fp):
+    nvars = len(vars)
+    for n, col in enumerate(vars):
+        filename = f'{name}_{n}' if nvars > 1 else name
+        if symbols is not None:
+            filename = symbols[n]
+        buffer = bytes([i.to_bytes(1, 'big')[0] for i in col])
+        image = Image.frombytes('1', (8, len(col)), buffer)
+        path = f'data/{filename}.png'
+        image.save(path, 'png')
+        fp.write(f'saving {path}\n')
+
 formats = {
     'asm': asmfmt,
     'bas': basfmt,
     'url': urlfmt,
+    'png': pngfmt,
 }
 
 # find offsets for a missile (enam)
@@ -329,7 +342,7 @@ def emit_spriteMulti(varname, image, fp, bits=24, fmt=asmfmt, symbols=None):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Generate 6502 assembly for sprite graphics')
-    parser.add_argument('--format', type=str, choices=['asm', 'bas', 'url'], default='asm')
+    parser.add_argument('--format', type=str, choices=['asm', 'bas', 'url', 'png'], default='asm')
     parser.add_argument('--reverse', type=bool, default=False)
     parser.add_argument('--mirror', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)

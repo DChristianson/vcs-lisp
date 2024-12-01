@@ -56,9 +56,8 @@ _draw_tower_clear_loop
         ldx #4
 _draw_tower_draw_disc_loop
         lda tower_disc_0,x
-        and tower_tmp_level
+        bit tower_tmp_level
         beq _draw_tower_skip_disc
-        lda tower_disc_0,x
         and #$06
         tay
         and #$02
@@ -72,12 +71,12 @@ _draw_tower_draw_disc_ac
         lda #$80
         sta curr_disc_pf0,y
         lda #$01
-        jmp _draw_tower_draw_disc_ac_base
+        bpl _draw_tower_draw_disc_ac_base
 _draw_tower_draw_disc_b
         ldy #0
         lda TOWER_DISC_B_PF2,x
-_draw_tower_draw_disc_ac_base
         ora curr_disc_pf2,y
+_draw_tower_draw_disc_ac_base
         sta curr_disc_pf2,y
 _draw_tower_skip_disc
         dex

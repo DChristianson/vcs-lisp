@@ -155,40 +155,43 @@ FUNC_S07_LT
             lda FRAME_ARG_OFFSET_MSB - 2,x
             sbc FRAME_ARG_OFFSET_MSB,x
             bcc _lt_return
-            ldy #$01 ; BUGBUG: TRUE
+            iny ; BUGBUG: TRUE
 _lt_return
             sty accumulator_msb
             jmp exec_frame_return
 
 FUNC_S08_AND
+            ; and return second arg
             ldx eval_frame
-            ldy #0
-            sty accumulator_lsb
             lda FRAME_ARG_OFFSET_LSB,x
+            sta accumulator_lsb
             ora FRAME_ARG_OFFSET_MSB,x
             beq _and_return
             lda FRAME_ARG_OFFSET_LSB - 2,x
+            sta accumulator_lsb
             ora FRAME_ARG_OFFSET_MSB - 2,x
             beq _and_return
-            ldy #$01 ; BUGBUG: TRUE
+            lda FRAME_ARG_OFFSET_MSB,x
 _and_return
-            sty accumulator_msb
+            sta accumulator_msb
             jmp exec_frame_return
 
 FUNC_S09_OR
+            ; short circuit OR
             ldx eval_frame
-            ldy #0
-            sty accumulator_lsb
-            ldy #$01 ; BUGBUG: TRUE
             lda FRAME_ARG_OFFSET_LSB,x
-            ora FRAME_ARG_OFFSET_LSB - 2,x
-            bne _or_return
+            ora FRAME_ARG_OFFSET_MSB,x
+            bne _or_next_arg
+            dex
+            dex
+_or_next_arg
+            lda FRAME_ARG_OFFSET_LSB,x
+            sta accumulator_lsb
+            ora FRAME_ARG_OFFSET_MSB,x
+            beq _or_return
             lda FRAME_ARG_OFFSET_MSB,x
-            ora FRAME_ARG_OFFSET_MSB - 2,x
-            bne _or_return
-            ldy #0
 _or_return
-            sty accumulator_msb
+            sta accumulator_msb
             jmp exec_frame_return
 
 FUNC_S0A_NOT
@@ -197,10 +200,9 @@ FUNC_S0A_NOT
             ldy #0
             sty accumulator_lsb
             lda FRAME_ARG_OFFSET_LSB,x
+            ora FRAME_ARG_OFFSET_MSB,x
             bne _not_return
-            lda FRAME_ARG_OFFSET_MSB,x
-            bne _not_return
-            ldy #$01 ; BUGBUG: TRUE
+            iny ; BUGBUG: TRUE
 _not_return
             sty accumulator_msb
             jmp exec_frame_return
@@ -380,16 +382,24 @@ _func_cx_save
             sta CXCLR
             bpl _func_jkcx_exit
 
-FUNC_POSITION
+FUNC_MOVE
             ; get player
+            tsx
+            stx tmp_eval_stack
+            lda eval_frame
+            sec 
+            sbc tmp_eval_stack
+            cmp #7 ; check if 3+ args
+            bpl FUNC_MOVE_XY
             ldx eval_frame
             lda FRAME_ARG_OFFSET_LSB,x
-            and #$03 ; BUGBUG: possible unsafe access
+            and #$03 ; SAFETY: unsafe access if > 2
             tay
             lda accumulator_lsb
-            lsr
-            and #$07 ; BUGBUG: possible unsafe access
+            and #$0f ; ignore bcd values < 9; SAFETY: unsafe access if not a BCD value
+            beq _func_move_exit
             tax
+            dex
             lda X_DIR,x
             clc
             adc game_p0_x,y
@@ -400,6 +410,8 @@ FUNC_POSITION
             adc game_p0_y,y
             and #$1f
             sta game_p0_y,y          
+FUNC_MOVE_XY
+_func_move_exit
             jmp exec_frame_return
     
 FUNC_SHAPE

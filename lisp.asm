@@ -123,7 +123,8 @@ beep_t0            ds 1
 ; reserve for game data
 game_data          ds 8
 
-; reserved area for graphics
+; reserved area for graphics & eval tms
+tmp_eval_stack
 tmp_kx_swcha
 tmp_kx_player = tmp_kx_swcha + 1
 gx_addr
@@ -443,7 +444,7 @@ sub_clr_pf
         lda #0
         sta GRP0     
         sta GRP1 
-        sta GRP0     
+        sta GRP0   ; SPACE: needed if clearing VDELPx?   
         sta COLUBK
         sta PF0
         sta PF1
@@ -453,6 +454,14 @@ sub_clr_pf
         sta VDELP0
         sta VDELP1
         rts
+
+
+TOWER_STACK_MASK
+        byte $01,$02,$04
+TOWER_DISC_AC_PF1
+        byte $18,$3c,$7e,$ff,$ff
+TOWER_DISC_B_PF2
+        byte $80,$c0,$e0,$f0,$f8
 
     ORG $FF00
 
@@ -501,7 +510,7 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_F2-1
     word FUNC_BEEP-1
     word FUNC_STACK-1
-    word FUNC_POSITION-1
+    word FUNC_MOVE-1
     word FUNC_SHAPE-1
     word FUNC_CLOCK-1
     word FUNC_JX-1
@@ -618,16 +627,9 @@ oom
             jmp _repl_update_edit_keys_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
 
 Y_DIR
-        byte 0, -1, 0, 0, 1
+        byte -1, -1, -1, 0, 0, 0, 1, 1, 1
 X_DIR
-        byte 0, 0, -1, 1, 0
-
-TOWER_STACK_MASK
-        byte $01,$02,$04
-TOWER_DISC_AC_PF1
-        byte $18,$3c,$7e,$ff,$ff
-TOWER_DISC_B_PF2
-        byte $80,$c0,$e0,$f0,$f8
+        byte -1, 0, 1, -1, 0, 1, -1, 0, 1
 
 #if CONTROLS = JOYSTICK
 JX_KEYS     ; SPACE: lot of zeros
