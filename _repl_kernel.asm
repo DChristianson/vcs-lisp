@@ -5,138 +5,86 @@
 
 repl_kernel_start
 
-_repl_update_edit_number
-            ; we've changed to a number using # symbol
-            lda HEAP_CAR_ADDR,x
-            bpl _repl_update_edit_number_skip ; already a number
-_repl_update_edit_set_number
-            ; clear car and free cdr
-            lda #0
-            sta HEAP_CAR_ADDR,x
-            jsr set_cdr
-_repl_update_edit_number_skip
-            jmp _repl_update_edit_keys_done
-
-_repl_update_edit_head
-            lda repl_edit_sym
-            beq _repl_update_edit_delete ; edit function or . symbol
-            cmp #$20 ; BUGBUG: magic number (var versus function)
-            bcc _repl_update_edit_set_car
-            jmp _repl_update_edit_keys_done ; can't replace with symbol
-_repl_update_edit_set_funcar
-            cmp #SYMBOL_HASH 
-            beq _repl_update_edit_number
-            ; we are editing the head of a funcall
-            ldy HEAP_CAR_ADDR,x
-            bmi _repl_update_edit_set_car ; just change symbol
-            ; otherwise it's a number
-            ldy #0
-            sty HEAP_CDR_ADDR,x
-            jmp _repl_update_edit_set_car
-_repl_update_edit_funcall
-            tax
-            lda repl_edit_sym
-            beq _repl_update_edit_delete   ; delete current cell
-            cmp #$20 ; BUGBUG: magic number (var versus function)                        
-            bcc _repl_update_edit_set_funcar   ; edit funcall operator
-            ora #$c0
-            ldx repl_curr_cell
-            dex
-            jsr set_cdr
-            jmp _repl_update_edit_keys_done
-_repl_update_edit_symbol
-            cmp #$20 ; BUGBUG: magic number (var versus function)                
-            bcs _repl_update_edit_set_car  ; edit symbol
-            dex
-            jsr alloc_cdr       
-            lda repl_edit_sym
-_repl_update_edit_set_car
-            ora #$c0
-            sta HEAP_CAR_ADDR,x
-_repl_update_edit_keys_done
-            inc repl_edit_col ; move cursor over
-repl_update_edit_keys_cancel
-            lda game_state
-            and #$f0 ; #GAME_STATE_EDIT
-            sta game_state
+repl_update_splice_cell
+            ; insert cell between current and prev
+            ; do not allow at head 
+            ldx repl_prev_cell 
+            cpx #$c0
+            bpl _repl_update_splice_root
+            lda HEAP_CDR_ADDR,x
+            cmp repl_curr_cell
+            bne _repl_update_prevent_splice_head
+_repl_update_splice_cdr
+            jsr alloc_cdr
+            lda repl_curr_cell
+            sta HEAP_CDR_ADDR,x
+            stx repl_curr_cell
+            rts
+_repl_update_splice_root
+            ; make sure curr cell is null if at root
+            lda repl_curr_cell
+            beq _repl_update_splice_cdr
+_repl_update_prevent_splice_head
+            ; exit update if we try to splice head
+            pla
+            pla
             jmp _repl_update_skip_move
-_repl_update_edit_extend
-            ldx repl_prev_cell
-            lda repl_edit_sym
-            beq _repl_update_edit_keys_done     ; extending with null is noop
-            jsr alloc_cdr       
-            lda #$c0                       ; put in dummy term symbol 
-            sta HEAP_CAR_ADDR,x            ; otherwise we will misinterpret
-            jmp _repl_update_edit_apply    ; proceed to edit new extension
-_repl_update_edit_delete
-            ldx repl_prev_cell             ; 
-            jsr set_cdr                    ;
-            jmp _repl_update_edit_keys_done
 
-repl_update_edit_keys_ok
-            ldx repl_curr_cell
-            beq _repl_update_edit_extend   ; curr cell is null
-_repl_update_edit_apply
-            ldy repl_prev_cell              ; check if we are at head
-            cpy #REPL_CELL_ADDR             ; .
-            bpl _repl_update_edit_head      ; .
-            lda HEAP_CAR_ADDR,x
-            bpl _repl_update_edit_digit     ; we are editing a number
-            cmp #$40
-            bpl _repl_update_edit_funcall  ; curr cell is a funcall
-            ; curr cell is a symbol
-            lda repl_edit_sym
-            beq _repl_update_edit_delete   ; delete current cell
-            cmp #SYMBOL_HASH 
-            bne _repl_update_edit_symbol ; BUGBUG could be simpler?
+repl_update_insert_number
+            ldy #0
+            jmp _repl_update_insert_cell
+repl_update_insert_subexp
+            ldy #$c0
+_repl_update_insert_cell
+            jsr repl_update_splice_cell
             dex
             jsr alloc_cdr
-            jmp _repl_update_edit_set_number
-_repl_update_edit_digit
-            ldy #3
-_repl_update_edit_digit_loop
-            asl HEAP_CDR_ADDR,x
-            rol HEAP_CAR_ADDR,x
-            dey
-            bpl _repl_update_edit_digit_loop
-            lda repl_edit_sym
-            and #$0f
-            ora HEAP_CDR_ADDR,x
-            sta HEAP_CDR_ADDR,x
-            lda #$0f
-            and HEAP_CAR_ADDR,x
-            sta HEAP_CAR_ADDR,x
-            jmp _repl_update_skip_move ; don't exit editor
-
-repl_update_edit_ok
-_repl_update_edit_keys_start
-            ; button was pushed, so we need to display keyboard
-            lda game_state
-            ora #GAME_STATE_EDIT_KEYS
-            sta game_state
-            lda repl_curr_cell
-            beq _repl_update_edit_save_sym ; curr cell is null
-            tax
-            lda HEAP_CAR_ADDR,x
-            bpl _repl_update_edit_number_start
-            cmp #$40
-            bmi _repl_update_edit_save_sym
-            tax
-            lda HEAP_CAR_ADDR,x
-            bmi _repl_update_edit_save_sym
-            ; we are at the head of a number
-            lda #SYMBOL_HASH 
-            jmp _repl_update_edit_save_sym
-_repl_update_edit_number_start
-            ; current cell is a number
-            lda #$20 ; BUGBUG: ZERO
-_repl_update_edit_save_sym
-            and #$3f
-            sta repl_edit_sym ; BUGBUG find right sym
+            sty HEAP_CAR_ADDR,x
+            ;advance cursor
             jmp _repl_update_skip_move
+
+repl_update_edit_delete
+            ; delete what's at the cursor
+            ldx repl_prev_cell 
+            cpx #$c0
+            bpl _repl_update_delete_root
+            lda HEAP_CDR_ADDR,x
+            cmp repl_curr_cell
+            beq _repl_update_edit_delete_cdr
+            ldx repl_curr_cell
+            lda HEAP_CAR_ADDR,x
+            bmi _repl_update_edit_delete_end  ; do not allow at head ref
+            ldy #3
+_repl_update_delete_digit_loop
+            lsr HEAP_CAR_ADDR,x
+            ror HEAP_CDR_ADDR,x
+            dey
+            bpl _repl_update_delete_digit_loop
+            bmi _repl_update_edit_delete_end
+_repl_update_delete_root
+            lda repl_edit_col
+            lsr
+            bne _repl_update_edit_delete_end ; curr cell is second
+            lda repl_curr_cell
+            beq _repl_update_edit_delete_end ; curr cell is empty
+            ldy #0
+            beq _repl_update_edit_delete_cdr_root
+_repl_update_edit_delete_cdr
+            tax             ; 
+            beq _repl_update_edit_delete_end ; curr cell is empty
+            ldy HEAP_CDR_ADDR,x
+            lda #0
+            sta HEAP_CDR_ADDR,x
+_repl_update_edit_delete_cdr_root
+            ldx repl_prev_cell 
+            jsr set_cdr_y                  ;
+_repl_update_edit_delete_end
+            jmp _repl_update_skip_move
+
 repl_update_eval
             ; eval
             lda game_state
+            and #$f0
             ora #GAME_STATE_EVAL
 _repl_update_save_state
             sta game_state
@@ -146,13 +94,14 @@ repl_menu_select_game
             lda game_state
             ora #GAME_STATE_EDIT_SELECT
             bpl _repl_update_save_state ; SPACE: take advantage of saving state
-
+            ; will not fall through (state always positive)
+            
 repl_menu_update_game
             ; inc game
             lda game_state
             clc
             adc #$10
-            and #$31
+            and #$30
             sta game_state
 repl_menu_reset_game
             lda game_state
@@ -166,6 +115,34 @@ repl_menu_reset_game
             pha
             rts    
 
+repl_update_edit_digit
+            ldy #3
+_repl_update_edit_digit_loop
+            asl HEAP_CDR_ADDR,x
+            rol HEAP_CAR_ADDR,x
+            dey
+            bpl _repl_update_edit_digit_loop
+            lda player_input_latch + 1
+            cmp #$0b
+            bne _repl_update_edit_digit_zero_skip
+            lda #0
+_repl_update_edit_digit_zero_skip
+            ora HEAP_CDR_ADDR,x
+            sta HEAP_CDR_ADDR,x
+            lda #$0f
+            and HEAP_CAR_ADDR,x
+            sta HEAP_CAR_ADDR,x
+_repl_update_edit_digit_end
+            bpl _repl_update_skip_move ; don't exit editor
+
+repl_update_shift_context
+            lda game_state
+            clc
+            adc #$02
+            and #$f6
+            sta game_state
+            jmp _repl_update_skip_move
+
 repl_update
             lda SWCHB
             lsr
@@ -175,12 +152,11 @@ repl_update
             ; disambiguate editor state
             lda game_state
             and #$0f
-            lsr ; #GAME_STATE_EDIT_KEYS == 1
-            bne repl_menu_update_game
+            lsr ; test if #GAME_STATE_EDIT_SELECT== 1
+            bcs repl_menu_update_game
+            tay ; move state into 
             lda player_input_latch
-            beq _repl_update_skip_move
-            bcc _repl_update_edit_move ; moving cursor
-            adc #11
+            beq _repl_update_check_key_1
 _repl_update_edit_move 
             tax
             dex
@@ -190,7 +166,39 @@ _repl_update_edit_move
             lda REPL_EDIT_K0_TABLE_LO,x
             pha
             rts ; jump away
-            
+_repl_update_check_key_1
+            ldy player_input_latch + 1
+            beq _repl_update_skip_move
+            ldx repl_curr_cell
+            bne repl_update_edit_cell
+            jsr repl_update_splice_cell
+            lda #$c0
+            sta HEAP_CAR_ADDR,x
+repl_update_edit_cell
+            lda HEAP_CAR_ADDR,x
+            bpl repl_update_edit_digit
+            cmp #$40 ; check for symbol vs ref
+            bpl _repl_update_skip_move ; if ref skip
+            ; intentional fallthrough
+repl_update_edit_symbol
+            lda #7 ; READABILITY: MAGIC NUMBER - key 7 on keypad 0 is held down
+            cmp player_input
+            bne _repl_update_replace_symbol
+            jsr repl_update_splice_cell
+_repl_update_replace_symbol
+            ; lookup
+            lda game_state
+            and #$0f
+            asl
+            adc REPL_KEY_ROW-1,y
+            tay
+            lda player_input_latch + 1
+            adc REPL_KEY_SHIFT,y
+            ora #$c0
+            sta HEAP_CAR_ADDR,x
+            ; fallthrough to advance cursor
+_repl_update_advance_cursor
+            inc repl_edit_col
             ; end of moves
 _repl_update_skip_move
 game_state_init_return
@@ -209,11 +217,11 @@ game_state_init_return
             sta repl_prev_cell
             tax
             lda HEAP_CDR_ADDR,x
-            beq _prep_repl_line_next_terminal
+            beq _prep_repl_line_start_terminal
             ; start scanning the current list for complex data
             sta repl_display_list,y ; ^ a is the current, if this line is simple we don't need to do more
 _prep_repl_line_scan
-            ldx #$ff
+            ldx #$00
             stx repl_tmp_width
 _prep_repl_line_scan_loop
             tax
@@ -224,7 +232,7 @@ _prep_repl_line_scan_loop
             lda repl_tmp_width
             clc
             adc #1
-            cmp #5 ; BUGBUG: check for too long
+            cmp #4 ; BUGBUG: check for too long
             bcs _prep_repl_line_complex_from_scan
             sta repl_tmp_width
             lda HEAP_CDR_ADDR,x ; read cdr
@@ -232,10 +240,13 @@ _prep_repl_line_scan_loop
             jmp _prep_repl_line_next
 _prep_repl_line_complex_from_scan
             lda repl_display_list,y       ; recover start of line address and recurse
+            ldx repl_display_indent,y     ; mark head with additional width
+            inx
+            stx repl_display_indent,y
 _prep_repl_line_complex_next
             tax ; ^ a is the current
 _prep_repl_line_complex
-            lda #0                
+            lda #0               
             sta repl_tmp_width
             lda HEAP_CDR_ADDR,x           ; read cdr
             pha                           ; push next addr to stack
@@ -248,6 +259,11 @@ _prep_repl_line_complex
             bmi _prep_repl_line_next      ; if symbol next line
             ; ^ car is pointing at a list, we need to pop down
             jmp _prep_repl_line_scan      ; go back to scan
+_prep_repl_line_start_terminal
+            lda #$c0 ; BUGBUG: magic number
+            sta repl_display_list+3 ; SPACE: should always be top line
+            inc repl_display_indent+3; SPACE: should always be top line
+            bpl _prep_repl_line_next_dey ; SPACE: should always be positive
 _prep_repl_line_number
             ; numbers are three wide
             lda #3
@@ -281,7 +297,6 @@ _prep_repl_line_next_skip_dey
 _prep_repl_line_next_skip_prev
             pla ; pull next cell from stack
             bmi _prep_repl_line_complex_next ; not null
-_prep_repl_line_next_terminal
             lda #$c0; SYMBOL_GRAPHICS_S00_TERM BUGBUG: magic number
             sta repl_display_list,y
             jmp _prep_repl_line_next_dey
@@ -306,7 +321,6 @@ _prep_repl_line_end
             ; adjust cursor to stay within line bounds
             lda #$ff
             sta repl_edit_y 
-            sta repl_keys_y
 _prep_repl_line_adjust 
             lda repl_scroll              ; get edit line y index
             sec                          ; .
@@ -361,22 +375,6 @@ _prep_repl_line_adjust_end
             adc repl_display_cursor
             sta repl_display_cursor
             sty repl_edit_y
-            ; show keyboard if we are in that game state
-            ; keep y as edit line
-            lda game_state
-            lsr ; GAME_STATE_EDIT_KEYS
-            bcc _prep_repl_key_end
-            lda repl_display_cursor
-            sec
-            sbc #2
-            asl
-            asl
-            asl
-            ora #4 ; keyboard is 5 cells wide
-            dey
-            sty repl_keys_y
-            sta repl_display_indent,y
-            stx repl_display_list,y
 _prep_repl_key_end
 
             ; find curr cell based on editor position
@@ -384,7 +382,11 @@ _prep_repl_key_end
             sec                   ; subtract indent level from col
             sbc repl_tmp_indent   ; .
             tay                   ; .
-            ldx repl_prev_cell  ; deref prev cell       
+            ldx repl_prev_cell  ; deref prev cell
+            cpx #$c0
+            bmi _prep_repl_line_skip_root
+            dey
+_prep_repl_line_skip_root            
             lda HEAP_CDR_ADDR,x
             tax
             beq _prep_repl_line_found_curr_cell
@@ -396,6 +398,8 @@ _prep_repl_key_end
             bmi _prep_repl_line_find_curr_cell
             stx repl_prev_cell
             tax ; pop down
+            dey
+            bmi _prep_repl_line_found_curr_cell
 _prep_repl_line_find_curr_cell
             lda HEAP_CAR_ADDR,x
             bpl _prep_repl_line_found_curr_cell ; check for number
@@ -413,143 +417,6 @@ _prep_repl_end
             ldx #$ff ; clean stack
             txs      ;
             jmp update_return
-
-
-repl_update_edit_up
-            lda #-1
-            byte $2c
-repl_update_edit_down
-            lda #1
-_repl_update_set_cursor_line
-            clc
-            adc repl_edit_line
-            bpl _repl_update_above_limit
-            lda #0
-_repl_update_above_limit
-            ; check if we are past last line
-            cmp repl_last_line
-            bcc _repl_update_check_limit
-            lda repl_last_line
-_repl_update_check_limit
-            sta repl_edit_line
-            cmp repl_scroll
-            bpl _repl_update_check_scroll_down
-            sta repl_scroll
-            jmp _repl_update_skip_move
-_repl_update_check_scroll_down
-            sec 
-            sbc #(EDITOR_LINES-2)
-            cmp repl_scroll
-            bmi _repl_update_skip_save_scroll
-            sta repl_scroll
-_repl_update_skip_save_scroll
-            jmp _repl_update_skip_move
-
-repl_update_edit_left
-            lda #-1
-            byte $2c ; skip next 2 bytes
-repl_update_edit_right
-            lda #1
-            clc
-            adc repl_edit_col
-            bpl _repl_update_check_col_limit
-            lda #0
-_repl_update_check_col_limit
-            sta repl_edit_col
-            jmp _repl_update_skip_move
-
-repl_update_menu_tab
-            ; inc tab
-            lda repl_menu_tab
-            clc 
-            adc #1
-            and #$03
-            sta repl_menu_tab
-            jmp _repl_update_skip_move
-
-repl_update_edit_keys_up
-            ;up
-            lda #-5
-            bmi _repl_update_keys_set ; SPACE: use bmi instead of jmp
-repl_update_edit_keys_down
-            ;down
-            lda #5
-            bpl _repl_update_keys_set ; SPACE: use bpl instead of jmp
-repl_update_edit_keys_left
-            ; left
-            lda #-1
-            byte $2c
-repl_update_edit_keys_right
-            ;right
-            lda #1
-_repl_update_keys_set
-            clc
-            adc repl_edit_sym
-            bmi _repl_update_check_keys_roll
-            sec
-            sbc #SYMBOL_TABLE_SIZE
-            bcs _repl_update_check_keys_save
-_repl_update_check_keys_roll
-            adc #SYMBOL_TABLE_SIZE
-_repl_update_check_keys_save
-            sta repl_edit_sym
-_repl_update_keys_skip_move
-            jmp _repl_update_skip_move
-
-
-REPL_EDIT_K0_TABLE_LO
-            byte <(_repl_update_skip_move -1)
-            byte <(repl_update_edit_up - 1)
-            byte <(_repl_update_skip_move -1)
-            byte <(repl_update_edit_left - 1)
-            byte <(repl_update_edit_ok - 1)
-            byte <(repl_update_edit_right - 1)
-            byte <(_repl_update_skip_move -1)
-            byte <(repl_update_edit_down - 1)
-            byte <(_repl_update_skip_move -1)
-            byte <(repl_update_eval -1)
-            byte <(_repl_update_skip_move -1)
-            byte <(repl_update_menu_tab -1)
-REPL_EDIT_KEYS_K0_TABLE_LO
-            byte <(_repl_update_skip_move -1)
-            byte <(repl_update_edit_keys_up - 1)
-            byte <(_repl_update_skip_move -1)
-            byte <(repl_update_edit_keys_left - 1)
-            byte <(repl_update_edit_keys_ok - 1)
-            byte <(repl_update_edit_keys_right - 1)
-            byte <(repl_update_edit_keys_cancel -1)
-            byte <(repl_update_edit_keys_down - 1)
-            byte <(_repl_update_skip_move -1)
-            byte <(_repl_update_skip_move -1)
-            byte <(_repl_update_skip_move -1)
-            byte <(_repl_update_skip_move -1)
-
-REPL_EDIT_K0_TABLE_HI
-            byte >(_repl_update_skip_move -1)
-            byte >(repl_update_edit_up - 1)
-            byte >(_repl_update_skip_move -1)
-            byte >(repl_update_edit_left - 1)
-            byte >(repl_update_edit_ok - 1)
-            byte >(repl_update_edit_right - 1)
-            byte >(_repl_update_skip_move -1)
-            byte >(repl_update_edit_down - 1)
-            byte >(_repl_update_skip_move -1)
-            byte >(repl_update_eval -1)
-            byte >(_repl_update_skip_move -1)
-            byte >(repl_update_menu_tab -1)
-REPL_EDIT_KEYS_K0_TABLE_HI
-            byte >(_repl_update_skip_move -1)
-            byte >(repl_update_edit_keys_up - 1)
-            byte >(_repl_update_skip_move -1)
-            byte >(repl_update_edit_keys_left - 1)
-            byte >(repl_update_edit_keys_ok - 1)
-            byte >(repl_update_edit_keys_right - 1)
-            byte >(repl_update_edit_keys_cancel -1)
-            byte >(repl_update_edit_keys_down - 1)
-            byte >(_repl_update_skip_move -1)
-            byte >(_repl_update_skip_move -1)
-            byte >(_repl_update_skip_move -1)
-            byte >(_repl_update_skip_move -1)
 
 ;----------------------
 ; Repl display
@@ -603,86 +470,76 @@ _prompt_repos_loop
             sbcs _prompt_repos_swap ;2/3 25 ; .
             sta.w RESP0             ;3   29 shim to 29
             sta RESP1               ;3   32
-            jmp _prompt_repos_swap_end
+            jmp _prompt_repos_swap_end ; 3 35
 _prompt_repos_swap
             sta RESP1               ;3   29
             sta RESP0               ;3   32
 _prompt_repos_swap_end
             sta WSYNC               ;--
-            lda #$30                ;2    2
-            sta CTRLPF              ;3    5
-            tya                     ;2    7 
-            clc                     ;2    9
-            adc repl_scroll         ;3   12
-            and #$01                ;2   14
-            tax                     ;2   16
-            lda DISPLAY_REPL_COLOR_SHADES,x ;4 20
-            ldx repl_menu_tab       ;3   23
-            adc DISPLAY_REPL_COLOR_SCHEME,x ;4 27
-            cpy repl_keys_y         ;3   30
-            sbne _prompt_keys_skip  ;2*  32
-            lda #0                  ;2   34
-            ldx #CURSOR_COLOR+1     ;2   36
-            SLEEP 4                 ;4   40
-            jmp _prompt_cursor_bk_1 ;3   43
-_prompt_keys_skip
-            cpy repl_edit_y         ;3   36
-            sbne _prompt_cursor_skip ;2*  38
-            ldx #CURSOR_COLOR       ;2   40
-            jmp _prompt_cursor_bk_1 ;3   43
+            ; background color
+            tya                     ;2    2
+            lsr                     ;2    4
+            lda repl_menu_tab       ;3    7
+            rol                     ;2    9
+            tax                     ;2   11
+            lda DISPLAY_REPL_COLOR_SCHEME,x ;4 15
+            sta COLUBK              ;3   18
+            sta COLUPF              ;3   21
+            ; game cursor
+            lda game_state          ;3   24
+            and #$0f                ;2   26
+            lsr                     ;2   28
+            tax                     ;2   30
+            lda CURSOR_COLORS,x     ;4   34
+            cpy repl_edit_y         ;3   37
+            sbne _prompt_cursor_skip ;2* 39
+            sta COLUPF              ;3   42
+            jmp _prompt_cursor_bk_1 ;3   45
 _prompt_cursor_skip
-            tax                     ;2   41    
-            SLEEP 2                 ;2   43
+            SLEEP 5                 ;5   45            
 _prompt_cursor_bk_1
-            SLEEP 24                ;24  67 ; BUGBUG: SPACE?
-            stx COLUPF              ;3   70
-            sta HMOVE               ;3   73 ; BUGBUG: can move back? or go to one HMOVE?
-            sta COLUBK              ;3   76
-            SLEEP 14                ;14  14 ; sleep to protect HMX registers
-            lda repl_display_indent,y ;4 18
-            and #$01                ;2   10
-            sbne _prompt_swap_hpos  ;2/3 22
-            lda #$a0                ;2   24
-            sta HMP0                ;3   27
-            lda #$b0                ;2   29
-            sta HMP1                ;3   32
-            lda #$00                ;2   34
-            sta HMM0                ;3   37 
-            lda #$10                ;2   39
-            sta HMM1                ;3   42
-            jmp _prompt_final_hpos  ;3   45
-_prompt_swap_hpos
-            lda #$a0                ;2   25
-            sta HMP1                ;3   28
-            lda #$b0                ;2   30
-            sta HMP0                ;3   33
-            lda #$00                ;2   35
-            sta HMM1                ;3   38 
-            lda #$10                ;2   40
-            sta HMM0                ;3   43
-            SLEEP 2                 ;2   45 ; -2  -3  -4  -5  -6  -7  -8  -9
-_prompt_final_hpos
-            lda #0                  ;2   47
-            sta RESMP0              ;3   50
-            sta RESMP1              ;3   53
-            lda #$80                ;2   55
-            sta HMBL                ;3   58 ; no move
-            SLEEP 12                ;12  70
-            sta HMOVE               ;3   73
+            lda #$30                ;2   47
+            sta CTRLPF              ;3   50
+            lda repl_display_indent,y ;4 54
+            and #$01                ;2   56
+            tax                     ;2   58
+            ldy POW_2_4,x           ;4   62
+            SLEEP 8                 ;8   70
+            sta HMOVE             ;3   73 ; BUGBUG: can move back? or go to one HMOVE?
+            ldx #4                  ;2   75
+_prompt_hmove_loop
+            dey                     ;2    1  6
+            lda PROMPT_HMP_OFFSETS,y;4    5  4
+            dex                     ;2    7  8
+            sta HMP0,x              ;4   11 12
+            sbne _prompt_hmove_loop  ;2/3 14 15 * 3 + 14 = 59 - 2 = 57
+            sta RESMP0              ;3   60
+            sta RESMP1              ;3   63
+            lda #$80                ;2   65
+            sta HMBL                ;3   68 ; no move
+            sta.w HMOVE             ;4   73
             
 prompt_encode
-            cpx #CURSOR_COLOR + 1   ; still background; BUGBUG kludgy to use +1?
-            beq _prompt_encode_keys
+            ldy repl_editor_line
             lda repl_display_list,y
             beq _prompt_encode_blank
+            tax
             cmp #$40
             bpl _prompt_encode_ref
 _prompt_encode_symbol
+            lda repl_display_indent,y 
+            lsr
+            bcc _prompt_encode_symbol_alone
+            ldy #2
+            lda #SYMBOL_CELL
+            jsr sub_fmt_symbol
+_prompt_encode_symbol_alone
+            txa
             ldy #0
             jsr sub_fmt_symbol
             jmp prompt_display
 _prompt_encode_ref
-            tax
+            ; add ref marker
             lda HEAP_CAR_ADDR,x
             bpl _prompt_encode_number
             ; load width and find offset to write graphics
@@ -690,6 +547,10 @@ _prompt_encode_ref
             and #$07
             asl ; multiply by 2
             tay ; load offset into y
+            lda #SYMBOL_CELL
+            jsr sub_fmt_symbol
+            dey
+            dey
             ;  encoding loop
 _prompt_encode_loop
             lda HEAP_CAR_ADDR,x ; read car
@@ -697,51 +558,22 @@ _prompt_encode_loop
             lda HEAP_CDR_ADDR,x
             dey
             dey
+            bmi _prompt_encode_end
             tax
             bne _prompt_encode_loop
 _prompt_encode_end
             jmp prompt_display
+_prompt_encode_blank
+            ldx #CHAR_HEIGHT + 4
+            jsr sub_wsync_loop
+            jmp prompt_end_line
 _prompt_encode_number
             lda #<SYMBOL_GRAPHICS_HASH
             sta gx_s1_addr
             lda #>SYMBOL_GRAPHICS_HASH
             sta gx_s1_addr + 1
             jsr sub_fmt_number
-            jmp prompt_display
-
-_prompt_encode_blank
-            ldx #CHAR_HEIGHT + 4
-_prompt_encode_blank_loop
-            sta WSYNC
-            dex
-            bpl _prompt_encode_blank_loop
-            jmp prompt_end_line
-
-_prompt_encode_keys
-            lda repl_edit_sym
-            sbc #2
-            bcs _prompt_encode_keys_mod
-            adc #SYMBOL_TABLE_SIZE
-_prompt_encode_keys_mod
-            tay
-            ldx #9 ; fill in 10 addresses
-_prompt_encode_keys_loop
-            tya
-            asl
-            asl
-            asl
-            sta gx_addr-1,x
-            lda #>SYMBOL_GRAPHICS_P0
-            adc #0
-            sta gx_addr,x
-            iny
-            cpy #SYMBOL_TABLE_SIZE
-            bne _prompt_encode_keys_roll
-            ldy #0
-_prompt_encode_keys_roll
-            dex
-            dex
-            bpl _prompt_encode_keys_loop
+            ; SPACE: intentional fallthrough
 
 prompt_display
             ; ------------------------------------
@@ -860,8 +692,6 @@ _prompt_draw_loop    ; 40/41 w page jump
             sta NUSIZ0                   ;3   30
 
             sta WSYNC
-            lda #$80
-            sta HMBL
             lda #0          
             sta ENAM0
             sta ENAM1
@@ -893,7 +723,7 @@ _menu_fmt_fn
             lda #<SYMBOL_GRAPHICS_BLANK
             sta gx_s4_addr
 _menu_draw_start
-            lda DISPLAY_REPL_COLOR_SCHEME,x
+            lda DISPLAY_REPL_COLOR_MENU,x
         	sta WSYNC
             sta COLUBK
             lda #WHITE     
@@ -927,6 +757,96 @@ _glyph_loop
             sbpl _glyph_loop
             rts
 
+; display
+
+    ; line width X sprite arrangement
+    ; we use the same display kernel for all 
+    ; code, but manipulate respx and nusizex 
+    ; to ensire p1/m1 are always written last
+    ;         - S0 S1  0  1  0  1  0  1  0
+    ; 1 - 0 0 - 30 00             30 00 00  
+    ; 2 - 2 0 - 30 31          31 30 01 00 
+    ; 3 - 2 2 - 31 31       31 31 31 01 01
+    ; 4 - 3 2 - 31 33    33 31 33 31 03 01 
+    ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03  
+  
+DISPLAY_COLS_INDENT
+    byte 80,88,96,104,112
+DISPLAY_COLS_NUSIZ0_A
+    byte $30,$30,$31,$31,$33
+DISPLAY_COLS_NUSIZ1_A
+    byte $00,$31,$31,$33,$33
+DISPLAY_COLS_NUSIZ0_B
+    byte $00,$00,$01,$01,$03
+DISPLAY_COLS_NUSIZ1_B
+    byte $00,$01,$01,$03,$03
+
+PROMPT_HMP_OFFSETS
+    byte $a0, $b0, $00, $10
+    byte $b0, $a0, $10, $00
+
+CURSOR_COLORS
+    byte CURSOR_COLOR,$60,$B0,$50
+
+DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
+    byte $6A,$6E,$BA,$BE,$5A,$5E,$3A,$3E
+DISPLAY_REPL_COLOR_MENU
+    byte $60,$B0,$50,$30 ; BUGBUG: make pal safe
+
+; -- NON space-sensitive routines follow
+
+repl_update_edit_up
+            lda #-1
+            byte $2c
+repl_update_edit_down
+            lda #1
+_repl_update_set_cursor_line
+            clc
+            adc repl_edit_line
+            bpl _repl_update_above_limit
+            lda #0
+_repl_update_above_limit
+            ; check if we are past last line
+            cmp repl_last_line
+            bcc _repl_update_check_limit
+            lda repl_last_line
+_repl_update_check_limit
+            sta repl_edit_line
+            cmp repl_scroll
+            bpl _repl_update_check_scroll_down
+            sta repl_scroll
+            jmp _repl_update_skip_move
+_repl_update_check_scroll_down
+            sec 
+            sbc #(EDITOR_LINES-2)
+            cmp repl_scroll
+            bmi _repl_update_skip_save_scroll
+            sta repl_scroll
+_repl_update_skip_save_scroll
+            jmp _repl_update_skip_move
+
+repl_update_edit_left
+            lda #-1
+            byte $2c ; skip next 2 bytes
+repl_update_edit_right
+            lda #1
+            clc
+            adc repl_edit_col
+            bpl _repl_update_check_col_limit
+            lda #0
+_repl_update_check_col_limit
+            sta repl_edit_col
+            jmp _repl_update_skip_move
+
+repl_update_menu_tab
+            ; inc tab
+            lda repl_menu_tab
+            clc 
+            adc #1
+            and #$03
+            sta repl_menu_tab
+            jmp _repl_update_skip_move    
+
 sub_fmt_symbol
             ; a is a symbol value, y is location
             asl ; multiply by 8
@@ -956,34 +876,52 @@ sub_fmt_number
             WRITE_DIGIT_LO HEAP_CDR_ADDR, gx_s4_addr   ;16 45
             rts
 
+REPL_EDIT_K0_TABLE_LO
+            byte <(repl_update_insert_number -1)
+            byte <(repl_update_edit_up - 1)
+            byte <(repl_update_edit_delete-1)
+            byte <(repl_update_edit_left - 1)
+            byte <(_repl_update_skip_move - 1)
+            byte <(repl_update_edit_right - 1)
+            byte <(_repl_update_skip_move-1)
+            byte <(repl_update_edit_down - 1)
+            byte <(repl_update_shift_context -1)
+            byte <(repl_update_eval -1)
+            byte <(repl_update_insert_subexp -1)
+            byte <(repl_update_menu_tab -1)
 
-    ; line width X sprite arrangement
-    ; we use the same display kernel for all 
-    ; code, but manipulate respx and nusizex 
-    ; to ensire p1/m1 are always written last
-    ;         - S0 S1  0  1  0  1  0  1  0
-    ; 1 - 0 0 - 30 00             30 00 00  
-    ; 2 - 2 0 - 30 31          31 30 01 00 
-    ; 3 - 2 2 - 31 31       31 31 31 01 01
-    ; 4 - 3 2 - 31 33    33 31 33 31 03 01 
-    ; 5 - 3 3 - 33 33 33 33 33 33 33 03 03  
+REPL_EDIT_K0_TABLE_HI
+            byte >(repl_update_insert_number -1)
+            byte >(repl_update_edit_up - 1)
+            byte >(repl_update_edit_delete-1)
+            byte >(repl_update_edit_left - 1)
+            byte >(_repl_update_skip_move - 1)
+            byte >(repl_update_edit_right - 1)
+            byte >(_repl_update_skip_move-1)
+            byte >(repl_update_edit_down - 1)
+            byte >(repl_update_shift_context -1)
+            byte >(repl_update_eval -1)
+            byte >(repl_update_insert_subexp -1)
+            byte >(repl_update_menu_tab -1)
 
-DISPLAY_COLS_INDENT
-    byte 80,88,96,104,112
-DISPLAY_COLS_NUSIZ0_A
-    byte $30,$30,$31,$31,$33
-DISPLAY_COLS_NUSIZ1_A
-    byte $00,$31,$31,$33,$33
-DISPLAY_COLS_NUSIZ0_B
-    byte $00,$00,$01,$01,$03
-DISPLAY_COLS_NUSIZ1_B
-    byte $00,$01,$01,$03,$03
+; set up symbol offsets for each keyboard shift
+;  key + repl_key_shift[shift][repl_key_row[key]]
+; the first three rows have to be three sequential digits
+; the last row each key can be a different offset
+; 
 
+REPL_KEY_ROW
+    byte 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3
 
-DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
-    byte $60,$B0,$50,$30
-DISPLAY_REPL_COLOR_SHADES
-    byte #$0A,#$0E ; BUGBUG: make pal safe
+REPL_KEY_SHIFT
+REPL_KEY_SHIFT_0
+    byte $0, $0, $0, $0
+REPL_KEY_SHIFT_1
+    byte $20, $20, $20, ($20 - 11)
+REPL_KEY_SHIFT_2
+    byte $0f, $1d - 4, $13 - 7, ($2a - 10) 
+REPL_KEY_SHIFT_3
+    byte $15, $15, $0d - 7, ($2b - 10)
 
     MAC WRITE_DIGIT_HI 
             lda {1},x

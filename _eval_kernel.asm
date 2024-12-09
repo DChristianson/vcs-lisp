@@ -44,23 +44,22 @@ eval_iter
             bpl _eval_number      ; branch if it's a number
             cmp #SYMBOL_QUOTE + $c0
             beq _eval_quote
-            and #SYMBOL_IF + $c0  ; 11001100, 
-            eor #SYMBOL_IF + $c0  ; special case if we are applying test, loop, progn
-            bne _eval_funcall     ; otherwise eval as funcall
+            bmi _eval_funcall     ; eval as funcall if less than quote
 _eval_test_loop_progn
-            lda HEAP_CAR_ADDR,x   ; 11001100
-            and #$07
+            lda HEAP_CAR_ADDR,x   ; special case if we are applying test, loop, progn
+            sbc #1                ; SPACE: expect carry set here
+            and #$07              ; mask out eval_next
             sta eval_next
-            lsr                   ; test/loop/progn : dc/dd/de -> 6e/6e/6f
+            lsr                   ; test/loop/progn : 100/101/110 -> 00/01/11
             bcc _eval_no_loop
 _eval_loop_init
-            ; BUGBUG: need 1 stack
+            ; SAFETY: need 1 stack
             lda HEAP_CDR_ADDR,x   ; push cdr of loop 
             pha                   ; . 
             tsx                   ; push stack up
             stx eval_frame        ;
 _eval_no_loop
-            ; BUGBUG: need 1 more stack
+            ; SAFETY: need 1 more stack
             ; x references a test/progn expression
             lda HEAP_CDR_ADDR,x   ; follow cddr of test ; BUGBUG: what if empty
             tax                   ; .
@@ -82,15 +81,15 @@ eval_update
 
 _eval_quote 
 _eval_number
-            ; BUGBUG: need 0 stack
+            ; SAFETY: need 0 stack
             ; x references a number or quote cell, a is the car
             sta accumulator_car   ; push number cell into accumulator and return
             lda HEAP_CDR_ADDR,x   ; .
             sta accumulator_cdr   ; .
-_eval_null  ; BUGBUG: just returning from null
+_eval_null  ; SAFETY: just returning from null
             jmp exec_frame_return ; .
 _eval_funcall
-            ; BUGBUG: need 1 stack
+            ; SAFETY: need 1 stack
             ; x references a function call
             lda HEAP_CAR_ADDR,x   ; .
             pha                   ; push head to stack
@@ -129,7 +128,7 @@ _eval_funcall_args_env
             clc
             adc eval_env                ; eval_env is the parent frame in stack 
             tax
-            ; BUGBUG: need 2 stack
+            ; SAFETY: need 2 stack
             ; this is a short circuit from doing a frame eval
             lda #FRAME_ARG_OFFSET_LSB,x
             sta accumulator_lsb        ; BUGBUG: may not be needed?
@@ -139,7 +138,7 @@ _eval_funcall_args_env
             pha
             jmp _eval_funcall_args_next
 _eval_funcall_args_expression
-            ; BUGBUG: need 2 stack
+            ; SAFETY: need 2 stack
             ; a is a reference to a function call, x is the parent frame
             tay
             lda eval_next  ; push next arg to stack
@@ -167,7 +166,7 @@ _eval_funcall_exec
             rts
 
 _eval_funcall_args_end
-            lsr                         
+            lsr ; 001/100/101/110 -> 00/00/01/10                     
             bne _eval_test_loop_continue ; otherwise special form, go to return sub
 exec_frame_return
             ; called when we've made a funcall or evaluated an expression
@@ -235,10 +234,10 @@ _eval_old_env
 _eval_test_loop_continue
             ldx eval_frame ; pull 
             txs
-            bcs _eval_loop_continue
+            bcs _eval_loop_continue ; carry is set if we were looped
             ; evaluate test/progn expression
-            ; BUGBUG: potentially we can optimize the stack here
-            lsr
+            ; SPACE: potentially we can optimize the stack here
+            lsr ; 10/11 -> 1
             sta eval_next ; should be 1 after the lsr
             lda #0,x ; READABILITY: notation ; get pointer at FRAME+0
             beq _eval_return      ; if null we will return 
@@ -267,9 +266,9 @@ _eval_loop_iter
 _eval_loop_end_iter
             jsr eval_wait         ; we need to start the loop over but first, wait 1 frame
             ldx eval_frame
-            lda #1,x ; BUGBUG: READABILITy
+            lda #1,x ; READABILITY: notation
             tax
-            lda #5
+            lda #5                ; we will re-test READABILITY: meaning 
 _eval_loop_next
             sta eval_next
             jmp _eval_test_loop_progn_next
@@ -289,7 +288,7 @@ _eval_return
             jmp exec_frame_return
 _eval_continue_args
             sta eval_next ; SPACE: REDUNDANT? could consolidate?
-            ; BUGBUG: need 2 stack
+            ; SAFETY: need 2 stack
             lda accumulator_lsb
             pha
             lda accumulator_msb 

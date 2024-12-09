@@ -121,14 +121,11 @@ FUNC_S05_EQUALS
             sty accumulator_lsb
             lda FRAME_ARG_OFFSET_LSB,x
             cmp FRAME_ARG_OFFSET_LSB - 2,x
-            bne _equals_return
+            bne _y_bool_return
             lda FRAME_ARG_OFFSET_MSB,x
             cmp FRAME_ARG_OFFSET_MSB - 2,x
-            bne _equals_return
-            ldy #$01 ; BUGBUG: TRUE
-_equals_return
-            sty accumulator_msb
-            jmp exec_frame_return
+            bne _y_bool_return
+            beq _y_bool_inc_return
 
 FUNC_S06_GT
             ldx eval_frame
@@ -139,11 +136,8 @@ FUNC_S06_GT
             sbc FRAME_ARG_OFFSET_LSB - 2,x
             lda FRAME_ARG_OFFSET_MSB,x
             sbc FRAME_ARG_OFFSET_MSB - 2,x
-            bcc _gt_return
-            ldy #$01 ; BUGBUG: TRUE
-_gt_return
-            sty accumulator_msb
-            jmp exec_frame_return
+            bcc _y_bool_return
+            bcs _y_bool_inc_return
 
 FUNC_S07_LT
             ldx eval_frame
@@ -154,11 +148,8 @@ FUNC_S07_LT
             sbc FRAME_ARG_OFFSET_LSB,x
             lda FRAME_ARG_OFFSET_MSB - 2,x
             sbc FRAME_ARG_OFFSET_MSB,x
-            bcc _lt_return
-            iny ; BUGBUG: TRUE
-_lt_return
-            sty accumulator_msb
-            jmp exec_frame_return
+            bcc _y_bool_return
+            bcs _y_bool_inc_return
 
 FUNC_S08_AND
             ; and return second arg
@@ -201,9 +192,10 @@ FUNC_S0A_NOT
             sty accumulator_lsb
             lda FRAME_ARG_OFFSET_LSB,x
             ora FRAME_ARG_OFFSET_MSB,x
-            bne _not_return
-            iny ; BUGBUG: TRUE
-_not_return
+            bne _y_bool_return
+_y_bool_inc_return
+            iny ; SPACE: TRUE
+_y_bool_return
             sty accumulator_msb
             jmp exec_frame_return
 
@@ -382,6 +374,21 @@ _func_cx_save
             sta CXCLR
             bpl _func_jkcx_exit
 
+FUNC_ROTATE
+            ; rotate a direction
+            ldx eval_frame
+            lda FRAME_ARG_OFFSET_LSB,x
+            and #$0f
+            beq _func_jkcx_exit
+            tay 
+            lda FRAME_ARG_OFFSET_LSB - 2,x
+            clc
+            adc DIR_ANGLES-1,y
+            and #$07
+            tax
+            lda ANGLE_DIRS,x
+            beq _func_jkcx_exit
+
 FUNC_MOVE
             ; get player
             tsx
@@ -425,7 +432,15 @@ FUNC_SHAPE
             sta game_p0_shape,x
             jmp exec_frame_return
 
-FUNC_CLOCK
-            ; get the clock
-            lda clock
-            jmp _func_jkcx_exit
+FUNC_REFLECT
+            ; BUGBUG: TODO: implement
+            ldx eval_frame
+            ldy FRAME_ARG_OFFSET_LSB,x
+            lda FRAME_ARG_OFFSET_LSB - 2,x
+            tax
+            jmp exec_frame_return
+
+DIR_ANGLES
+    byte 7, 0, 1, 6, 0, 2, 5, 4, 3
+ANGLE_DIRS
+    byte 2, 3, 6, 9, 8, 7, 4, 1

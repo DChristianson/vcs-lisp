@@ -38,12 +38,11 @@ SCANLINES = 262
 #endif
 
 ; game state sxxxyyyy
-; s = state (edit/eval), x = game type, y = mode
-; REPL 0xxxyyyi
+; s = state (edit/eval), x = game type, y = submode
+; REPL 0xxxyyyi (i = cursor / select) yyy = edit state
 GAME_STATE_EDIT          = %00000000
-GAME_STATE_EDIT_KEYS     = %00000001
-GAME_STATE_EDIT_SELECT   = %00000010
-; EVAL 1xxxyyyi
+GAME_STATE_EDIT_SELECT   = %00000001
+; EVAL 1xxxyyyy
 GAME_STATE_EVAL          = %10000000
 GAME_STATE_EVAL_APPLY    = %10000001
 GAME_STATE_EVAL_CONTINUE = %10000010
@@ -66,12 +65,12 @@ NULL                = $00
 
 HEADER_HEIGHT = 56
 EDITOR_LINES  = 4
-LINE_HEIGHT = CHAR_HEIGHT + 10
+LINE_HEIGHT = CHAR_HEIGHT + 12
 PROMPT_HEIGHT = EDITOR_LINES * LINE_HEIGHT
-FOOTER_HEIGHT = 26
+FOOTER_HEIGHT = 18
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
-REPL_DISPLAY_MARGIN = 16
+REPL_DISPLAY_MARGIN = 8
 
 FRAME_ARG_OFFSET_LSB = -1
 FRAME_ARG_OFFSET_MSB = -2
@@ -148,7 +147,6 @@ repl_menu_tab       ds 1 ; which menu tab is active SPACE: collapse with game st
 repl_scroll         ds 1 ; lines to scroll
 repl_edit_line      ds 1 ; editor line SPACE: collapse with col?
 repl_edit_col       ds 1 ; editor column SPACE: collapse with line?
-repl_edit_sym       ds 1 ; editor symbol
 repl_prev_cell      ds 1
 repl_curr_cell      ds 1
 repl_last_line      ds 1 ; last line in SPACE: can be tmp?
@@ -157,7 +155,6 @@ repl_display_cursor ds 1 ; cursor position for display
 repl_display_list   ds EDITOR_LINES ; cell to display on each line
 repl_display_indent ds EDITOR_LINES ; 4 bits indent level + 4 bits line width
 
-repl_keys_y         ds 1 ; y index of keys
 repl_edit_y         ds 1 ;y index of edit line
 repl_tmp_width      ds 1 ; temporary NUSIZ storage during layout SPACE: need?
 repl_tmp_indent       ; ds 1  temporary indent storage during layout SPACE: need?
@@ -455,7 +452,6 @@ sub_clr_pf
         sta VDELP1
         rts
 
-
 TOWER_STACK_MASK
         byte $01,$02,$04
 TOWER_DISC_AC_PF1
@@ -477,15 +473,15 @@ GAME_STATE_DRAW_JMP_LO
 GAME_STATE_DRAW_JMP_HI = GAME_STATE_DRAW_JMP_LO + 1
     word (repl_draw_accumulator-1)
     word (repl_draw_music-1)
-    word (repl_draw_game-1)
     word (repl_draw_tower-1)
+    word (repl_draw_game-1)
 
 GAME_STATE_INIT_JMP_LO
 GAME_STATE_INIT_JMP_HI = GAME_STATE_INIT_JMP_LO + 1
     word (game_state_init_noop-1)
     word (game_state_init_noop-1)
-    word (repl_init_game-1)
     word (repl_init_tower-1)
+    word (repl_init_game-1)
 
     ; eval
 LOOKUP_SYMBOL_FUNCTION
@@ -501,21 +497,21 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_S08_AND-1
     word FUNC_S09_OR-1
     word FUNC_S0A_NOT-1
-    word FUNC_CONS-1 ; CONS
-    word FUNC_CAR-1 ; CAR
-    word FUNC_CDR-1 ; CDR
-    word FUNC_APPLY-1 ; APPLY
+    word FUNC_ROTATE-1
+    word FUNC_CONS-1
+    word FUNC_CAR-1
+    word FUNC_CDR-1 
     word FUNC_F0-1
     word FUNC_F1-1
     word FUNC_F2-1
     word FUNC_BEEP-1
+    word FUNC_JX-1
+    word FUNC_KX-1
     word FUNC_STACK-1
     word FUNC_MOVE-1
     word FUNC_SHAPE-1
-    word FUNC_CLOCK-1
-    word FUNC_JX-1
-    word FUNC_KX-1
     word FUNC_CX-1
+    word FUNC_REFLECT-1
 
 sub_wsync_loop
 _header_loop
@@ -544,7 +540,7 @@ _respxx_loop
             rts                     ;6    9
 
 ;--------------------
-; GC sub
+; GC sub - gc a single cell and its descendants
 
 gc
             tax
@@ -581,7 +577,8 @@ gcDone
 set_cdr
             ; free the cdr of x and replace with contents of a
             ; return state undefined
-            tay
+            tay                   ; SPACE: could preload y?
+set_cdr_y
             lda HEAP_CDR_ADDR,x
             sty HEAP_CDR_ADDR,x
             jsr gc
@@ -624,7 +621,7 @@ oom
             sta accumulator_car
             pla
             sta accumulator_cdr
-            jmp _repl_update_edit_keys_done ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
+            jmp _repl_update_skip_move ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
 
 Y_DIR
         byte -1, -1, -1, 0, 0, 0, 1, 1, 1

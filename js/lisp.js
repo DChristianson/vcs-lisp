@@ -93,26 +93,26 @@ LispMachine = function (ram) {
         '&',
         '|',
         '!',
+        'rot',
         'cons',
         'car',
         'cdr',
-        'apply',
         'f',
         'g',
         'h',
         'beep',
+        'jx',
+        'kx',
         'swap',
         'move',
         'size',
-        'clock',
-        'jx',
-        'kx',
+        'reflect',
         'cx',
+        'apply',
         '\'',
         'if',
         'loop',
         'progn',
-        '#',
         '0',
         '1',
         '2',
@@ -129,11 +129,32 @@ LispMachine = function (ram) {
         'd',
     ];
 
+    var _key_mappings_0 = [
+        ['#', 'up', 'del'],
+        ['left', '', 'right'],
+        ['ins', 'down', '*/# f/&'],
+        ['eval', 'expr', 'E/F G/H'],
+    ]
+
+    var _key_shifts_1 = [
+        [0, 0, 0, 0],
+        [0x20, 0x20, 0x20, 0x20 - 11],
+        [0x0f, 0x1d - 4, 0x13 - 7, 0x2a - 10],
+        [0x15, 0x15, 0x0d - 7, 0x2b - 10],
+    ]
+
+    var _key_mappings_game = [
+        ['', 'up', ''],
+        ['left', '', 'right'],
+        ['', 'down', ''],
+        ['', '', ''],
+    ]
+
     var _modes = {
         'calc': 0,
         'song': 1,
-        'game': 2,
-        'stax': 3,
+        'stax': 2,
+        'game': 3,
     }
 
     var _registers = {
@@ -144,7 +165,6 @@ LispMachine = function (ram) {
         'h': 0xc4,
         'accumulator': 0xc5,
         'game_state': 0xc8,
-        'repl_edit_sym': 0xe3,
     };
 
     var _functionNames = ['repl', 'f', 'g', 'h'];
@@ -317,14 +337,43 @@ LispMachine = function (ram) {
         await ram.restore(0x80, 0xc5);
     };
 
-    this.getEditSym = async function() {
+    this.getKeyMap0 = async function () {
+        const keyMap = {};
+        for (let row = 0; row <= 3; row++) {
+            for (let col = 0; col <= 2; col++) {
+                const label = `keypad0r${row}c${col}`;
+                keyMap[label] = _key_mappings_0[row][col];
+            }
+        }
+        return keyMap;
+    }
+
+    this.getKeyMap1 = async function () {
         await ram.snapshot();
         const gs = ram.read(_registers['game_state']);
-        if ((gs & 0x80) === 1 || (gs & 0x0f) === 0) {
-            // not in editor
-            return;
+        const keyMap = {};
+        if (gs & 0x80) {
+            // eval mode
+            for (let row = 0; row <= 3; row++) {
+                for (let col = 0; col <= 2; col++) {
+                    const label = `keypad1r${row}c${col}`;
+                    keyMap[label] = _key_mappings_game[row][col];
+                }
+            }
+        } else {
+            // repl mode
+            const shiftMode = (gs & 0x0f) >> 1;
+            const rowShifts = _key_shifts_1[shiftMode];
+            for (let row = 0; row <= 3; row++) {
+                const b = rowShifts[row];
+                for (let col = 0; col <= 2; col++) {
+                    const label = `keypad1r${row}c${col}`;
+                    const p = b + (row * 3) + col + 1;
+                    keyMap[label] = SYMBOLS[p];
+                }
+            }    
         }
-        return ram.read(_registers['repl_edit_sym']);
+        return keyMap;        
     }
 
     this.setGameState = async function(state) {
@@ -502,9 +551,9 @@ LispIde = function (lisp) {
     this.project = "";
     this.functions = {
         repl: NullRef,
-        f0: NullRef,
-        f1: NullRef,
-        f2: NullRef
+        f: NullRef,
+        g: NullRef,
+        h: NullRef
     };
 
     this.openWindow = function(event, id) {
@@ -546,7 +595,17 @@ LispIde = function (lisp) {
         self._updateEditors();
     };
 
-    this.getEditSym = lisp.getEditSym;
+    this.updateKeyMaps = async function() {
+        const keyMap0 = await lisp.getKeyMap0();
+        const keyMap1 = await lisp.getKeyMap1();
+        for (const [key, value] of Object.entries({...keyMap0, ...keyMap1})) {
+            document.getElementById(key).textContent = value;
+        }
+    };
+
+
+    this.getKeyMap0 = lisp.getKeyMap0;
+    this.getKeyMap1 = lisp.getKeyMap1;
 
     this.storeMemory = async function(register, data) {
         var parsedFunctions = self._parseFunctionExpressions();
@@ -630,7 +689,8 @@ LispIde = function (lisp) {
         if (projectElement) {
             projectElement.textContent = self.project;
         }
-        for (const [key, value] of Object.entries(data.functions)) {
+        for (const key of ['repl', 'f', 'g', 'h']) {
+            const value = data.functions[key] ?? '';
             const tabcontent = document.getElementById(key);
             if (tabcontent) {
                 tabcontent.textContent = value;
@@ -728,13 +788,17 @@ LispIde = function (lisp) {
         .then((json) => self._bindExamples(json));
     if (location.hash) {
         // dropoff link
-        initEnv.then(() => {
+        initEnv = initEnv.then(() => {
             window.setTimeout(() => {
                 self._bindProjectData(location.hash);
             }, 1000);
         });
     };
-
+    initEnv.then(() => {
+        window.setTimeout(() => {
+            self.updateKeyMaps();
+        }, 1000);     
+    });
 };
 
 lispInit = async function(stellerator) {

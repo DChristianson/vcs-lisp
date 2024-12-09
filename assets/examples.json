@@ -55,7 +55,17 @@
         "name": "Read Controller",
         "mode": "calc",
         "functions": {
-            "repl": "(loop 1 (jx))",
+            "repl": "(loop 1 (jx 0))",
+            "f": "",
+            "g": "",
+            "h": ""
+        }
+    },
+    "keyboard": {
+        "name": "Musical Keyboard",
+        "mode": "song",
+        "functions": {
+            "repl": "(loop (beep (kx 0) 3))",
             "f": "",
             "g": "",
             "h": ""

@@ -119,6 +119,7 @@ DONE
        - keydown forces rewrite of all registers
      - (maybe result of stack being trashed)
      - (f 1) (def (f a) (if (beep a 5) (f (+ a 1))))
+    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
@@ -183,6 +184,11 @@ DONE
     - select defn
     - cancel button for convenience
     - need latched key input
+    - advanced keyboard (both keyboards)
+      - use right keyboard for symbols
+      - paging through different symbols
+      - feedback on screen for what page you are on
+      - special cancel, etc keys on left keyboard
   - eval mode
      - be able to interrupt eval with switch (reset? select?)
   - dedicated executable for steps game
@@ -193,6 +199,9 @@ BETA
       - ball game
         - pong demo 
         - needs diagononal movement
+        - need some kind of direction rotation operator
+        - stretch goal: boundary collision
+        - stretch goal: score
         - not a stable framerate
       - towers of hanoi
         - recursion stuck on stack overflow
@@ -209,14 +218,7 @@ BETA
         - ringing changes examples
         - be able to handle DSS generative examples as demos
           - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
-
-
   - virtual keyboard 4
-    - advanced keyboard (both keyboards)
-      - use right keyboard for symbols
-      - paging through different symbols
-      - feedback on screen for what page you are on
-      - special cancel, etc keys on left keyboard
     - quote support (no way to properly quote a function from the editor))
   - dev support
     - stack overflow flag + ux
@@ -244,7 +246,6 @@ BETA
     - clicky beeps when playing sounds
     - browser warnings about audio
     - sound just not right in stellerator
-    - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
     - disks kernel adds +/-1 line in some configurations
     - repl adds +/- 1 line
     - complex program takes too long to analyze in vblank
@@ -297,7 +298,6 @@ BONUS
       - random function?
      - towers of hanoi
       - way to score?
-
   - dedicated music sequencer version
   - dedicated hanoi version
   - alt/bonus game modes/dedicated 

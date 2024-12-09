@@ -30,59 +30,61 @@ BACKWARD  FORWARD   NEW LINE
 
 HOR2 S =  VER2 T >  0 SPACE <
 
-
-'',
-'(',
-'#',
-'quote'
-'sel'
-'apply'
-
 '*',
 '+',
 '-',
+
 '/',
 '%',
 '=',
+
 '>',
 '<',
 '&',
+
 '|',
 '!',
+'rot',
+
+
+---
+
+'f',
+'g',
+'h',
+
+'if',
+'loop',
+'progn',
+
+'beep',
+'jx',
+'kx',
+
+'a',
+'b',
+
+----
+
+'swap',
+'move',
+'size',
+
+'reflect',
+'cx',
+'apply',
 
 'cons',
 'car',
 'cdr',
 
-'apply',
-'f',
-'g',
-'h',
-'if',
-'loop',
-'progn',
-'a',
-'b',
+'\'',
 'c',
 'd',
 
-
-'beep',
-'stack',
-'p0',
-'p1',
-'ball',
-'j0',
-'j1',
-'color',
-'quote',
-'cx0b',
-'cx1b',
-'cx01',
+--
 
 
-'hash',
-'0',
 '1',
 '2',
 '3',
@@ -93,3 +95,5 @@ HOR2 S =  VER2 T >  0 SPACE <
 '8',
 '9',
 
+'0',
+'\#'

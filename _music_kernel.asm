@@ -1,6 +1,6 @@
 
 repl_draw_music
-        ;; BUGBUG: Draw 8 music symbols
+        ;; Draw 8 music symbols
         ;; color whichever one is playing
         ldx #13
         jsr sub_wsync_loop

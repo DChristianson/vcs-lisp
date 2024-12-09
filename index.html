@@ -180,7 +180,7 @@
                 });
             };
 
-            function bindKeypad(targetElement, stellerator) {
+            function bindKeypad(targetElement, stellerator, ide) {
                 const keypadName = targetElement.id;
                 for (var row = 0; row < 4; row++) {
                     const rowElement = document.createElement("div");
@@ -191,7 +191,10 @@
                         button.className = "keypad";
                         button.id = actionName;
                         button.onmousedown = () => { stellerator.triggerKeydownAction(actionName); }
-                        button.onmouseup = () => { stellerator.triggerKeyupAction(actionName); }
+                        button.onmouseup = () => { 
+                            stellerator.triggerKeyupAction(actionName);
+                            ide.updateKeyMaps();
+                         }
                         rowElement.appendChild(button);
                     }
                     targetElement.appendChild(rowElement)
@@ -204,7 +207,7 @@
 
                 // We load the ROM file using the fetch API. We could also hardcode the ROM as a base64 encoded string
                 // and pass that to stellerator instead.
-                const response = await fetch("./publish/lisp_NTSC_20241130.bin");
+                const response = await fetch("./publish/lisp_NTSC_20241208.bin");
                 const rom = new Uint8Array(await response.arrayBuffer());
                 const canvas = document.getElementById('stellerator-canvas');
                 const keyboardTarget = canvas;
@@ -225,9 +228,6 @@
                     }
                 );
             
-                bindKeypad(document.getElementById('keypad0'), stellerator);
-                bindKeypad(document.getElementById('keypad1'), stellerator);
-
                 // Respond to size changes
                 window.addEventListener('resize', () => stellerator.isFullscreen() || stellerator.resize());
 
@@ -260,6 +260,10 @@
                 window.ide = ide;
 
                 // hook up ux
+
+                bindKeypad(document.getElementById('keypad0'), stellerator, ide);
+                bindKeypad(document.getElementById('keypad1'), stellerator, ide);
+
                 stellerator.stateChange.addHandler(
                     state => {
                         const targetElement = document.getElementById('console_switch_power');

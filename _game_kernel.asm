@@ -31,7 +31,9 @@ _repl_init_game_loop
 OBJ_X
         byte 5, 123, 64
 OBJ_TAB
-        byte 0, 1, 4
+        byte 0, 1
+POW_2_4
+        byte 4, 8
 
 repl_draw_game
         ; resp all objects
