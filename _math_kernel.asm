@@ -113,7 +113,6 @@ _div_return
             cld
             jmp exec_frame_return
 
-
 FUNC_S05_EQUALS
             ; Normalize 
             ldx eval_frame
@@ -257,7 +256,7 @@ _cons_null
             jmp exec_frame_return
 
 FUNC_BEEP
-            ; beep
+            ; beep 0 = silence, 1-8 note, 9 = buzz
             ;  - we count down from arg1
             ;  - if arg1 == 0 we return normally
             ;  - otherwise load note into audio registers and accumulator
@@ -265,41 +264,41 @@ FUNC_BEEP
             ; get timer
             lda FRAME_ARG_OFFSET_LSB - 2,x
             and #$0f ; take least significant digit
+            beq _beep_end
             asl      ; x 4
             asl      ;
-            sta beep_t0
-            beq _beep_end
+            sta FRAME_ARG_OFFSET_LSB - 2,x
             ; play sound
-            lda FRAME_ARG_OFFSET_MSB,x
-            sta accumulator_msb
             lda FRAME_ARG_OFFSET_LSB,x
-            sta accumulator_lsb
-            beq _func_beep_no_sound
-            sec
-            sbc #1
-            and #$07 ; modulo frequency
+            and #$0f
+            sta beep_n0             ; accumulator_lsb
+            beq _func_beep_setvol
             tax
-            lda BEEPS_TAB,x
-            sta AUDF0
-            inx
-            stx beep_f0
+            cmp #$09 
+            bpl _func_beep_buzz
             lda #12
+            byte $2c
+_func_beep_buzz
+            lda #7
             sta AUDC0
-_func_beep_no_sound
+            lda BEEPS_TAB-1,x
+            sta AUDF0
+_func_beep_setvol
             sta AUDV0
 _beep_continue
-            dec beep_t0
+            ldx eval_frame
+            dec FRAME_ARG_OFFSET_LSB - 2,x         ; use as timer
             beq _beep_end
             jsr eval_wait
             jmp _beep_continue
 _beep_end
             lda #0
             sta AUDV0
-            sta beep_f0
+            sta accumulator_msb
             jmp exec_frame_return
   
 BEEPS_TAB
-            byte 19, 17, 15, 14, 12, 11, 10, 9
+            byte 19, 17, 15, 14, 12, 11, 10, 9, 31
 
 FUNC_STACK
             ldx eval_frame
@@ -389,6 +388,30 @@ FUNC_ROTATE
             lda ANGLE_DIRS,x
             beq _func_jkcx_exit
 
+FUNC_REFLECT
+            ; PONG reflection
+            ldx eval_frame
+            lda FRAME_ARG_OFFSET_LSB,x
+            and #$01
+            tax
+            lda game_p0_s,x
+            lsr
+            clc
+            adc game_p0_y,x
+            sec
+            sbc game_bl_y
+            clc
+            beq _func_reflect_back
+            bpl _func_reflect_dn          
+_func_reflect_dn            
+            lda #3
+            byte $2C ; SPACE: skip next 2 bytes
+_func_reflect_up
+            lda #-3
+_func_reflect_back
+            adc LR_DIR,x
+            beq _func_jkcx_exit
+
 FUNC_MOVE
             ; get player
             tsx
@@ -432,14 +455,8 @@ FUNC_SHAPE
             sta game_p0_shape,x
             jmp exec_frame_return
 
-FUNC_REFLECT
-            ; BUGBUG: TODO: implement
-            ldx eval_frame
-            ldy FRAME_ARG_OFFSET_LSB,x
-            lda FRAME_ARG_OFFSET_LSB - 2,x
-            tax
-            jmp exec_frame_return
-
+LR_DIR
+    byte 4,6
 DIR_ANGLES
     byte 7, 0, 1, 6, 0, 2, 5, 4, 3
 ANGLE_DIRS

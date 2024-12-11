@@ -31,7 +31,7 @@ _music_loop
         ror ; .
         ror ; .
         tay
-        cpx beep_f0
+        cpx beep_n0
         bne _music_loop_save_colup0
         ldy #WHITE
 _music_loop_save_colup0
@@ -40,7 +40,7 @@ _music_loop_save_colup0
         sbc #$10
         dex 
         tay
-        cpx beep_f0
+        cpx beep_n0
         bne _music_loop_save_colup1
         ldy #WHITE
 _music_loop_save_colup1

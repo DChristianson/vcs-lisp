@@ -106,8 +106,8 @@ LispMachine = function (ram) {
         'swap',
         'move',
         'size',
-        'reflect',
         'cx',
+        'reflect',
         'apply',
         '\'',
         'if',
@@ -398,6 +398,12 @@ LispMachine = function (ram) {
         ram.write(ref, currentState | 0x80);
         await ram.restore(ref, ref + 1);
     }
+
+    this.isClear = async function () {
+        await ram.snapshot();
+        const freeMem = await self.countFreeMem();
+        return freeMem === 32;
+    };
 
 };
 
@@ -720,6 +726,19 @@ LispIde = function (lisp) {
         modal.classList.toggle('active', true);
     };
 
+    this._waitInitialized = async function(timeout, retries, func) {
+        if (retries < 0) {
+            throw new Exception('INIT');
+        }
+        window.setTimeout(async () => {
+            if (await lisp.isClear()) {
+                func();
+            } else {
+                self._waitInitialized(timeout, retries - 1, func);
+            }    
+        }, timeout);
+    };
+
     /**
      * Get function expressions
      * @returns 
@@ -780,24 +799,20 @@ LispIde = function (lisp) {
         self._bindProjectData(example);
     };
 
-
-
     // bind examples then load project
     var initEnv = fetch("assets/examples.json")
         .then((response) => response.json())
         .then((json) => self._bindExamples(json));
+
     if (location.hash) {
-        // dropoff link
         initEnv = initEnv.then(() => {
-            window.setTimeout(() => {
+            self._waitInitialized(1000, 5, () => {
                 self._bindProjectData(location.hash);
-            }, 1000);
+            });
         });
-    };
+    }
     initEnv.then(() => {
-        window.setTimeout(() => {
-            self.updateKeyMaps();
-        }, 1000);     
+        window.setTimeout(() => self.updateKeyMaps(), 1000);
     });
 };
 

@@ -103,6 +103,7 @@ f1 = function_table + 1
 f2 = function_table + 2
 ; return value from functions
 accumulator        ds CELL_SIZE
+beep_n0         = accumulator + 1 ; beep note
 accumulator_car = accumulator
 accumulator_cdr = accumulator + 1
 accumulator_msb = accumulator
@@ -116,9 +117,6 @@ game_state         ds 1
 player_input       ds 2
 ; debounced p0 input
 player_input_latch ds 2
-; beep frequency and time
-beep_f0            ds 1
-beep_t0            ds 1
 ; reserve for game data
 game_data          ds 8
 
