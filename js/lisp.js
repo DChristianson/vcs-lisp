@@ -93,7 +93,7 @@ LispMachine = function (ram) {
         '&',
         '|',
         '!',
-        'rot',
+        '-1',
         'cons',
         'car',
         'cdr',

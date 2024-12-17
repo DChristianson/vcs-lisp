@@ -9,9 +9,24 @@ eval_wait
             sta game_state
             jmp update_return
 
+stack_overflow
+            ; we hit a stack overflow
+            ; for now will pull address we were at from stack and drop in accumulator
+            pla
+            sta accumulator_car
+            pla
+            sta accumulator_cdr
+            ldx #$ff ; reset stack
+            txs
+            stx eval_frame
+            jmp exec_frame_return
+
 eval_apply
-            ; BUGBUG: PROTECT: we need at least 3 bytes of stack
-            jsr alloc_stack
+            ; PROTECT: we need at least 3 bytes of stack
+            ; very crude protection against stack overflow
+            tsx
+            cpx #STACK_DANGER_ZONE
+            bmi stack_overflow
             lda #1 ; 1 = return
             pha
             lda eval_frame
@@ -294,25 +309,6 @@ _eval_continue_args
             lda accumulator_msb 
             pha
             jmp _eval_funcall_args_next
-
-alloc_stack
-            ; very crude protection against stack overflow
-            tsx
-            cpx #STACK_DANGER_ZONE
-            bmi stack_overflow
-            rts
-
-stack_overflow
-            ; we hit a stack overflow
-            ; for now will pull address we were at from stack and drop in accumulator
-            pla
-            sta accumulator_car
-            pla
-            sta accumulator_cdr
-            ldx #$ff ; reset stack
-            txs
-            stx eval_frame
-            jmp exec_frame_return
 
 FUNC_APPLY
             ; collapse stack

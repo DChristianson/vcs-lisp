@@ -1,12 +1,6 @@
 repl_draw_accumulator
             ldx #HEADER_HEIGHT / 2
             jsr sub_wsync_loop
-            jsr sub_draw_accumulator
-            ldx #HEADER_HEIGHT / 2 - 1
-            jsr sub_wsync_loop
-            jmp game_draw_return
-
-sub_draw_accumulator
             ; convert accumulator to BCD
             ldx #<accumulator
             jsr sub_fmt_number
@@ -17,14 +11,11 @@ sub_draw_accumulator
             stx VDELP0                  ;3   5  
             stx VDELP1                  ;3   8
             stx NUSIZ0                  ;3  11
-            dex                         ;2  13; get to zero
-            stx NUSIZ1                  ;3  16
-            lda #$10                    ;2  18
+            lda #$10                    ;2  13
             sta WSYNC                   ;-----
             stx HMP0                    ;3   3
             sta HMP1                    ;3   6
             sta HMOVE                   ;3   9
-
             ldy #CHAR_HEIGHT - 1        ;2  70
 _accumulator_draw_loop    ; 40/41 w page jump
             sta WSYNC                   ;-   --
@@ -34,11 +25,14 @@ _accumulator_draw_loop    ; 40/41 w page jump
             sta GRP1                    ;3   16
             lda (gx_s4_addr),y          ;5   21
             sta GRP0                    ;3   24
-            SLEEP 19                    ;---- BUGBUG: SPACE
-            lda #0                      ;5   31
-            sta GRP1                    ;3   34
-            sta GRP0                    ;3   37 
-            dey                         ;2   39  
+            ldx #4                      ;2   26
+_accumulator_delay_loop
+            dex                         ;2   28/33/38/43
+            bne _accumulator_delay_loop ;3/2 31/36/41/45
+            stx GRP1                    ;3   48  / space - x is zero
+            dey                         ;2   50  
             bpl _accumulator_draw_loop  ;2   41  
             jsr sub_clr_pf
-            rts
+            ldx #HEADER_HEIGHT / 2 - 1
+            jsr sub_wsync_loop
+            jmp game_draw_return

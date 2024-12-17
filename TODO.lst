@@ -195,11 +195,21 @@ DONE
   - font
     - tune font / symbols
 BETA
+  - bugs
+    - keyboard doesn't work in browser
+    - empty repl with # is wacky
+    - editor freeze when using keypad 1?
+    - clicky beeps when playing sounds
+    - browser warnings about audio
+    - sound just not right in stellerator
+    - disks kernel adds +/-1 line in some configurations
+    - repl adds +/- 1 line
+    - complex program takes too long to analyze in vblank
+    - stella does not auto-recognize keyboard (not working as expected)?
   - game modes 2
       - ball game
         - pong demo 
-        - needs diagononal movement
-        - need some kind of direction rotation operator
+        - needs diagonal movement
         - stretch goal: boundary collision
         - stretch goal: score
         - not a stable framerate
@@ -241,15 +251,6 @@ BETA
     - protection against var access?
   - library 3
     - gauntlet of all functions (make sure all basically work)
-  - bugs
-    - editor freeze when using keypad 1?
-    - clicky beeps when playing sounds
-    - browser warnings about audio
-    - sound just not right in stellerator
-    - disks kernel adds +/-1 line in some configurations
-    - repl adds +/- 1 line
-    - complex program takes too long to analyze in vblank
-    - stella does not auto-recognize keyboard (not working as expected)?
   - code 2
       - hygiene
         - clean up temp variable usage

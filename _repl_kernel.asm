@@ -651,7 +651,11 @@ _prompt_draw_start_loop ; skip a line
             ldy #CHAR_HEIGHT - 1         ;2   32
 
 _prompt_draw_loop    ; 40/41 w page jump
-            SLEEP 23                     ;23  55/58
+            ldx #3                       ;2
+_prompt_draw_delay
+            dex                          ;2
+            bpl _prompt_draw_delay       ;3/21; SPACE: need delay
+            SLEEP 2                      ;2   55/58 ; 
             lda (gx_s0_addr),y           ;5   60/64
             sta GRP0                     ;3   63
             lda (gx_s1_addr),y           ;5   68
@@ -687,8 +691,11 @@ _prompt_draw_loop    ; 40/41 w page jump
             sta NUSIZ1                   ;3   74
             ldy DISPLAY_COLS_NUSIZ1_B,x  ;4    2
             lda DISPLAY_COLS_NUSIZ0_B,x  ;4    6
-            SLEEP 18                     ;18  24
-            sty NUSIZ1                   ;3   27
+            ldx #2                       ;2    8
+_prompt_draw_exit_delay
+            dex                          ;2   10/15/21
+            bpl _prompt_draw_exit_delay  ;3   13/18/23 ; need 18
+            sty.w NUSIZ1                 ;4   27
             sta NUSIZ0                   ;3   30
 
             sta WSYNC
@@ -708,20 +715,19 @@ prompt_done
 repl_draw
             lda #5
             jsr sub_respxx
+            clc
             ldx repl_menu_tab 
             txa
             bne _menu_fmt_fn
-            jsr sub_fmt_word_no_mult
-            jmp _menu_draw_start
+            lda #SYMBOL_LAMBDA
+            byte $2c
 _menu_fmt_fn
-            ldy #2
-            clc
             adc #SYMBOL_F0-1
+            ldy #0
             jsr sub_fmt_symbol
-            lda #>SYMBOL_GRAPHICS_BLANK
-            sta gx_s4_addr + 1
-            lda #<SYMBOL_GRAPHICS_BLANK
-            sta gx_s4_addr
+            ldy #2
+            lda #SYMBOL_APPLY
+            jsr sub_fmt_symbol
 _menu_draw_start
             lda DISPLAY_REPL_COLOR_MENU,x
         	sta WSYNC
@@ -744,18 +750,6 @@ _menu_draw_start
             jsr sub_wsync_loop
 
             jmp waitOnOverscan
-
-sub_draw_glyph_16px ; draw p0 and p1, using y and a registers
-            ldy #CHAR_HEIGHT - 1
-_glyph_loop
-            sta WSYNC          
-            lda (gx_s3_addr),y   
-            sta GRP0                    
-            lda (gx_s4_addr),y         
-            sta GRP1                     
-            dey
-            sbpl _glyph_loop
-            rts
 
 ; display
 
@@ -785,11 +779,10 @@ PROMPT_HMP_OFFSETS
     byte $a0, $b0, $00, $10
     byte $b0, $a0, $10, $00
 
-CURSOR_COLORS
-    byte CURSOR_COLOR,$60,$B0,$50
 
 DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
     byte $6A,$6E,$BA,$BE,$5A,$5E,$3A,$3E
+CURSOR_COLORS
 DISPLAY_REPL_COLOR_MENU
     byte $60,$B0,$50,$30 ; BUGBUG: make pal safe
 
@@ -856,18 +849,6 @@ sub_fmt_symbol
             lda #>SYMBOL_GRAPHICS_P0
             adc #0 ; will pick up carry bit if we have P1
             sta gx_addr+1,y
-            rts
-
-            ; a is a symbol value
-sub_fmt_word_no_mult
-            clc 
-            adc #<SYMBOL_GRAPHICS_WORDS
-            sta gx_s3_addr
-            adc #$08
-            sta gx_s4_addr
-            lda #>SYMBOL_GRAPHICS_WORDS
-            sta gx_s3_addr+1
-            sta gx_s4_addr+1
             rts
 
 sub_fmt_number

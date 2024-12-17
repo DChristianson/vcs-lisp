@@ -135,7 +135,7 @@ gx_s2_addr         ds 2
 
   SEG.U REPL
 
-    ORG $DD
+    ORG $DB
 
 ; additional graphics addresses for repl
 gx_s1_addr          ds 2
@@ -165,7 +165,7 @@ repl_editor_line ds 1  ; line counter storage during editor display
 ; for expression eval
   SEG.U EVAL
 
-    ORG $DD
+    ORG $DB
 
 eval_next        ds 1 ; next action to take
 eval_frame       ds 1 ; top of stack for current frame
@@ -299,8 +299,16 @@ endVBlank_loop
 
             lda game_state
             and #$70
-            adc #$10
-            jsr sub_fmt_word_no_mult 
+            ; a is a symbol value
+_sub_fmt_word_no_mult
+            clc 
+            adc #<SYMBOL_GRAPHICS_WORDS
+            sta gx_s3_addr
+            adc #$08
+            sta gx_s4_addr
+            lda #>SYMBOL_GRAPHICS_WORDS
+            sta gx_s3_addr+1
+            sta gx_s4_addr+1
             lda #70
             jsr sub_respxx
             lda #WHITE 
@@ -328,14 +336,18 @@ _mode_set_colupx
 game_draw_return
 
             lda game_state
-            bpl _jmp_repl_draw ; BUGBUG is there a better way -- jump table?
-            jmp logo_draw
-_jmp_repl_draw
+            bmi _jmp_logo_draw ; BUGBUG is there a better way -- jump table?
             jmp repl_draw
 
 
 game_state_init_noop
             jmp game_state_init_return
+
+
+_jmp_logo_draw
+    	    ldx #128
+	        jsr sub_wsync_loop
+            ; fallthrough
 
 ;--------------------
 ; Read keyboard during overscan
@@ -495,7 +507,7 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_S08_AND-1
     word FUNC_S09_OR-1
     word FUNC_S0A_NOT-1
-    word FUNC_ROTATE-1
+    word FUNC_DEC-1
     word FUNC_CONS-1
     word FUNC_CAR-1
     word FUNC_CDR-1 
@@ -516,6 +528,18 @@ _header_loop
             sta WSYNC
             dex
             bpl _header_loop
+            rts
+
+sub_draw_glyph_16px ; draw p0 and p1, using y and a registers
+            ldy #CHAR_HEIGHT - 1
+_glyph_loop
+            sta WSYNC          
+            lda (gx_s3_addr),y   
+            sta GRP0                    
+            lda (gx_s4_addr),y         
+            sta GRP1                     
+            dey
+            sbpl _glyph_loop
             rts
 
 sub_respxx
@@ -622,7 +646,7 @@ oom
             jmp _repl_update_skip_move ; BUGBUG: if we alloc anywhere other than editor will need a trap addr
 
 Y_DIR
-        byte -1, -1, -1, 0, 0, 0, 1, 1, 1
+        byte 1, 1, 1, 0, 0, 0, -1, -1;, -1 ; SPACE, run these together
 X_DIR
         byte -1, 0, 1, -1, 0, 1, -1, 0, 1
 
@@ -633,8 +657,6 @@ JX_KEYS     ; SPACE: lot of zeros
             byte 0,0,0,4
             byte 0,8,2,0
 #endif 
-
-    include "_logo_kernel.asm"
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors

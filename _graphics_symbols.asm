@@ -29,8 +29,8 @@ SYMBOL_GRAPHICS_OR
     byte $0,$20,$20,$20,$20,$20,$20,$20; 8
 SYMBOL_GRAPHICS_NOT
     byte $0,$20,$20,$0,$20,$20,$20,$20; 8
-SYMBOL_GRAPHICS_ROT
-    byte $0,$40,$80,$a0,$90,$68,$10,$20; 8
+SYMBOL_GRAPHICS_DEC
+    byte $0,$38,$10,$10,$d0,$10,$10,$30; 8
 SYMBOL_GRAPHICS_CONS
     byte $0,$f8,$20,$a8,$20,$a8,$20,$f8; 8
 SYMBOL_GRAPHICS_CAR
@@ -61,6 +61,7 @@ SYMBOL_GRAPHICS_CX
     byte $0,$90,$a0,$c8,$a8,$18,$28,$48; 8
 SYMBOL_GRAPHICS_REFLECT
     byte $0,$80,$a0,$90,$e8,$90,$a0,$80; 8
+SYMBOL_APPLY = $1b
 SYMBOL_GRAPHICS_APPLY
     byte $0,$60,$78,$60,$0,$c0,$f0,$c0; 8
 SYMBOL_QUOTE = $1c
@@ -113,11 +114,13 @@ SYMBOL_GRAPHICS_CELL
 SYMBOL_HASH = $2f
 SYMBOL_GRAPHICS_HASH
     byte $0,$50,$f8,$f8,$50,$f8,$f8,$50; 8
+SYMBOL_ZARA = $30
+SYMBOL_GRAPHICS_ZARA
+    byte $0,$38,$78,$7c,$d8,$d8,$8c,$c; 8
+SYMBOL_LAMBDA = $31
+SYMBOL_GRAPHICS_LAMBDA
+    byte $0,$88,$98,$50,$30,$20,$20,$60; 8
 SYMBOL_GRAPHICS_WORDS
-SYMBOL_GRAPHICS_EV
-    byte $0,$64,$84,$8a,$ca,$8a,$8a,$62; 8
-SYMBOL_GRAPHICS_AL
-    byte $0,$a6,$a8,$a8,$e8,$a8,$a8,$48; 8
 SYMBOL_GRAPHICS_CA
     byte $0,$6a,$8a,$8a,$8e,$8a,$8a,$64; 8
 SYMBOL_GRAPHICS_LC
@@ -134,6 +137,4 @@ SYMBOL_GRAPHICS_GA
     byte $0,$6a,$aa,$aa,$ae,$8a,$8a,$64; 8
 SYMBOL_GRAPHICS_ME
     byte $0,$a6,$a8,$a8,$ac,$e8,$e8,$a6; 8
-SYMBOL_GRAPHICS_BLANK ; pack blank bytes in
-    byte $0,$0,$0,$0,$0,$0,$0,$0
 

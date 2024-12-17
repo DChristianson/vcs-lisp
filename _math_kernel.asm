@@ -358,106 +358,153 @@ _func_kx_loop
             jsr eval_wait
             jmp _func_kx_loop
 
-FUNC_CX
-            lda #4
-            bit CXP0FB
-            bvs _func_cx_save
-            lsr
-            bit CXP1FB
-            bvs _func_cx_save
-            lsr
-            bit CXPPMM
-            bmi _func_cx_save
-            lsr
-_func_cx_save
-            sta CXCLR
-            bpl _func_jkcx_exit
-
-FUNC_ROTATE
-            ; rotate a direction
-            ldx eval_frame
-            lda FRAME_ARG_OFFSET_LSB,x
-            and #$0f
-            beq _func_jkcx_exit
-            tay 
-            lda FRAME_ARG_OFFSET_LSB - 2,x
-            clc
-            adc DIR_ANGLES-1,y
-            and #$07
-            tax
-            lda ANGLE_DIRS,x
-            beq _func_jkcx_exit
 
 FUNC_REFLECT
             ; PONG reflection
-            ldx eval_frame
-            lda FRAME_ARG_OFFSET_LSB,x
-            and #$01
-            tax
-            lda game_p0_s,x
+            lda game_bl_dir
+            bpl _func_jkcx_exit            
+
+FUNC_CX
+            ldy #8
+            ldx game_bl_dir
+            lda game_bl_x
+            beq _func_cx_wall_l
+            cmp #$7f
+            beq _func_cx_wall_r
+            lda game_bl_y            
+            beq _func_cx_wall_d
+            cmp #$1f
+            beq _func_cx_wall_u
+_func_cx_check
+            lda #4
+            bit CXPPMM
+            bmi _func_cx_save
             lsr
-            clc
-            adc game_p0_y,x
+            bit CXP1FB
+            bvs _func_cx_reflect
+            lsr
+            bit CXP0FB
+            bvs _func_cx_reflect
+            lsr
+            beq _func_cx_save 
+_func_cx_reflect
+            ; calc pong reflection
+            tay
+            lda game_bl_y
             sec
-            sbc game_bl_y
+            sbc game_p0_y-1,y ; SPACE: y is 1 or 2
+            and #$07
+            tax
+            lda REFL_UD,x
             clc
-            beq _func_reflect_back
-            bpl _func_reflect_dn          
-_func_reflect_dn            
+            adc X_DIR+1,y
+_func_reflect_save          
+            sta game_bl_dir
+            tya
+_func_cx_save
+            sta CXCLR
+            jmp _func_jkcx_exit
+_func_cx_wall_l
             lda #3
-            byte $2C ; SPACE: skip next 2 bytes
-_func_reflect_up
-            lda #-3
-_func_reflect_back
-            adc LR_DIR,x
-            beq _func_jkcx_exit
+            byte $2c
+_func_cx_wall_r
+            lda #1
+            clc
+            adc REPL_KEY_ROW-1,x
+            adc REPL_KEY_ROW-1,x
+            adc REPL_KEY_ROW-1,x
+            bpl _func_reflect_save
+_func_cx_wall_u
+            lda #8
+            byte $2c
+_func_cx_wall_d
+            lda #2
+            clc
+            adc X_DIR-1,x
+            bpl _func_reflect_save
+
+REFL_UD
+    byte 8, 8, 8, 5, 5, 2, 2, 2
 
 FUNC_MOVE
             ; get player
-            tsx
-            stx tmp_eval_stack
-            lda eval_frame
-            sec 
-            sbc tmp_eval_stack
-            cmp #7 ; check if 3+ args
-            bpl FUNC_MOVE_XY
             ldx eval_frame
             lda FRAME_ARG_OFFSET_LSB,x
             and #$03 ; SAFETY: unsafe access if > 2
             tay
+            txa
+            tsx
+            stx tmp_eval_stack
+            sec 
+            sbc tmp_eval_stack
+            cmp #7 ; check if 3+ args
+            bpl FUNC_MOVE_XY
             lda accumulator_lsb
-            and #$0f ; ignore bcd values < 9; SAFETY: unsafe access if not a BCD value
+            and #$0f ; ignore bcd values > 9; SAFETY: unsafe access if not a BCD value
             beq _func_move_exit
+            cpy #2
+            bne _skip_save_bl_dir
+            sta game_bl_dir
+_skip_save_bl_dir
             tax
-            dex
-            lda X_DIR,x
+            lda X_DIR-1,x
             clc
             adc game_p0_x,y
             and #$7f
             sta game_p0_x,y
-            lda Y_DIR,x
+            lda Y_DIR-1,x
             clc
             adc game_p0_y,y
             and #$1f
-            sta game_p0_y,y          
+            sta game_p0_y,y
+            bpl _func_move_exit          
 FUNC_MOVE_XY
+            ; move xy
+            ldx eval_frame
+            jsr _conv_bcd16
+            and #$7f
+            sta game_p0_x,y
+            dex
+            dex
+            jsr _conv_bcd16
+            and #$1f
+            sta game_p0_y,y
 _func_move_exit
             jmp exec_frame_return
-    
+_conv_bcd16
+            lda FRAME_ARG_OFFSET_LSB-2,x
+            and #$0f
+            asl FRAME_ARG_OFFSET_MSB-2,x
+            beq _conv_bcd16_lsb
+            adc #100
+_conv_bcd16_lsb            
+            sta accumulator_lsb
+            lda FRAME_ARG_OFFSET_LSB-2,x
+            and #$f0
+            lsr             
+            sta tmp_eval_stack
+            lsr
+            lsr
+            adc tmp_eval_stack
+            adc accumulator_lsb            
+            rts
+
 FUNC_SHAPE
             ; get player and set shape
-            ldx eval_frame
-            lda FRAME_ARG_OFFSET_LSB,x
-            and #$01
-            tax
             lda accumulator_lsb
-            and #$07
-            sta game_p0_shape,x
+            and #$03
+            sta game_px_shape
             jmp exec_frame_return
 
-LR_DIR
-    byte 4,6
-DIR_ANGLES
-    byte 7, 0, 1, 6, 0, 2, 5, 4, 3
-ANGLE_DIRS
-    byte 2, 3, 6, 9, 8, 7, 4, 1
+FUNC_DEC
+            ; subtract 1 from accumulator
+            sed 
+            lda accumulator_lsb
+            sec
+            sbc #1
+            sta accumulator_lsb
+            lda accumulator_msb
+            sbc #0
+            sta accumulator_msb
+            cld
+            jmp exec_frame_return
