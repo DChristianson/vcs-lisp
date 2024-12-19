@@ -345,7 +345,7 @@ game_state_init_noop
 
 
 _jmp_logo_draw
-    	    ldx #128
+    	    ldx #112
 	        jsr sub_wsync_loop
             ; fallthrough
 
