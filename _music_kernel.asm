@@ -23,23 +23,14 @@ repl_draw_music
         ; draw glyphs
         ldx #$08
 _music_loop
-        txa
-        sec
-        sbc #1
-        lsr ; multiply by 32 by shifting right and rolling
-        ror ; .
-        ror ; .
-        ror ; .
-        tay
+        ldy MUSIC_COLORS-1,x
         cpx beep_n0
         bne _music_loop_save_colup0
         ldy #WHITE
 _music_loop_save_colup0
         sty COLUP0
-        sec
-        sbc #$10
         dex 
-        tay
+        ldy MUSIC_COLORS-1,x
         cpx beep_n0
         bne _music_loop_save_colup1
         ldy #WHITE
@@ -49,7 +40,6 @@ _music_loop_save_colup1
         dex
         bne _music_loop
 _music_end
-        jsr sub_clr_pf
         ldx #15
         jsr sub_wsync_loop
         jmp game_draw_return

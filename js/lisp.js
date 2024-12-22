@@ -66,7 +66,7 @@ Pair = function(ref, car, cdr) {
 
 };
 
-LispMachine = function (ram) {
+LispMachine = function (ram, stellerator) {
 
     "use strict";
 
@@ -93,7 +93,7 @@ LispMachine = function (ram) {
         '&',
         '|',
         '!',
-        '-1',
+        'dec',
         'cons',
         'car',
         'cdr',
@@ -105,7 +105,7 @@ LispMachine = function (ram) {
         'kx',
         'swap',
         'move',
-        'size',
+        'shape',
         'cx',
         'reflect',
         'apply',
@@ -132,14 +132,14 @@ LispMachine = function (ram) {
     var _key_mappings_0 = [
         ['#', 'up', 'del'],
         ['left', '', 'right'],
-        ['ins', 'down', '*/# f/&'],
+        ['', 'down', '*/# f/&'],
         ['eval', 'expr', 'E/F G/H'],
     ]
 
     var _key_shifts_1 = [
         [0, 0, 0, 0],
         [0x20, 0x20, 0x20, 0x20 - 11],
-        [0x0f, 0x1d - 4, 0x13 - 7, 0x2a - 10],
+        [0x0f, 0x1c - 4, 0x13 - 7, 0x2a - 10],
         [0x15, 0x15, 0x0d - 7, 0x2b - 10],
     ]
 
@@ -150,12 +150,12 @@ LispMachine = function (ram) {
         ['', '', ''],
     ]
 
-    var _modes = {
-        'calc': 0,
-        'song': 1,
-        'stax': 2,
-        'game': 3,
-    }
+    var _modes = [
+        'calc',
+        'song',
+        'stax',
+        'game',
+    ];
 
     var _registers = {
         'free': 0xc0,
@@ -376,9 +376,18 @@ LispMachine = function (ram) {
         return keyMap;        
     }
 
+    this.getGameMode = async function() {
+        await ram.snapshot();
+        const ref = _registers['game_state'];
+        const currentState = ram.read(ref);
+        const stateIndex = (currentState & 0x70) >> 4;
+        console.log(`game mode ${stateIndex}`);
+        return _modes[stateIndex];
+    }
+
     this.setGameState = async function(state) {
         if (typeof state === 'string') {
-            state = _modes[state];
+            state = _modes.indexOf(state);
         }
         if (typeof state !== 'number') {
             return;
@@ -386,8 +395,12 @@ LispMachine = function (ram) {
         const ref = _registers['game_state'];
         ram.write(ref, state << 4);
         // BUGBUG: safety protections
-        // BUGBUG: init game data
         await ram.restore(ref, ref + 1);
+        // execute a reset
+        stellerator.getControlPanel().reset().toggle(true);
+        window.setTimeout( () => {
+            stellerator.getControlPanel().reset().toggle(false);
+        }, 1000);
     }
 
     this.eval = async function() {
@@ -550,6 +563,223 @@ LispParser = function() {
 
 };
 
+SymbolReference = function() {
+
+    "use strict";
+
+    var self = this;
+    var refdata = {};
+
+    this._bindSymbols = function (symbols) {
+        // init
+        for (const spec of symbols) {
+            const data = {
+                name: spec.name,
+                synonyms: spec.synonyms,
+                src: spec.src,
+            };
+            for (const sym of data.synonyms) {
+                refdata[sym] = data;
+            }
+            // image load
+            let img = new Image();
+            img.src = data.src;
+            data.img = img;
+        }
+    };
+
+    this.lookup = function (symbol) {
+        return refdata[symbol?.toString()];
+    }
+
+    // initialize
+    fetch('assets/symbols.json')
+        .then( (res) => { return res.json(); })
+        .then( (res) => { self._bindSymbols(res); });
+};
+
+LispVizualizer = function(canvas, symbols) {
+
+    "use strict";
+
+    var self = this;
+
+    const pixelW = 4;
+    const pixelH = 2;
+    const fontW = 8 * pixelW;
+    const fontH = 8 * pixelH;
+    const cellW = 8 * pixelW;
+    const cellH = 11 * pixelH;
+
+    const layout = [
+        ['repl', 'f', 'g', 'h'],
+    ];
+
+    var ctx;
+
+    this.resize = function(w, h) {
+        // set up canvas
+        canvas.width = w;
+        canvas.height = h;
+        ctx = canvas.getContext("2d");
+        ctx.fillStyle = 'white'
+        // shut off pixelation
+        ctx.msImageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+        ctx.imageSmoothingEnabled = false;
+    };
+
+    this.isComplexExpression = function (expr) {
+        if (expr.length > 4) {
+            return true;
+        }
+        for (const cell of expr) {
+            if (cell instanceof Array) {
+                return true;
+            }
+            if (typeof cell === 'number' && (cell > 9 || cell < 0)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    this.drawCell = function(s, x, y, bw = 1) {
+        if (bw) {
+            ctx.beginPath();
+            ctx.fillRect(x, y, cellW, pixelH);
+            ctx.fillRect(x, y, pixelW, cellH);
+            ctx.fillRect(x + cellW, y, pixelW, cellH);
+            ctx.fillRect(x, y + cellH - pixelH, cellW, pixelH);
+            ctx.stroke();    
+        }
+        const img = symbols.lookup(s)?.img;
+        if (img) {
+            ctx.drawImage(img, x + 2 * pixelW, y + 2 * pixelH, fontW, fontH);
+        }
+        return [cellW, cellH];
+    };
+
+    this.drawVertical = function (expr, x, y) {
+        self.drawCell('cell', x, y)[0];
+        x = x + cellW;
+        var maxW = cellW;
+        for (const cell of expr) {
+            var [w, h] = self.drawExpression(cell, x, y);
+            y = y + h
+            w = w + cellW;
+            if (w > maxW) {
+                maxW = w;
+            }
+        }
+        self.drawCell('term', x, y, 0);
+        y = y + cellH
+        return [maxW, y];
+    };
+
+    this.drawHorizontal = function (expr, x, y) {
+        var [w, maxH] = self.drawCell('cell', x, y);
+        x = x + w;
+        for (const cell of expr) {
+            const [w, h] = self.drawCell(cell, x, y);
+            x = x + w;
+            if (h > maxH) {
+                maxH = h;
+            }
+        }
+        return [x, maxH];
+    };
+
+    this.drawNumber = function (expr, x, y) {
+        self.drawCell('#', x, y);
+        self.drawCell(Math.floor(expr / 100), x + cellW, y);
+        self.drawCell(Math.floor((expr % 100) / 10), x + 2 * cellW, y);
+        self.drawCell(Math.floor(expr % 10), x + 3 * cellW, y);
+        return [4 * cellW, cellH];
+    };
+
+    this.drawExpression = function (expr, x, y) {
+
+        if (!expr) {
+            return [cellW, cellH];
+        } else if (expr instanceof Array) {
+            return self.isComplexExpression(expr) ?
+                self.drawVertical(expr, x, y) : 
+                self.drawHorizontal(expr, x, y);
+        } else if (typeof expr === 'number') {
+            return self.drawNumber(expr, x, y);
+        }
+
+        return self.drawCell(expr, x, y);
+    };
+
+    this.estimateSizeHorizontal = function (expr) {
+        return [(expr.length + 1) * cellW, cellH];
+    };
+
+    this.estimateSizeVertical = function (expr) {
+        var maxW = cellW;
+        var maxH = 0;
+        for (const cell of expr) {
+            var [w, h] = self.estimateSizeExpression(cell);
+            maxH = maxH + h;
+            w = w + cellW;
+            if (w > maxW) {
+                maxW = w;
+            }
+        }
+        maxH = maxH + cellH;
+        return [maxW, maxH];
+    }
+
+    this.estimateSizeExpression = function (expr) {
+        if (expr instanceof Array) {
+            return self.isComplexExpression(expr) ?
+                self.estimateSizeVertical(expr) : self.estimateSizeHorizontal(expr)
+        } else if (typeof expr === 'number') {
+            return [4 * cellW, cellH];
+        }
+        return [cellW, cellH];
+    }
+
+    this.drawExpressions = function (exprs) {
+        // get layout size
+        var maxW = 0, maxH = 0;
+        for (const [name, expr] of Object.entries(exprs)) {
+            var [w, h] = self.estimateSizeExpression(expr);
+            h = h + cellH * 3 / 2;
+            if (w > maxW) {
+                maxW = w;
+            }
+            if (h > maxH) {
+                maxH = h;
+            }
+        }
+
+        this.resize((maxW + cellW) * 4, (maxH + cellH) * 1);
+        
+        // draw expressions
+        var y = cellH / 2;
+        for (const row of layout) {
+            var x = cellW / 2;
+            for (const col of row) {
+                const expr = exprs[col];
+                self.drawCell(col, x, y, 0);
+                self.drawExpression(expr, x, y + 3 * cellH / 2);
+                x = x + maxW + cellW;    
+            };
+            y = y + maxH + cellH;
+        }
+    };
+
+    this.clearCanvas = function() {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+
+};
+
 LispIde = function (lisp) {
 
     var self = this;
@@ -561,6 +791,7 @@ LispIde = function (lisp) {
         g: NullRef,
         h: NullRef
     };
+    this.symbols = new SymbolReference();
 
     this.openWindow = function(event, id) {
 
@@ -586,7 +817,9 @@ LispIde = function (lisp) {
     };
 
     this.changeMode = async function(event, idx) {
-        lisp.setGameState(idx);
+        lisp.setGameState(idx).then(
+
+        )
     };
 
     this.help = async function(event) {
@@ -643,11 +876,47 @@ LispIde = function (lisp) {
     };
 
     this.shareProject = async function() {
-        const data = await self._exportProjectJson();
-        const pdata = btoa(JSON.stringify(data));
-        const href = location.href + '#' + pdata;
-        navigator.clipboard.writeText(href);
-        self._okcancel("Copied link to clipboard!", () => {}, false);
+        let modal = document.getElementById("ide_share");
+        let copy_url_button = document.getElementById('ide_share_copy_url');
+        let copy_image_button = document.getElementById('ide_share_copy_image');
+
+        let closeModal = async function() {
+            modal.classList.toggle('active', false)
+        };
+
+        // get viz
+        (async () => {
+            const canvas = document.getElementById('ide_share_viz');
+            const viz = new LispVizualizer(canvas, self.symbols);
+            var exprs = self._parseFunctionExpressions();
+            viz.drawExpressions(exprs);
+            copy_image_button.onclick = async function(event) {
+                canvas.toBlob(function(blob) { 
+                    const item = new ClipboardItem({ "image/png": blob });
+                    navigator.clipboard.write([item])
+                        .then(() => {
+                            self._okcancel("Copied image to clipboard!", () => {}, false);
+                        });
+                });
+            }
+        })();
+
+        // get share URL
+        (async () => {
+            const data = await self._exportProjectJson();
+            const pdata = btoa(JSON.stringify(data));
+            const href = location.href + '#' + pdata;
+            copy_url_button.onclick = async function(event) {
+                navigator.clipboard.writeText(href)
+                    .then(() => {
+                        self._okcancel("Copied link to clipboard!", () => {}, false);
+                    });
+            }
+        })();
+
+        let closeButton = document.getElementById('ide_share_close');
+        closeButton.onclick = closeModal;
+        modal.classList.toggle('active', true);
     };
 
     this.loadProject = async function(event) {
@@ -674,6 +943,10 @@ LispIde = function (lisp) {
             let name = tabcontent[i].id;
             let textContent = tabcontent[i].textContent;
             data.functions[name] = textContent;
+        }
+        let mode = await lisp.getGameMode();
+        if (mode) {
+            data.mode = mode;
         }
         return data;
     };
@@ -706,7 +979,7 @@ LispIde = function (lisp) {
         if (data.mode) {
             lisp.setGameState(data.mode);
         }
-    }
+    };
 
     this._okcancel = async function(text, accept, yesNo) {
         let modal = document.getElementById("ide_dialog");
@@ -799,7 +1072,7 @@ LispIde = function (lisp) {
         self._bindProjectData(example);
     };
 
-    // bind examples then load project
+    // bind examples and reference data then load project
     var initEnv = fetch("assets/examples.json")
         .then((response) => response.json())
         .then((json) => self._bindExamples(json));
@@ -818,7 +1091,7 @@ LispIde = function (lisp) {
 
 lispInit = async function(stellerator) {
     const ram = new ConsoleRam(stellerator);
-    const lisp = new LispMachine(ram);
+    const lisp = new LispMachine(ram, stellerator);
     const ide = new LispIde(lisp);
     return ide;
 };

@@ -13,12 +13,12 @@ game_px_addr_lo = gx_s4_addr + 0 ; make this addr loc match gx_s2_addr
 game_px_addr_hi = gx_s4_addr + 1 ; to avoid glitches in repl reading unitialized gx vars
 
 repl_init_game
-        ldy #16
         ldx #3
 _repl_init_game_loop
         lda OBJ_X-1,x
         sta game_p0_x-1,x
-        sty game_p0_y-1,x
+        lda OBJ_Y-1,x
+        sta game_p0_y-1,x
         dex
         bne _repl_init_game_loop ; SPACE: make sure x ends at zero
         stx game_px_shape
@@ -27,9 +27,12 @@ _repl_init_game_loop
 
 OBJ_X
         byte 5, 123, 64
+OBJ_Y
+        byte 12, 12, 16
 OBJ_TAB
         byte 0, 1
 POW_2_4
+REFL_X
         byte 4, 8
 
 repl_draw_game
@@ -52,11 +55,17 @@ _respx_object_loop
         bpl _game_respx_loop     ;3  32
         sta WSYNC                ;-----
         sta HMOVE
-        ldx game_px_shape
+        lda game_px_shape
+        and #$01
+        tax
         lda GAME_SHAPE_HI,x
         sta game_px_addr_hi
         lda GAME_SHAPE_LO,x
         sta game_px_addr_lo
+        lda game_px_shape
+        sta REFP1
+        asl
+        sta REFP0
 
         lda #$10
         sta CTRLPF  
@@ -94,17 +103,15 @@ _game_skip_bl_gfx
         bne _draw_game_loop
         stx GRP0
         stx GRP1
-        stx ENABL          
+        stx ENABL
+        stx REFP0          
+        stx REFP1
         jmp game_draw_return
 
 GAME_SHAPE_HI
         byte >SYMBOL_GRAPHICS_OR
-        byte >SYMBOL_GRAPHICS_SUB
         byte >SYMBOL_GRAPHICS_ZARA
-        byte >SYMBOL_GRAPHICS_LAMBDA
 
 GAME_SHAPE_LO
         byte <SYMBOL_GRAPHICS_OR
-        byte <SYMBOL_GRAPHICS_SUB
         byte <SYMBOL_GRAPHICS_ZARA
-        byte <SYMBOL_GRAPHICS_LAMBDA

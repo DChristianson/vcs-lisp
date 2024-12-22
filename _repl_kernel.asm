@@ -11,6 +11,7 @@ repl_update_splice_cell
             ldx repl_prev_cell 
             cpx #$c0
             bpl _repl_update_splice_root
+repl_update_splice_cell_x
             lda HEAP_CDR_ADDR,x
             cmp repl_curr_cell
             bne _repl_update_prevent_splice_head
@@ -36,11 +37,15 @@ repl_update_insert_number
 repl_update_insert_subexp
             ldy #$c0
 _repl_update_insert_cell
-            jsr repl_update_splice_cell
+            ldx repl_prev_cell 
+            cpx #$c0
+            bpl _repl_update_prevent_root
+            jsr repl_update_splice_cell_x
             dex
             jsr alloc_cdr
             sty HEAP_CAR_ADDR,x
             ;advance cursor
+_repl_update_prevent_root
             jmp _repl_update_skip_move
 
 repl_update_edit_delete
@@ -201,6 +206,7 @@ _repl_update_advance_cursor
             inc repl_edit_col
             ; end of moves
 _repl_update_skip_move
+game_state_init_noop
 game_state_init_return
             ; calculate visible program
             ldy #(EDITOR_LINES - 1)
@@ -780,6 +786,7 @@ PROMPT_HMP_OFFSETS
     byte $b0, $a0, $10, $00
 
 
+MUSIC_COLORS
 DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
     byte $6A,$6E,$BA,$BE,$5A,$5E,$3A,$3E
 CURSOR_COLORS
@@ -900,7 +907,7 @@ REPL_KEY_SHIFT_0
 REPL_KEY_SHIFT_1
     byte $20, $20, $20, ($20 - 11)
 REPL_KEY_SHIFT_2
-    byte $0f, $1d - 4, $13 - 7, ($2a - 10) 
+    byte $0f, $1c - 4, $13 - 7, ($2a - 10) 
 REPL_KEY_SHIFT_3
     byte $15, $15, $0d - 7, ($2b - 10)
 

@@ -109,7 +109,6 @@ _draw_tower_loop_end
         sta PF1
         lda #$80
         sta PF2
-        jsr sub_clr_pf
         jmp game_draw_return
 
         ; y = stack, x will be top disk 0-4

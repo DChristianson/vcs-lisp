@@ -195,6 +195,18 @@ def basfmt(name, vars, symbols, fp):
         for i in col:
             fp.write(f'    {int2bas(i)}\n')
 
+def make_transparent(image):
+    rgba = image.convert("RGBA")
+    data = rgba.load()
+    width, height = image.size
+    for y in range(height):
+        for x in range(width):
+            if data[x, y] == (0, 0, 0, 255):
+                data[x, y] = (255, 255, 255, 0)
+            elif data[x, y] == (255, 255, 255, 255):
+                data[x, y] = (0, 0, 0, 255)
+    return rgba
+
 def urlfmt(name, vars, symbols, fp):
     images = []
     for n, col in enumerate(vars):
@@ -202,11 +214,11 @@ def urlfmt(name, vars, symbols, fp):
         if symbols is not None:
             meta['symbol'] = symbols[n]
         buffer = bytes([i.to_bytes(1, 'big')[0] for i in col])
-        image = Image.frombytes('1', (8, len(col)), buffer)
+        image = make_transparent(Image.frombytes('1', (8, len(col)), buffer))
         mem = BytesIO() 
-        image.save(mem, 'bmp')
+        image.save(mem, 'png')
         data64 = str(base64.b64encode(mem.getvalue()), 'UTF-8')
-        meta['img'] = 'data:image/bmp;base64,' + data64
+        meta['src'] = 'data:image/png;base64,' + data64
         images.append(meta)
     if len(images) > 1:
         json.dump({'name': name, 'images': images}, fp, indent=4)
@@ -221,7 +233,7 @@ def pngfmt(name, vars, symbols, fp):
         if symbols is not None:
             filename = symbols[n]
         buffer = bytes([i.to_bytes(1, 'big')[0] for i in col])
-        image = Image.frombytes('1', (8, len(col)), buffer)
+        image = make_transparent(Image.frombytes('1', (8, len(col)), buffer))
         path = f'data/{filename}.png'
         image.save(path, 'png')
         fp.write(f'saving {path}\n')

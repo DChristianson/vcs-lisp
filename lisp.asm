@@ -248,36 +248,6 @@ newFrame
             ; update clock
             inc clock
 
-#if CONTROLS = JOYSTICK
-            ; update player input
-jx_update
-            ldx #1
-            lda SWCHA
-            and #$0f
-_jx_update_loop
-            tay
-            lda JX_KEYS,y
-            ldy INPT4,x
-            bmi _jx_update_skip_fire
-            lda #5
-_jx_update_skip_fire
-            tay
-            cmp player_input,x
-            bne _jx_update_end_debounce
-            lda #0
-_jx_update_end_debounce
-            sty player_input,x
-            sta player_input_latch,x
-            lda SWCHA
-            lsr
-            lsr
-            lsr
-            lsr
-            dex
-            bpl _jx_update_loop
-_jx_update_end_update
-#endif
-
             ; do eval and repl updates
             lda game_state ; BUGBUG: make a jump tables?
             bmi _gx_eval_update
@@ -312,11 +282,6 @@ _sub_fmt_word_no_mult
             lda #70
             jsr sub_respxx
             lda #WHITE 
-            ldy #-2    
-            cpy repl_edit_line 
-            bne _mode_set_colupx
-            lda #CURSOR_COLOR
-_mode_set_colupx
             sta COLUP0     
             sta COLUP1    
             jsr sub_draw_glyph_16px
@@ -331,17 +296,13 @@ _mode_set_colupx
             pha
             lda GAME_STATE_DRAW_JMP_LO,x
             pha
-            jsr sub_clr_pf
             rts
 game_draw_return
+            jsr sub_clr_pf
 
             lda game_state
-            bmi _jmp_logo_draw ; BUGBUG is there a better way -- jump table?
+            bmi _jmp_logo_draw 
             jmp repl_draw
-
-
-game_state_init_noop
-            jmp game_state_init_return
 
 
 _jmp_logo_draw
@@ -356,10 +317,12 @@ waitOnOverscan
             lda #36    ; vblank timer to drive us 30 scanlines
             sta TIM64T
 kx_update
-#if CONTROLS = KEYBOARD
+            lda game_state
+            bmi _kx_update_skip_latch
             lda #0
             sta player_input_latch
             sta player_input_latch + 1
+_kx_update_skip_latch
             lda clock
             and #$01
             sta tmp_kx_player
@@ -404,19 +367,17 @@ _kx_update_keydown:
             ldx tmp_kx_player
             cmp player_input,x
             bne _kx_update_end_debounce
-            lda #0
+            lda player_input_latch,x ; going to hold prior value
 _kx_update_end_debounce
             sty player_input,x
             sta player_input_latch,x
 _kx_update_end
-#endif
             jsr waitOnTimer
             sta WSYNC 
             jmp newFrame
 
 ;-------------------
 ; Timer sub
-; BUGBUG: need - or inline?
 waitOnTimer
             ldx #$00
 waitOnTimer_loop          
@@ -649,14 +610,6 @@ Y_DIR
         byte 1, 1, 1, 0, 0, 0, -1, -1;, -1 ; SPACE, run these together
 X_DIR
         byte -1, 0, 1, -1, 0, 1, -1, 0, 1
-
-#if CONTROLS = JOYSTICK
-JX_KEYS     ; SPACE: lot of zeros
-            byte 0,0,0,0
-            byte 0,0,0,6
-            byte 0,0,0,4
-            byte 0,8,2,0
-#endif 
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors

@@ -116,86 +116,70 @@ _div_return
 FUNC_S05_EQUALS
             ; Normalize 
             ldx eval_frame
-            ldy #0
-            sty accumulator_lsb
             lda FRAME_ARG_OFFSET_LSB,x
             cmp FRAME_ARG_OFFSET_LSB - 2,x
-            bne _y_bool_return
+            bne _return_false
             lda FRAME_ARG_OFFSET_MSB,x
             cmp FRAME_ARG_OFFSET_MSB - 2,x
-            bne _y_bool_return
-            beq _y_bool_inc_return
+            bne _return_false
+            beq _return_true
 
 FUNC_S06_GT
             ldx eval_frame
-            ldy #0
-            sty accumulator_lsb
             clc ; intentionally set carry bit so == is false
             lda FRAME_ARG_OFFSET_LSB,x
             sbc FRAME_ARG_OFFSET_LSB - 2,x
             lda FRAME_ARG_OFFSET_MSB,x
             sbc FRAME_ARG_OFFSET_MSB - 2,x
-            bcc _y_bool_return
-            bcs _y_bool_inc_return
+            bcc _return_false
+            bcs _return_true
 
 FUNC_S07_LT
             ldx eval_frame
-            ldy #0
-            sty accumulator_lsb
             clc ; intentionally set carry bit so == is false
             lda FRAME_ARG_OFFSET_LSB - 2,x
             sbc FRAME_ARG_OFFSET_LSB,x
             lda FRAME_ARG_OFFSET_MSB - 2,x
             sbc FRAME_ARG_OFFSET_MSB,x
-            bcc _y_bool_return
-            bcs _y_bool_inc_return
+            bcc _return_false
+            bcs _return_true
 
 FUNC_S08_AND
-            ; and return second arg
+            ; and return second arg if first is true
             ldx eval_frame
             lda FRAME_ARG_OFFSET_LSB,x
-            sta accumulator_lsb
             ora FRAME_ARG_OFFSET_MSB,x
-            beq _and_return
-            lda FRAME_ARG_OFFSET_LSB - 2,x
-            sta accumulator_lsb
-            ora FRAME_ARG_OFFSET_MSB - 2,x
-            beq _and_return
-            lda FRAME_ARG_OFFSET_MSB,x
-_and_return
-            sta accumulator_msb
+            beq _return_false 
+            ; will return contents of accumulator = second (last) arg
             jmp exec_frame_return
 
 FUNC_S09_OR
-            ; short circuit OR
+            ; short circuit or
             ldx eval_frame
             lda FRAME_ARG_OFFSET_LSB,x
             ora FRAME_ARG_OFFSET_MSB,x
-            bne _or_next_arg
-            dex
-            dex
-_or_next_arg
+            beq _or_return
+            ; first arg was true, return it
             lda FRAME_ARG_OFFSET_LSB,x
             sta accumulator_lsb
-            ora FRAME_ARG_OFFSET_MSB,x
-            beq _or_return
             lda FRAME_ARG_OFFSET_MSB,x
-_or_return
             sta accumulator_msb
+_or_return
             jmp exec_frame_return
 
 FUNC_S0A_NOT
             ; Normalize 
             ldx eval_frame
-            ldy #0
-            sty accumulator_lsb
             lda FRAME_ARG_OFFSET_LSB,x
             ora FRAME_ARG_OFFSET_MSB,x
-            bne _y_bool_return
-_y_bool_inc_return
-            iny ; SPACE: TRUE
-_y_bool_return
-            sty accumulator_msb
+            bne _return_false
+_return_true
+            lda #1
+            byte $2c
+_return_false
+            lda #0
+            sta accumulator_lsb
+            sta accumulator_msb
             jmp exec_frame_return
 
 FUNC_CAR
@@ -350,14 +334,12 @@ _func_jkcx_exit
             jmp exec_frame_return
 
 FUNC_KX
-_func_kx_loop
             ldy eval_frame
             ldx FRAME_ARG_OFFSET_LSB,y
             lda player_input_latch,x
-            bne _func_jkcx_exit
-            jsr eval_wait
-            jmp _func_kx_loop
-
+            ldy #0
+            sty player_input_latch,x
+            beq _func_jkcx_exit
 
 FUNC_REFLECT
             ; PONG reflection
@@ -457,7 +439,19 @@ _skip_save_bl_dir
             adc game_p0_y,y
             and #$1f
             sta game_p0_y,y
-            bpl _func_move_exit          
+            ; set player direction
+            cpy #2
+            bpl _func_move_exit
+            lda X_DIR-1,x
+            asl
+            lda game_px_shape
+            beq _func_move_exit
+            ora REFL_X,y
+            bcs _skip_clear_refl_bit
+            eor REFL_X,y
+_skip_clear_refl_bit
+            sta game_px_shape
+            bpl _func_move_exit ; should always be trie
 FUNC_MOVE_XY
             ; move xy
             ldx eval_frame
@@ -488,11 +482,11 @@ _conv_bcd16_lsb
             adc tmp_eval_stack
             adc accumulator_lsb            
             rts
-
+    
 FUNC_SHAPE
             ; get player and set shape
             lda accumulator_lsb
-            and #$03
+            and #$01
             sta game_px_shape
             jmp exec_frame_return
 

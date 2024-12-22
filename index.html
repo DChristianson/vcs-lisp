@@ -103,10 +103,10 @@
                             <div class="ide_links func_g" onclick="window.ide.openWindow(event, 'g')">G - &#x25BD;</div>
                             <div class="ide_links func_h" onclick="window.ide.openWindow(event, 'h')">H - &#x2734;</div>
                         </div>
-                        <div id="repl" class="ide_content func_repl active" contenteditable="true" spellcheck="false"></div>
-                        <div id="f" class="ide_content func_f" contenteditable="true" spellcheck="false"></div>
-                        <div id="g" class="ide_content func_g" contenteditable="true" spellcheck="false"></div>        
-                        <div id="h" class="ide_content func_h" contenteditable="true" spellcheck="false"></div>
+                        <div id="repl" class="ide_content func_repl active" contenteditable="plaintext-only" spellcheck="false"></div>
+                        <div id="f" class="ide_content func_f" contenteditable="plaintext-only" spellcheck="false"></div>
+                        <div id="g" class="ide_content func_g" contenteditable="plaintext-only" spellcheck="false"></div>        
+                        <div id="h" class="ide_content func_h" contenteditable="plaintext-only" spellcheck="false"></div>
                     </div>
                     <div class="row">
                         <div id="eval" class="ide_ops" onclick="window.ide.eval(event)">EVAL</div>
@@ -132,8 +132,8 @@
                             <div class="row">
                                 <div id="calc" class="ide_ops" onclick="window.ide.changeMode(event, 0)">CALC</div>
                                 <div id="song" class="ide_ops" onclick="window.ide.changeMode(event, 1)">SONG</div>
-                                <div id="game" class="ide_ops" onclick="window.ide.changeMode(event, 2)">GAME</div>
-                                <div id="stax" class="ide_ops" onclick="window.ide.changeMode(event, 3)">STAX</div>
+                                <div id="stax" class="ide_ops" onclick="window.ide.changeMode(event, 2)">STAX</div>
+                                <div id="game" class="ide_ops" onclick="window.ide.changeMode(event, 3)">GAME</div>
                             </div>
                         </div>
                     </div>
@@ -153,6 +153,22 @@
                 </button>
                 <button id="ide_dialog_cancel">
                     <label>Cancel</label>
+                </button>
+            </div>
+        </div>
+        <div id="ide_share" class="modal">
+            <div class="modal_body">
+                <canvas id="ide_share_viz"></canvas>
+            </div>
+            <div class="modal_footer">
+                <button class="active" id="ide_share_copy_url">
+                    <label>Copy URL</label>
+                </button>   
+                <button class="active" id="ide_share_copy_image">
+                    <label>Copy Image</label>
+                </button>   
+                <button class="active" id="ide_share_close">
+                    <label>Close</label>
                 </button>
             </div>
         </div>
@@ -208,7 +224,7 @@
 
                 // We load the ROM file using the fetch API. We could also hardcode the ROM as a base64 encoded string
                 // and pass that to stellerator instead.
-                const response = await fetch("./publish/lisp_NTSC_20241217.bin");
+                const response = await fetch("./publish/lisp_NTSC_20241222.bin");
                 const rom = new Uint8Array(await response.arrayBuffer());
                 const canvas = document.getElementById('stellerator-canvas');
                 const keyboardTarget = canvas;

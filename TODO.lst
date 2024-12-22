@@ -120,6 +120,11 @@ DONE
      - (maybe result of stack being trashed)
      - (f 1) (def (f a) (if (beep a 5) (f (+ a 1))))
     - long program goes over timing limit (+ (progn (+ 1 2) (+ 3 4) (+ 5 6)) 2)
+    - keyboard doesn't work in browser
+    - CNR repl adds +/- 1 line
+    - stella does not auto-recognize keyboard (not working as expected)?
+    - editor freeze when using keypad 1? - CNR
+    - empty repl with # is wacky
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
@@ -131,6 +136,10 @@ DONE
         - changes color with different beeps
         - retune notes
         - zero note should be silent
+      - pong demo 
+        - needs diagonal movement
+        - stretch goal: boundary collision
+        - stable framerate
       - ball game
         - stable-ish framerate
         - draw players
@@ -161,6 +170,7 @@ DONE
      - gc of cons
   - dev support
      - self hosted stellerator page
+       - viz full program
        - display and editing of programs as text
        - allow load/save of programs
        - keyboard controller support
@@ -169,6 +179,7 @@ DONE
        - help - ide online tips
        - favicon
        - change mode for example
+       - editors are weird (switched to plaintext)
   - virtual keyboard 3
     - extend to all commands
     - keyboard controller support
@@ -177,7 +188,8 @@ DONE
     - advance cursor after entering symbol
     - stabilize framerate
     - limit up movement
-   - virtual keyboard 4
+  - virtual keyboard 4
+    - quote support (no way to properly quote a function from the editor))
     - too slow to scroll through keys
     - select switch can change games?
     - eval button for convenience
@@ -194,63 +206,6 @@ DONE
   - dedicated executable for steps game
   - font
     - tune font / symbols
-BETA
-  - bugs
-    - keyboard doesn't work in browser
-    - empty repl with # is wacky
-    - editor freeze when using keypad 1?
-    - clicky beeps when playing sounds
-    - browser warnings about audio
-    - sound just not right in stellerator
-    - disks kernel adds +/-1 line in some configurations
-    - repl adds +/- 1 line
-    - complex program takes too long to analyze in vblank
-    - stella does not auto-recognize keyboard (not working as expected)?
-  - game modes 2
-      - ball game
-        - pong demo 
-        - needs diagonal movement
-        - stretch goal: boundary collision
-        - stretch goal: score
-        - not a stable framerate
-      - towers of hanoi
-        - recursion stuck on stack overflow
-            (def (f a b c d) 
-             (if a 
-              (progn (f (- a 1) b d c)
-              (swap b c)
-              (f (- a 1) d b a))))
-        - glitchy base disc on stack 1
-        - not a stable framerate 
-      - music game
-        - ringtone demo example
-        - simon game example?
-        - ringing changes examples
-        - be able to handle DSS generative examples as demos
-          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
-  - virtual keyboard 4
-    - quote support (no way to properly quote a function from the editor))
-  - dev support
-    - stack overflow flag + ux
-    - heap full flag + ux
-    - mode switch perform reset
-    - instruction manual
-      - commands w/ icons
-      - controls description
-    - self hosted stellerator page
-      - editors are weird
-      - custom overlays?
-      - program descriptions?
-      - display version for example
-      - load/save control name?
-      - save game states (all ram?)
-      - draw program?
-    - achievements
-    - gitlab auto deployment
-    - some way to do unit tests (stellerator debugger?)
-    - protection against var access?
-  - library 3
-    - gauntlet of all functions (make sure all basically work)
   - code 2
       - hygiene
         - clean up temp variable usage
@@ -261,6 +216,51 @@ BETA
         - multiple ways to draw - can consolidate?
         - 87 bytes of sleeps
         - 24 zp y offset lookups
+BETA
+  - dev support
+    - import/export stella and/or PlusCart ROM image
+    - instruction manual
+      - commands w/ icons
+      - controls description
+    - self hosted stellerator page
+      - display version
+      - show free space left
+      - custom overlays?
+      - program descriptions?
+      - load/save control name?
+      - save full game states (all ram?)
+    - achievements
+    - gitlab auto deployment
+  - bugs
+    - disks kernel adds +/-1 line in some configurations
+    - complex program takes too long to analyze in vblank
+    - sound just not right in stellerator
+      - clicky beeps when playing sounds
+      - browser warnings about audio
+    - can crash with complex program
+  - library 3
+    - gauntlet of all functions (make sure all basically work)
+  - game modes 2
+      - towers of hanoi
+        - recursion stuck on stack overflow
+            (def (f a b c d) 
+             (if a 
+              (progn (f (- a 1) b d c)
+              (swap b c)
+              (f (- a 1) d b a))))
+        - glitchy base disc on stack 1
+      - music game
+        - ringtone demo example
+        - simon game example?
+        - ringing changes examples
+        - be able to handle DSS generative examples as demos
+          - https://www.accum.se/~tjoppen/files/vcs/genmusic1/
+  - dev safety
+    - stack overflow flag + ux
+    - heap full flag + ux
+    - mode switch perform reset
+    - some way to do unit tests (stellerator debugger?)
+    - protection against var access?
 SPRINKLES
   - repl mode
     - can use PF0 to hide HMOVE + switch to std HMOVE..?.

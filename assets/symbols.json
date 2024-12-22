@@ -1,0 +1,353 @@
+[
+    {
+        "name": "SYMBOL_GRAPHICS_TERM",
+        "synonyms": [
+            "term",
+            "null"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4nGP8//8/Az7AhFcWTQFWo5AVMOJT8B+NxlDAiEZjtQIrIKgAAMIPBg32CdO5AAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_MULT",
+        "synonyms": [
+            "*"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nI2NMRIAQAwByf//7MqgyaUx2AlKEgBiL/xY6AoHWCUb8DDK74l+rQbOiQ7DPx46DA/MhRlyAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_ADD",
+        "synonyms": [
+            "+"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMklEQVR4nGP8//8/AxT8Z2BgYGRAA0zoAiQrYIEajWwNA7JVLEgcGrkBWQGG8QwMDAwAxLcHEoWZmJYAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_SUB",
+        "synonyms": [
+            "-"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJklEQVR4nGP8//8/Az7AhFeWGAUsDAwM2OxgRFbAiEUBFd1AUAEAvCEEElAdEVsAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_DIV",
+        "synonyms": [
+            "/"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANUlEQVR4nH3NQQoAMAgDwdX//zk9CTbV5iazYEjCJiDqyAGv5Q970DE8WNFfPNiDEStYEeAAuZEIDodxZEMAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_MOD",
+        "synonyms": [
+            "%"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nHWNMRIAIAjDqOf/vxwHF6wlGyQHAqiLKrDCjhSoSXkwyn4BC59glP4ism3+4gPc4QsQknql2QAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_EQUALS",
+        "synonyms": [
+            "="
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKUlEQVR4nGP8//8/Az7AhFeWgYGBhYGBAd0IRnQFjAx4AOUmEHQkQQUAX/YFF2u42lwAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_GT",
+        "synonyms": [
+            ">"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nGP8////fwYIYGTAApiQJP7jUsCATxETEhurImQFWN3ChE8SpgCvL1hwScAAAE/2ChC1hB8DAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_LT",
+        "synonyms": [
+            "<"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nGP8//8/AxKAcRhhAkz4JJEVYJWEKcApCVMAk/iPSwEDPkXIjsSqiAVNA4Y7AEPqChAqAjPvAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_AND",
+        "synonyms": [
+            "&", "and"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOklEQVR4nG2NuQ0AMAwCIfL+K5PGSP6uoeCjJCQCQAxeGiqhRqSuZl3gWFkL5/e8qO0W9gUv04GzaT7AQwsULre08gAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_OR",
+        "synonyms": [
+            "|", "or"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAIklEQVR4nGP8//8/AxT8Z2BgYGRAA0zoAkNeAYYXGRgYGAAUgwQOxWZIXAAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_NOT",
+        "synonyms": [
+            "!", "not"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJklEQVR4nGP8//8/AxT8Z2BgYGRAA0zoArRVgGE/uoL/hBSQZwUAa6QFDl7gGG0AAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_DEC",
+        "synonyms": [
+            "dec", "-1", "--"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/AxTAGIwMSIAJiY0igU0BVsAENfo/LgUsuIwmyQoY+I9Gw62AAaxWAQC3kQgQRA3/UwAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_CONS",
+        "synonyms": [
+            "cons"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nKWMsQ0AIAzDKOr/L5uFSpEZ8ZQqTgtgvdSEjoMshn2LBAtelYW/D60FltoLcwDOUQsUrsI9kAAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_CAR",
+        "synonyms": [
+            "car"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAL0lEQVR4nGP8////fwZMwAhjsOCSgAEmLBL/sSlAFmTEpoByE5B1o5jAgq4DHQAAmSAKEd0N/NoAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_CDR",
+        "synonyms": [
+            "cdr"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMklEQVR4nGP8////fwZMwAhjMEE5jFgUwRUgm4ChkAlNEMM6yk1gwSaIrgCnDxgYGBgAhuMJE922RikAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_F0",
+        "synonyms": [
+            "f"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwZMwAhjsKALoAMmXBLoJiBbw4hNAflWEKUAp/EMDAwMAL7qBRbZWyGuAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_F1",
+        "synonyms": [
+            "g"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOElEQVR4nGP8//8/AwMDw38GVMAIY7BAJRkZcAAmXBLIJsAAsjVwE5nQBDGsIsoKRlzGI7sBpy8A03YHGc9D31oAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_F2",
+        "synonyms": [
+            "h"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwYGBkYGBEDhMzEQAAQVsCAZi1cBuhuIt4IoBYxoYih8AB9zBxLJx4+FAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_BEEP",
+        "synonyms": [
+            "beep"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANklEQVR4nGP8//8/AwMDw38GVMAIYzChCTKiKURRgBWgK0C3ioEJmyBJVrCg8TEcyYJNEBkAAC8jBhNOU0/SAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_JOYSTICK",
+        "synonyms": [
+            "jx", "joy"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMUlEQVR4nGP8//8/AxT8Z2BgYGRAA0zoAmQr+I9GwwELFrtR+AStYMFlNLICDK8hAwBxAwkRp1LjrQAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_KEYPAD",
+        "synonyms": [
+            "kx", "key"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKUlEQVR4nGP8////fwYGBkYGBgZ0moGBgYGBCYmDTsMV/Iey0emhYwIARigPEK090NYAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_STACK",
+        "synonyms": [
+            "stack"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOUlEQVR4nIWOQQoAIAzDMvH/X64XGaUq5lIooVtJAhBQls3YpaMUKoRjwcuUWzimU9BL+j45b3edBVhjDA3Sb8dOAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_MOVE",
+        "synonyms": [
+            "move"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAO0lEQVR4nIWPQQoAMAjDouz/X+4OwyGVsZ7EphZDkjgKoM8ApC2u4cBT2VLjfAFuyIFvRU/JgWWd44sNC2oKEWPB/AUAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_SHAPE",
+        "synonyms": [
+            "shape", "size"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALklEQVR4nGP8//8/Axr4z8DAwAjjMKFJYAAmXBLYTCBfASMhBTCAVSE2K1AUAgCoggYOztj5UgAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_CX",
+        "synonyms": [
+            "cx"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOklEQVR4nH2OMQ4AMAgCD///Zzq0g1pbFolcCLINYEBsZU+cqxNciuRHKNKzVPeGMXxt0AR8N6hBRQvcigwP7uCamAAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_REFLECT",
+        "synonyms": [
+            "reflect"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOUlEQVR4nIWPQQoAMAjD4tj/v9xdJsi0TCj0kEIMSQICc6t0/YCYoAR006Bd1hTIOjTZ12GUtC8CHD9wCw8NTE5MAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_APPLY",
+        "synonyms": [
+            "apply"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8////fwZMwAhjMGGRRAEwBYzIupABCy6jcVnxH4oxTMDmUKwmYHUDVsfBAABeqgcUSGBeoQAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_QUOTE",
+        "synonyms": [
+            "'", "quote"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAI0lEQVR4nGP8//8/Az7AhMTGqpIJmyDZChixWYNuAiP13QAAZu4FDZ5M1pAAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_IF",
+        "synonyms": [
+            "if", "?"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8////fwZMwAhjsKALMDAwoGhgQpPEACxIbGxWoShAtwpuBU5JdAVYrSBoAgDDbAcV4Je04gAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_LOOP",
+        "synonyms": [
+            "loop"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANUlEQVR4nGP8////fwYEYGRAA0y4JNAV4AQwBf+R6P/oChiRrMDpBoJWwMB/dAUsSGysPgEAEjUIEFMrRCgAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_PROGN",
+        "synonyms": [
+            "progn"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJElEQVR4nGP8//8/AxT8Z2BgYGRAA0xIbAxJdAX/CSkYtCYAAHz1Bw4FlOvdAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_ZERO",
+        "synonyms": [
+            "0"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALklEQVR4nGP8//8/AwMDw38GBGBEYjOwQCWRBVH4TAwEAB0UsEAdhNcXGILIAAALWwcVPvEtHAAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_ONE",
+        "synonyms": [
+            "1"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4nGP8//8/AwMDw38GCGBkQANMuCTQFeAEdFTwH42GAxYojdMXAIU4Bg+I9Of1AAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_TWO",
+        "synonyms": [
+            "2"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMUlEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3SiABV0HNgUodqIDoqxgwGINXl+gAADPSwcYmiY2YgAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_THREE",
+        "synonyms": [
+            "3"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKElEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3SiABV0HNgUDYAUKAABCwAgWov4wvwAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_FOUR",
+        "synonyms": [
+            "4"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwYGBkYGBEDhMzEQAAQVsCAZi1MBI5oYimLK3YBNAYqVAB9aBxF05zxzAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_FIVE",
+        "synonyms": [
+            "5"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nGP8////fwZMwAhjsKALoAMmXBLoJqBbg2IFuvEoiomyApsvUBTg9AEDAwMDAG0RBxhJ/z3rAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_SIX",
+        "synonyms": [
+            "6"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALklEQVR4nGP8////fwZMwAhjsKALoAMmXBLoJqBbg9cKFMVkW4GiAKcPGBgYGABpEQcYGMnM3QAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_SEVEN",
+        "synonyms": [
+            "7"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAIklEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3QxDQQGKrwDxSQUQatS/GQAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_EIGHT",
+        "synonyms": [
+            "8"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALklEQVR4nGP8////fwZMwAhjsKALMDAwoGhgwqIbBcBMwGYNPa1gxCXJwMDAAAA6wAgW+Fv+lQAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_NINE",
+        "synonyms": [
+            "9"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMElEQVR4nGP8////fwZMwAhjsKALMDAwoGhgwqIbBcBMwGYNXAEjmhhpVpClAMVKAAAoBxPCEj9SAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_A",
+        "synonyms": [
+            "a"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nH2OsQ0AQAgC4eP+K/MtYgIlOfQoCS0DIAkmwADk3VhZX/iVBb9qaA6+OpKn9Hx66gka79x+7wAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_B",
+        "synonyms": [
+            "b"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAL0lEQVR4nGP8//8/Az7AxMDAgFcFE17tDAwMLFAa2RRGbAqQBf8j86ljBYoAOgAARTMHFuJX1IEAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_C",
+        "synonyms": [
+            "c"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/Az7AhFeWgYGBBUojG8OIruA/miAKH5sVKCZgU4DiahaoDrxuwBBEBgCVdQgXcPboBwAAAABJRU5ErkJggg=="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_D",
+        "synonyms": [
+            "d"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALElEQVR4nGP8//8/Az7AhEXsPyEFKIAFmy50Bf8ZGBgYKbKCkZAVDGhWoAAAs9IIE9mBSQkAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_CELL",
+        "synonyms": [
+            "cell"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALElEQVR4nGP8//8/Az7AhFcWScF/KMYALGh8dEWM6AoYcZmAIYHuBpyAoAIAJ+AGE3AeuRgAAAAASUVORK5CYII="
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_HASH",
+        "synonyms": [
+            "hash", "#"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMElEQVR4nGP8//8/AwMDw38GBgZGJBoOmKCCDFhouAK8gAnJSHSanlbglGRgYGAAAAhTCw9JyUwwAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_ZARA",
+        "synonyms": [
+            "zara"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANklEQVR4nH2NQQ4AIAzCYPH/X8bTEpxoj6QAJWHQAQGgLIjUaB1tF74LbfuVXEhcF3yIWKnlbEZmCQ+DiPniAAAAAElFTkSuQmCC"
+    },
+    {
+        "name": "SYMBOL_GRAPHICS_LAMBDA",
+        "synonyms": [
+            "lambda", "repl"
+        ],
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nHWPMQ4AQAjC0P//uTe4eES6IU2IBUgSGkpGp8KFiAskgTTTR4kLm/MLP375AdfICA+XL4DMAAAAAElFTkSuQmCC"
+    }   
+]
