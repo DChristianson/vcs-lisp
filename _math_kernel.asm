@@ -265,8 +265,8 @@ FUNC_BEEP
 _func_beep_buzz
             lda #7
             sta AUDC0
-            lda BEEPS_TAB-1,x
-            sta AUDF0
+            ldy BEEPS_TAB-1,x
+            sty AUDF0
 _func_beep_setvol
             sta AUDV0
 _beep_continue
