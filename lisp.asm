@@ -483,6 +483,7 @@ LOOKUP_SYMBOL_FUNCTION
     word FUNC_SHAPE-1
     word FUNC_CX-1
     word FUNC_REFLECT-1
+    word FUNC_APPLY-1
 
 sub_wsync_loop
 _header_loop

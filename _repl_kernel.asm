@@ -791,7 +791,9 @@ DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
     byte $6A,$6E,$BA,$BE,$5A,$5E,$3A,$3E
 CURSOR_COLORS
 DISPLAY_REPL_COLOR_MENU
-    byte $60,$B0,$50,$30 ; BUGBUG: make pal safe
+    byte $60,$B0
+SPRITE_COLORS
+    byte $50,$30 ; BUGBUG: make pal safe
 
 ; -- NON space-sensitive routines follow
 
@@ -845,6 +847,9 @@ repl_update_menu_tab
             adc #1
             and #$03
             sta repl_menu_tab
+            lda #0
+            sta repl_edit_line
+            sta repl_scroll
             jmp _repl_update_skip_move    
 
 sub_fmt_symbol

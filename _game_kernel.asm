@@ -51,6 +51,12 @@ _respx_object_loop
         sta HMP0,x               ;4  20
         sta RESP0,x              ;4  24
         sta WSYNC                ;3  27
+        lda game_px_shape
+        and #$01
+        beq _respx_skip_colorize
+        lda SPRITE_COLORS,y
+        sta COLUP0,y
+_respx_skip_colorize
         dey                      ;2  29
         bpl _game_respx_loop     ;3  32
         sta WSYNC                ;-----

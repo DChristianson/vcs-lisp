@@ -347,6 +347,8 @@ FUNC_REFLECT
             bpl _func_jkcx_exit            
 
 FUNC_CX
+            sta CXCLR
+            jsr eval_wait
             ldy #8
             ldx game_bl_dir
             lda game_bl_x
@@ -360,7 +362,7 @@ FUNC_CX
 _func_cx_check
             lda #4
             bit CXPPMM
-            bmi _func_cx_save
+            bmi _func_jkcx_exit
             lsr
             bit CXP1FB
             bvs _func_cx_reflect
@@ -368,7 +370,7 @@ _func_cx_check
             bit CXP0FB
             bvs _func_cx_reflect
             lsr
-            beq _func_cx_save 
+            beq _func_jkcx_exit 
 _func_cx_reflect
             ; calc pong reflection
             tay
@@ -383,9 +385,7 @@ _func_cx_reflect
 _func_reflect_save          
             sta game_bl_dir
             tya
-_func_cx_save
-            sta CXCLR
-            jmp _func_jkcx_exit
+            bpl _func_jkcx_exit
 _func_cx_wall_l
             lda #3
             byte $2c
