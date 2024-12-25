@@ -13,9 +13,12 @@ This is an Atari 2600 game from an alternate reality...
 - has been hastily crammed onto a VCS ROM cartridge in 1977
 - so you can learn to program from a [textbook](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) first published in 1984
 
-<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png" height=180></img>
 <img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_20230714.png" height=180></img>
-<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_5.png" height=180></img>
+<img src="https://github.com/DChristianson/vcs-lisp/blob/main/assets/lisp_NTSC_2.png" height=180></img>
+<img height="180" alt="image" src="https://github.com/user-attachments/assets/69a4c0b3-17e9-41e2-a9e7-7f2532912a61" />
+<img height="180" alt="image" src="https://github.com/user-attachments/assets/f753995c-d475-450d-ad24-be7a8f1b621e" />
+<img height="180" alt="image" src="https://github.com/user-attachments/assets/e5469753-a3a3-4dbb-8c3a-95add60fc64f" />
+<img height="180" alt="image" src="https://github.com/user-attachments/assets/3c8a022f-f121-4bf2-9654-8edd7ba74353" />
 
 ## References, Credits and Inspirations
 
