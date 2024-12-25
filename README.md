@@ -1,4 +1,6 @@
 # LISP Programming 
+LISP Programming is a Lisp interpreter that runs on the Atari 2600, a second generation home video game console. 
+
 Play the game at [github.io](https://dchristianson.github.io/vcs-lisp/)!
 
 Documentation and example programs in the  [wiki](https://github.com/DChristianson/vcs-lisp/wiki)
