@@ -504,7 +504,6 @@ _menu_draw_start
             lda DISPLAY_REPL_COLOR_MENU,x
         	sta WSYNC
             sta COLUBK
-        	sta WSYNC
             jsr sub_draw_glyph_16px
             sta GRP0     
 

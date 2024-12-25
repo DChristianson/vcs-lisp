@@ -665,30 +665,33 @@ LispVizualizer = function(canvas, symbols) {
         self.drawCell('cell', x, y)[0];
         x = x + cellW;
         var maxW = cellW;
+        var totalH = 0;
         for (const cell of expr) {
             var [w, h] = self.drawExpression(cell, x, y);
-            y = y + h
+            y = y + h;
+            totalH = totalH + h;
             w = w + cellW;
             if (w > maxW) {
                 maxW = w;
             }
         }
         self.drawCell('term', x, y, 0);
-        y = y + cellH
-        return [maxW, y];
+        totalH = totalH + cellH
+        return [maxW, totalH];
     };
 
     this.drawHorizontal = function (expr, x, y) {
-        var [w, maxH] = self.drawCell('cell', x, y);
-        x = x + w;
+        var [totalW, maxH] = self.drawCell('cell', x, y);
+        x = x + totalW;
         for (const cell of expr) {
             const [w, h] = self.drawCell(cell, x, y);
             x = x + w;
+            totalW = totalW + w;
             if (h > maxH) {
                 maxH = h;
             }
         }
-        return [x, maxH];
+        return [totalW, maxH];
     };
 
     this.drawNumber = function (expr, x, y) {

@@ -321,6 +321,10 @@ _func_stack_illegal_move
 FUNC_JX
             ldy eval_frame
             ldx FRAME_ARG_OFFSET_LSB,y
+            cpx #2 ; check if value out of range, use bl dir instead
+            bmi _func_jx_read_input
+            ldx #(game_bl_dir - player_input) 
+_func_jx_read_input
             lda player_input,x
 _func_jkcx_exit
             ; write a to accumulator

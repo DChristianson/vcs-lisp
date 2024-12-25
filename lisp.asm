@@ -63,7 +63,6 @@ HEAP_CDR_ADDR       = $0001
 REPL_CELL_ADDR      = #repl - 1 ; virtual cell
 NULL                = $00
 
-HEADER_HEIGHT = 59
 EDITOR_LINES  = 4
 LINE_HEIGHT = CHAR_HEIGHT + 12
 PROMPT_HEIGHT = EDITOR_LINES * LINE_HEIGHT
@@ -294,6 +293,9 @@ update_return
 game_draw_return
             jsr sub_clr_pf
 game_draw_return_no_clr
+            lda #WHITE
+            sta COLUP0
+            sta COLUP1
 
             lda game_state
             bmi _jmp_logo_draw 
@@ -414,9 +416,6 @@ sub_clr_pf
         sta PF2
         sta NUSIZ0
         sta NUSIZ1
-        ldx #WHITE 
-        stx COLUP0 
-        stx COLUP1   
         rts
 
 TOWER_STACK_MASK
