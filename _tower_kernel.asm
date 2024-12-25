@@ -50,7 +50,7 @@ _draw_tower_loop
         jsr sub_clr_pf
         ldx #6
 _draw_tower_clear_loop
-        sta curr_disc_pf0,x
+        sta curr_disc_pf0,x ; SPACE: a is zero after clr pf
         dex
         bpl _draw_tower_clear_loop
         ldx #4

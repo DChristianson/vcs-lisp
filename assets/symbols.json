@@ -157,7 +157,7 @@
     {
         "name": "SYMBOL_GRAPHICS_STACK",
         "synonyms": [
-            "stack"
+            "swap", "stack"
         ],
         "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOUlEQVR4nIWOQQoAIAzDMvH/X64XGaUq5lIooVtJAhBQls3YpaMUKoRjwcuUWzimU9BL+j45b3edBVhjDA3Sb8dOAAAAAElFTkSuQmCC"
     },

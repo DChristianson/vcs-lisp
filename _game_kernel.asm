@@ -112,7 +112,7 @@ _game_skip_bl_gfx
         stx ENABL
         stx REFP0          
         stx REFP1
-        jmp game_draw_return
+        jmp game_draw_return_no_clr
 
 GAME_SHAPE_HI
         byte >SYMBOL_GRAPHICS_OR

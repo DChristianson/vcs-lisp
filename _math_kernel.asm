@@ -333,10 +333,19 @@ _func_jkcx_exit
             sta accumulator_msb
             jmp exec_frame_return
 
+_func_kx_loop
+            sta accumulator_lsb ; TRICKY: song and calc mode both monitor the accumulator
+            sta accumulator_msb ; TRICKY: song and calc mode both monitor the accumulator
+            lda FRAME_ARG_OFFSET_LSB-2,y ; read second arg
+            ora FRAME_ARG_OFFSET_MSB-2,y
+            beq _func_kx_input
+            jsr eval_wait
 FUNC_KX
             ldy eval_frame
             ldx FRAME_ARG_OFFSET_LSB,y
             lda player_input_latch,x
+            beq _func_kx_loop
+_func_kx_input
             ldy #0
             sty player_input_latch,x
             beq _func_jkcx_exit
@@ -347,7 +356,7 @@ FUNC_REFLECT
             bpl _func_jkcx_exit            
 
 FUNC_CX
-            sta CXCLR
+            sta CXCLR ; clear collision and run one cycle
             jsr eval_wait
             ldy #8
             ldx game_bl_dir

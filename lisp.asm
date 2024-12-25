@@ -63,11 +63,12 @@ HEAP_CDR_ADDR       = $0001
 REPL_CELL_ADDR      = #repl - 1 ; virtual cell
 NULL                = $00
 
-HEADER_HEIGHT = 56
+HEADER_HEIGHT = 59
 EDITOR_LINES  = 4
 LINE_HEIGHT = CHAR_HEIGHT + 12
 PROMPT_HEIGHT = EDITOR_LINES * LINE_HEIGHT
-FOOTER_HEIGHT = 18
+FOOTER_HEIGHT = 16
+LOGO_HEIGHT = 109
 DISPLAY_COLS = 6
 CHAR_HEIGHT = 8
 REPL_DISPLAY_MARGIN = 8
@@ -259,18 +260,14 @@ update_return
 ;---------------------
 ; end vblank
 
-            ldx #$00
-endVBlank_loop          
-            cpx INTIM
-            bmi endVBlank_loop
-            stx VBLANK
+            jsr waitOnTimer
+            stx VBLANK        ; SPACE: x is zero
 
             jsr sub_clr_pf
 
             lda game_state
             and #$70
             ; a is a symbol value
-_sub_fmt_word_no_mult
             clc 
             adc #<SYMBOL_GRAPHICS_WORDS
             sta gx_s3_addr
@@ -281,9 +278,6 @@ _sub_fmt_word_no_mult
             sta gx_s4_addr+1
             lda #70
             jsr sub_respxx
-            lda #WHITE 
-            sta COLUP0     
-            sta COLUP1    
             jsr sub_draw_glyph_16px
 
             lda game_state
@@ -299,14 +293,14 @@ _sub_fmt_word_no_mult
             rts
 game_draw_return
             jsr sub_clr_pf
+game_draw_return_no_clr
 
             lda game_state
             bmi _jmp_logo_draw 
             jmp repl_draw
 
-
 _jmp_logo_draw
-    	    ldx #112
+    	    ldx #LOGO_HEIGHT
 	        jsr sub_wsync_loop
             ; fallthrough
 
@@ -373,7 +367,6 @@ _kx_update_end_debounce
             sta player_input_latch,x
 _kx_update_end
             jsr waitOnTimer
-            sta WSYNC 
             jmp newFrame
 
 ;-------------------
@@ -383,6 +376,7 @@ waitOnTimer
 waitOnTimer_loop          
             cpx INTIM
             bmi waitOnTimer_loop
+            sta WSYNC ; immediate WSYNC to start at known position
             rts
 
 ; -------------------
@@ -410,17 +404,19 @@ waitOnTimer_loop
 sub_clr_pf
         sta WSYNC
         lda #0
-        sta GRP0     
-        sta GRP1 
-        sta GRP0   ; SPACE: needed if clearing VDELPx?   
+        sta VDELP0 
+        sta VDELP1 
+        sta GRP0   
+        sta GRP1  
         sta COLUBK
         sta PF0
         sta PF1
         sta PF2
         sta NUSIZ0
         sta NUSIZ1
-        sta VDELP0
-        sta VDELP1
+        ldx #WHITE 
+        stx COLUP0 
+        stx COLUP1   
         rts
 
 TOWER_STACK_MASK

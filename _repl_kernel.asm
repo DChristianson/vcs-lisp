@@ -287,9 +287,9 @@ _prep_repl_line_next_dey
             bmi _prep_repl_line_end
 _prep_repl_line_next_skip_dey
             ; start next line
-            tsx ; read stack to see how indented we need to be
+            tsx ; read stack to see how indented we need to be 
             txa
-            eor #$ff ; invert to get size (at size 0 will be #$ff)
+            eor #$ff ; TRICKY: invert to get size (at size 0 will be #$ff)
             beq _prep_repl_line_clear
             asl ; shift left x 4
             asl
@@ -424,14 +424,93 @@ _prep_repl_end
             txs      ;
             jmp update_return
 
+
+repl_update_edit_up
+            lda #-1
+            byte $2c
+repl_update_edit_down
+            lda #1
+_repl_update_set_cursor_line
+            clc
+            adc repl_edit_line
+            bpl _repl_update_above_limit
+            lda #0
+_repl_update_above_limit
+            ; check if we are past last line
+            cmp repl_last_line
+            bcc _repl_update_check_limit
+            lda repl_last_line
+_repl_update_check_limit
+            sta repl_edit_line
+            cmp repl_scroll
+            bpl _repl_update_check_scroll_down
+            sta repl_scroll
+            jmp _repl_update_skip_move
+_repl_update_check_scroll_down
+            sec 
+            sbc #(EDITOR_LINES-2)
+            cmp repl_scroll
+            bmi _repl_update_skip_save_scroll
+            sta repl_scroll
+_repl_update_skip_save_scroll
+            jmp _repl_update_skip_move
+
+repl_update_edit_left
+            lda #-1
+            byte $2c ; skip next 2 bytes
+repl_update_edit_right
+            lda #1
+            clc
+            adc repl_edit_col
+            bpl _repl_update_check_col_limit
+            lda #0
+_repl_update_check_col_limit
+            sta repl_edit_col
+            jmp _repl_update_skip_move
+
+repl_update_menu_tab
+            ; inc tab
+            lda repl_menu_tab
+            clc 
+            adc #1
+            and #$03
+            sta repl_menu_tab
+            lda #0
+            sta repl_edit_line
+            sta repl_scroll
+            jmp _repl_update_skip_move    
+
 ;----------------------
 ; Repl display
 ;
 
+repl_draw
+            lda #5
+            jsr sub_respxx
+            clc
+            ldx repl_menu_tab 
+            txa
+            bne _menu_fmt_fn
+            lda #SYMBOL_LAMBDA
+            byte $2c
+_menu_fmt_fn
+            adc #SYMBOL_F0-1
+            ldy #0
+            jsr sub_fmt_symbol
+            ldy #2
+            lda #SYMBOL_APPLY
+            jsr sub_fmt_symbol
+_menu_draw_start
+            lda DISPLAY_REPL_COLOR_MENU,x
+        	sta WSYNC
+            sta COLUBK
+        	sta WSYNC
+            jsr sub_draw_glyph_16px
+            sta GRP0     
+
             ; PROMPT
             ; BUGBUG: change name from prompt
             ; draw repl cell tree
-sfd_draw_prompt ; stack 1 level deep
             lda #(PROMPT_HEIGHT * 76 / 64) 
             sta TIM64T
             ldy #(EDITOR_LINES - 1)
@@ -679,7 +758,7 @@ _prompt_draw_delay
             dey                          ;2   29  
             sbpl _prompt_draw_loop       ;2   31  
 
-            ldx #$fd ; reset the stack   ;2   33
+            ldx #$ff ; reset the stack   ;2   33
             txs                          ;2   35
             lda #0                       ;2   37
             sta VDELP0                   ;3   40
@@ -716,40 +795,8 @@ prompt_end_line
             jmp prompt_next_line
 prompt_done
             jsr waitOnTimer
-            rts
-
-repl_draw
-            lda #5
-            jsr sub_respxx
-            clc
-            ldx repl_menu_tab 
-            txa
-            bne _menu_fmt_fn
-            lda #SYMBOL_LAMBDA
-            byte $2c
-_menu_fmt_fn
-            adc #SYMBOL_F0-1
-            ldy #0
-            jsr sub_fmt_symbol
-            ldy #2
-            lda #SYMBOL_APPLY
-            jsr sub_fmt_symbol
-_menu_draw_start
-            lda DISPLAY_REPL_COLOR_MENU,x
-        	sta WSYNC
-            sta COLUBK
-            lda #WHITE     
-        	sta WSYNC
-            sta COLUP0     
-            sta COLUP1    
-            jsr sub_draw_glyph_16px
-            sta GRP0     
-            lda #WHITE
-            sta COLUP0
-            sta COLUP1
-            jsr sfd_draw_prompt
-
-            sta WSYNC
+            
+            ;exit
             lda #BLACK
             sta COLUBK
             ldx #FOOTER_HEIGHT
@@ -757,7 +804,7 @@ _menu_draw_start
 
             jmp waitOnOverscan
 
-; display
+; display tables
 
     ; line width X sprite arrangement
     ; we use the same display kernel for all 
@@ -796,61 +843,6 @@ SPRITE_COLORS
     byte $50,$30 ; BUGBUG: make pal safe
 
 ; -- NON space-sensitive routines follow
-
-repl_update_edit_up
-            lda #-1
-            byte $2c
-repl_update_edit_down
-            lda #1
-_repl_update_set_cursor_line
-            clc
-            adc repl_edit_line
-            bpl _repl_update_above_limit
-            lda #0
-_repl_update_above_limit
-            ; check if we are past last line
-            cmp repl_last_line
-            bcc _repl_update_check_limit
-            lda repl_last_line
-_repl_update_check_limit
-            sta repl_edit_line
-            cmp repl_scroll
-            bpl _repl_update_check_scroll_down
-            sta repl_scroll
-            jmp _repl_update_skip_move
-_repl_update_check_scroll_down
-            sec 
-            sbc #(EDITOR_LINES-2)
-            cmp repl_scroll
-            bmi _repl_update_skip_save_scroll
-            sta repl_scroll
-_repl_update_skip_save_scroll
-            jmp _repl_update_skip_move
-
-repl_update_edit_left
-            lda #-1
-            byte $2c ; skip next 2 bytes
-repl_update_edit_right
-            lda #1
-            clc
-            adc repl_edit_col
-            bpl _repl_update_check_col_limit
-            lda #0
-_repl_update_check_col_limit
-            sta repl_edit_col
-            jmp _repl_update_skip_move
-
-repl_update_menu_tab
-            ; inc tab
-            lda repl_menu_tab
-            clc 
-            adc #1
-            and #$03
-            sta repl_menu_tab
-            lda #0
-            sta repl_edit_line
-            sta repl_scroll
-            jmp _repl_update_skip_move    
 
 sub_fmt_symbol
             ; a is a symbol value, y is location

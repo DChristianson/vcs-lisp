@@ -2,7 +2,7 @@
 repl_draw_music
         ;; Draw 8 music symbols
         ;; color whichever one is playing
-        ldx #13
+        ldx #17
         jsr sub_wsync_loop
         lda #$40       ; BUGBUG - magic constant screen pos 
         jsr sub_respxx ; position both players at once

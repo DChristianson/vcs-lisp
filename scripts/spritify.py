@@ -203,8 +203,8 @@ def make_transparent(image):
         for x in range(width):
             if data[x, y] == (0, 0, 0, 255):
                 data[x, y] = (255, 255, 255, 0)
-            elif data[x, y] == (255, 255, 255, 255):
-                data[x, y] = (0, 0, 0, 255)
+            # elif data[x, y] == (255, 255, 255, 255):
+            #     data[x, y] = (0, 0, 0, 255)
     return rgba
 
 def urlfmt(name, vars, symbols, fp):

@@ -1,5 +1,5 @@
 repl_draw_accumulator
-            ldx #HEADER_HEIGHT / 2
+            ldx #28
             jsr sub_wsync_loop
             ; convert accumulator to BCD
             ldx #<accumulator
@@ -29,6 +29,6 @@ _accumulator_delay_loop
             dey                         ;2   45  ; timing: swap these around
             sta GRP0                    ;3   48
             bpl _accumulator_draw_loop  ;2   41  
-            ldx #HEADER_HEIGHT / 2 - 1
+            ldx #28
             jsr sub_wsync_loop
             jmp game_draw_return
