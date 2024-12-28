@@ -198,7 +198,7 @@
         "synonyms": [
             "shape", "size", "sqrl"
         ],
-        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/AxKAcRhhAkxIglgBEz7dyApwmsKErgNdMRMDJsBqBbopcMCCSycMAAC58AgQjHhGrQAAAABJRU5ErkJggg=="
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/AxKAcRhhAkxQQRRVyIAJn250BThNYEQT+4+uAB1gtQLdFDhgwaUTBgD7rggQgazyegAAAABJRU5ErkJggg=="
     },
     {
         "name": "collide",

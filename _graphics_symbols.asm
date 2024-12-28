@@ -57,7 +57,7 @@ SYMBOL_GRAPHICS_POSITION
     byte $0,$d8,$88,$88,$20,$88,$88,$d8; 8
 SYMBOL_SQRL= $18
 SYMBOL_GRAPHICS_SQRL
-    byte $0,$38,$78,$7c,$d8,$d8,$8c,$c; 8
+    byte $0,$30,$70,$78,$f0,$f0,$d8,$18; 8
 SYMBOL_GRAPHICS_CX
     byte $0,$90,$a0,$c8,$a8,$18,$28,$48; 8
 SYMBOL_GRAPHICS_REFLECT
