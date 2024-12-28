@@ -263,6 +263,7 @@ _eval_test_loop_continue
             bne _eval_test_true ; assume 0 is false
 _eval_test_false
             lda HEAP_CDR_ADDR,x
+            beq _eval_return      ; if null we will return 
             tax
 _eval_test_true
             jmp _eval_funcall_arg

@@ -64,7 +64,7 @@ _respx_skip_colorize
         lda game_px_shape
         and #$01
         tax
-        lda GAME_SHAPE_HI,x
+        lda #>SYMBOL_GRAPHICS_P0
         sta game_px_addr_hi
         lda GAME_SHAPE_LO,x
         sta game_px_addr_lo
@@ -114,10 +114,6 @@ _game_skip_bl_gfx
         stx REFP1
         jmp game_draw_return_no_clr
 
-GAME_SHAPE_HI
-        byte >SYMBOL_GRAPHICS_OR
-        byte >SYMBOL_GRAPHICS_ZARA
-
 GAME_SHAPE_LO
         byte <SYMBOL_GRAPHICS_OR
-        byte <SYMBOL_GRAPHICS_ZARA
+        byte <SYMBOL_GRAPHICS_SQRL

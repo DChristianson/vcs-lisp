@@ -66,7 +66,7 @@ Pair = function(ref, car, cdr) {
 
 };
 
-LispMachine = function (ram, stellerator) {
+LispMachine = function (ram, stellerator, symbols) {
 
     "use strict";
 
@@ -79,55 +79,6 @@ LispMachine = function (ram, stellerator) {
     var REF_TYPE_PREFIX_MASK = 0xc0;
     var REF_TYPE_SYMBOL_PREFIX = 0xc0;
     var SYMBOL_INDEX_MASK = 0x3f;
-
-    var SYMBOLS = [
-        '',
-        '*',
-        '+',
-        '-',
-        '/',
-        '%',
-        '=',
-        '>',
-        '<',
-        '&',
-        '|',
-        '!',
-        'dec',
-        'cons',
-        'car',
-        'cdr',
-        'f',
-        'g',
-        'h',
-        'beep',
-        'jx',
-        'kx',
-        'swap',
-        'move',
-        'shape',
-        'cx',
-        'reflect',
-        'apply',
-        '\'',
-        'if',
-        'loop',
-        'progn',
-        '0',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-        'a',
-        'b',
-        'c',
-        'd',
-    ];
 
     var _key_mappings_0 = [
         ['#', 'up', 'del'],
@@ -176,12 +127,13 @@ LispMachine = function (ram, stellerator) {
     var tail = function(cell) {
         return cell & 0xff;
     };
+    
 
     this.decodeRef = function(ref) {
         switch (ref & REF_TYPE_PREFIX_MASK) {
             case REF_TYPE_SYMBOL_PREFIX:
                 var index = ref & SYMBOL_INDEX_MASK;
-                var symbol = SYMBOLS[index];
+                var symbol = symbols.get(index).name;
                 return new Symbolic(ref, symbol);
             case 0:
                 return NullRef;
@@ -257,7 +209,7 @@ LispMachine = function (ram, stellerator) {
     }
 
     this.symbolRef = function(s) {
-        var i = SYMBOLS.findIndex((value) => value === s);
+        var i = symbols.lookup(s).code;
         return i | REF_TYPE_SYMBOL_PREFIX;
     }
 
@@ -369,12 +321,14 @@ LispMachine = function (ram, stellerator) {
                 for (let col = 0; col <= 2; col++) {
                     const label = `keypad1r${row}c${col}`;
                     const p = b + (row * 3) + col + 1;
-                    keyMap[label] = SYMBOLS[p];
+                    keyMap[label] = symbols.get(p).name;
                 }
             }    
         }
         return keyMap;        
     }
+
+    this.symbols = symbols;
 
     this.getGameMode = async function() {
         await ram.snapshot();
@@ -569,15 +523,21 @@ SymbolReference = function() {
 
     var self = this;
     var refdata = {};
+    var codes = {};
 
     this._bindSymbols = function (symbols) {
         // init
         for (const spec of symbols) {
             const data = {
                 name: spec.name,
+                code: spec.code,
                 synonyms: spec.synonyms,
                 src: spec.src,
             };
+            if (data.code) {
+                codes[data.code] = data;
+            }
+            refdata[name] = data;
             for (const sym of data.synonyms) {
                 refdata[sym] = data;
             }
@@ -590,6 +550,10 @@ SymbolReference = function() {
 
     this.lookup = function (symbol) {
         return refdata[symbol?.toString()];
+    }
+
+    this.get = function (index) {
+        return codes[index];
     }
 
     // initialize
@@ -794,7 +758,6 @@ LispIde = function (lisp) {
         g: NullRef,
         h: NullRef
     };
-    this.symbols = new SymbolReference();
 
     this.openWindow = function(event, id) {
 
@@ -890,7 +853,7 @@ LispIde = function (lisp) {
         // get viz
         (async () => {
             const canvas = document.getElementById('ide_share_viz');
-            const viz = new LispVizualizer(canvas, self.symbols);
+            const viz = new LispVizualizer(canvas, lisp.symbols);
             var exprs = self._parseFunctionExpressions();
             viz.drawExpressions(exprs);
             copy_image_button.onclick = async function(event) {
@@ -1093,8 +1056,9 @@ LispIde = function (lisp) {
 };
 
 lispInit = async function(stellerator) {
+    const symbols = new SymbolReference();
     const ram = new ConsoleRam(stellerator);
-    const lisp = new LispMachine(ram, stellerator);
+    const lisp = new LispMachine(ram, stellerator, symbols);
     const ide = new LispIde(lisp);
     return ide;
 };
