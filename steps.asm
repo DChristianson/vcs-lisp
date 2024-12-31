@@ -61,7 +61,6 @@ NUM_AUDIO_CHANNELS = 2
 
 CHAR_HEIGHT = 8
 DRAW_TABLE_SIZE = 18
-DRAW_TABLE_BYTES = DRAW_TABLE_SIZE
 
 JUMP_TABLE_SIZE = 16
 JUMP_TABLE_BYTES = JUMP_TABLE_SIZE
@@ -159,7 +158,8 @@ draw_step_offset    ds 1 ; what step # do we start drawing at
 draw_ground_color   ds 1 ; ground color
 draw_lava_counter   ds 1 ; how far to lava counter
 draw_player_sprite  ds 1 
-draw_table          ds DRAW_TABLE_BYTES
+draw_table          ds DRAW_TABLE_SIZE
+draw_table_top      ds 1 ; steps to skip at start
 
 ; draw vars used during draw kernels
 draw_hmove_a        ds 1 ; initial HMOVE
@@ -283,17 +283,21 @@ draw_t1_data_addr  ds 2
 ;   - optimize title screen
 ;  - sounds 2
 ;   - tuneup sound pass
-; RC 1
 ;  - glitches
-;   - frame rate unstable in select
-;   - frame rate unstable at top of tower
+;   - frame rate low 243 in select
+;   - frame rate high 270+ at top of tower
+; RC 1
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;   - dark mode - limited step visibility, double button press "plays" solution musically
+;  - glitches
+;   - counter has a glitch
+;   - leftmost step cut off
+;   - select screen glitch
 ;  - sprinkles 1
 ;   - select screen design, shows lava, etc
-;   - animated squirrels in title and select
 ;   - some kind of celebration on win (fireworks?)
+;   - animated squirrels in title and select
 ; CONSIDER
 ;  - sprinkles 2
 ;   - some kind of theme on lose
@@ -621,7 +625,24 @@ _gx_continue_ground_calc
 
             jsr sub_vblank_loop
 
-gx_steps_resp
+gx_step_draw           
+            lda #(DRAW_TABLE_SIZE - 1)
+            sec
+            sbc draw_table_top
+            beq gx_steps_resp_a
+            tax
+_gx_step_draw_sky_loop
+            ldy #9
+_gx_step_skip_step_loop
+            sta WSYNC
+            dey 
+            bpl _gx_step_skip_step_loop
+            dex
+            bne _gx_step_draw_sky_loop
+            byte $2c ; skip next WSYNC
+gx_steps_resp_a
+            sta WSYNC
+gx_steps_resp_b
             lda draw_player_dir
             bit player_inc
             bpl _gx_steps_resp_skip_invert
@@ -631,16 +652,15 @@ _gx_steps_resp_skip_invert
             lda draw_steps_respx
             ldy draw_steps_dir
             jsr sub_steps_respxx
-
-gx_step_draw           
+            ; intentional 
             ldy draw_steps_wsync
             sty temp_step_start
             ldy #$0
             sty temp_step_end
-            ldx #(DRAW_TABLE_SIZE - 1)
+            ldx draw_table_top
             sta WSYNC
-            sta WSYNC ; shim
             jmp sub_write_stair_b
+
 _gx_step_draw_loop
 
 sub_write_stair_a
@@ -702,7 +722,7 @@ sub_write_stair_b
             ldy temp_step_start               ;3  22
             cpy temp_step_end                 ;3  25
             beq ._gx_draw_skip_stair          ;2  27
-            cpx  #(DRAW_TABLE_SIZE - 1)       ;2
+            cpx draw_table_top                ;2
             beq _gx_draw_loop                 ;2
             lda #$ff                          ;2
             sta GRP1                          ;3
@@ -723,23 +743,23 @@ sub_draw_stair
 ._gx_draw_player_r
             lsr
             sta WSYNC
-            sta GRP0
-            lda (draw_s1_addr),y
-            bit draw_steps_mask
-            bpl ._gx_draw_stair_l
-            lsr
+            sta GRP0                     ;3   3
+            lda (draw_s1_addr),y         ;5   8
+            bit draw_steps_mask          ;3  11
+            bpl ._gx_draw_stair_l        ;2  13
+            lsr                          ;2  15
 ._gx_draw_stair_l
-            ora draw_steps_mask
-            sta GRP1
-            lda draw_colubk
-            sta COLUBK
-            dey
-            cpy temp_step_end
-            bne _gx_draw_loop
+            ora draw_steps_mask          ;3  18
+            sta GRP1                     ;3  21
+            lda draw_colubk              ;3  24
+            sta COLUBK                   ;3  27
+            dey                          ;2  29
+            cpy temp_step_end            ;3  32
+            bne _gx_draw_loop            ;2  34
 ._gx_draw_skip_stair
-            dex 
-            bmi gx_timer
-            bne ._gx_draw_skip_stop
+            dex                          ;2  36
+            bmi gx_timer                 ;2
+            bne ._gx_draw_skip_stop      ;2
             lda draw_ground_color 
             sta draw_colubk
             ldy draw_steps_wsync
@@ -1025,6 +1045,7 @@ _steps_addr_loop
 sub_steps_refresh
             ; clear draw table
             ldx #(DRAW_TABLE_SIZE - 1)
+            stx draw_table_top
             lda #0
 _steps_draw_clear_loop
             sta draw_table,x
@@ -1067,12 +1088,18 @@ _steps_draw_flights
             jmp _steps_draw_flights 
 _steps_draw_last_flight
             lda #$00 + ((SYMBOL_GRAPHICS_CROWN - SYMBOL_GRAPHICS) / 8) ; force crown stair (NOTE: should be $0f)
-_steps_draw_blanks_loop
             sta draw_table,x
+            stx draw_table_top
+            ldy #1
+_steps_draw_last_flight_loop
             inx
+            cpx #(DRAW_TABLE_SIZE)
+            bpl _steps_draw_flights_end
             lda #$60 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8) ; force blank stair
-            cpx #DRAW_TABLE_SIZE
-            bmi _steps_draw_blanks_loop            
+            sta draw_table,x
+            stx draw_table_top
+            dey
+            bpl _steps_draw_last_flight_loop
 _steps_draw_flights_end
             ; inject jump table graphics
             ldx jump_table_size
@@ -1361,7 +1388,7 @@ _calc_respx_left
 _calc_respx_switch_left
             dey
             inx
-            cpx #(DRAW_TABLE_SIZE - 1)
+            cpx draw_table_top
             bne _calc_respx_left
             tya
             ldy #$00
@@ -1373,7 +1400,7 @@ _calc_respx_right
 _calc_respx_switch_right
             iny
             inx
-            cpx #(DRAW_TABLE_SIZE - 1)
+            cpx draw_table_top
             bne _calc_respx_right
             dey
             tya
@@ -1585,7 +1612,7 @@ _gx_go_redraw_player
             jmp gx_update_return
 
 sub_redraw_player_step
-            ldx #(DRAW_TABLE_BYTES - 1)
+            ldx draw_table_top
 _sub_redraw_player_loop
             lda #$7f
             and draw_table+1,x
@@ -2163,6 +2190,9 @@ gx_title_11_hmove_7
 gx_select_return
             jsr sub_clear_gx
 
+            ldx #15
+            jsr sub_wsync_loop
+
             lda #3 
             sta temp_select_repeat
             ora difficulty_level
@@ -2214,7 +2244,7 @@ _gx_show_select_stairs_loop
             sta NUSIZ0
             sta NUSIZ1
 
-            ldx #30
+            ldx #33
             jsr sub_wsync_loop
 
             jmp gx_title_end

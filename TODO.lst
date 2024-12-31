@@ -125,6 +125,9 @@ DONE
     - stella does not auto-recognize keyboard (not working as expected)?
     - editor freeze when using keypad 1? - CNR
     - empty repl with # is wacky
+    - sound just not right in stellerator
+      - clicky beeps when playing sounds CNR
+      - browser warnings about audio WNF
   - menu 3
       - allow cyclical switching
       - separate lines for function vs mode
@@ -218,7 +221,7 @@ DONE
         - 24 zp y offset lookups
 BETA
   - dev support
-    - import/export stella and/or PlusCart ROM image
+    - keypad overlays
     - instruction manual
       - commands w/ icons
       - controls description
@@ -229,15 +232,11 @@ BETA
       - program descriptions?
       - load/save control name?
       - save full game states (all ram?)
-    - achievements
-    - gitlab auto deployment
+        - import/export stella and/or PlusCart ROM image
   - bugs
-    - disks kernel adds +/-1 line in some configurations
+    - disks kernel adds +/-1 line in configurations
     - complex program takes too long to analyze in vblank
-    - sound just not right in stellerator
-      - clicky beeps when playing sounds
-      - browser warnings about audio
-    - can crash with complex program
+    - can crash with complex program (need repro)
   - library 3
     - gauntlet of all functions (make sure all basically work)
   - game modes 2
