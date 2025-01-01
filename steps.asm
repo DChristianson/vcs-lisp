@@ -304,13 +304,15 @@ draw_t1_data_addr  ds 2
 ;   - dark mode - limited step visibility, double button press "plays" solution musically
 ;      - sky black
 ;      - steps obscured
-; RC 1
-;  - glitches
-;   - leftmost step cut off
 ;  - sprinkles 1
-;   - some kind of celebration on win (fireworks?)
-;   - some kind of lose song
 ;   - animated squirrels in title and select
+; RC 1
+;  - sprinkles 1
+;   - some kind of lose song
+;   - some kind of celebration on win (fireworks?)
+;  - glitches
+;   - extra line in scroll
+;   - leftmost step cut off
 ; CONSIDER
 ;  - sprinkles 2
 ;   - some kind of theme on lose
@@ -2084,6 +2086,7 @@ gx_title_end
             sta COLUP0
             ldx #4
             jsr sub_wsync_loop
+            jsr sub_squirrel_refpxx
             lda #0
             sta VDELP0
             sta VDELP1
@@ -2113,6 +2116,7 @@ _draw_tx_skip_lava
 
             inx ; cheat and bump x up 1
             stx COLUBK
+            stx REFP1
 
             ldx #10
             jsr sub_wsync_loop
@@ -2207,14 +2211,8 @@ _gx_show_select_stairs_loop
             dec temp_select_index
             dec temp_select_repeat
             bpl _gx_show_select_flights_repeat
-            lda #3
-            sta NUSIZ0
-            sta NUSIZ1
 
-            ldx #33
-            jsr sub_wsync_loop
-
-            jmp gx_title_end
+            jmp gx_select_footer
 
 ; ------------------------
 ; audio tracks
@@ -2432,6 +2430,7 @@ MAZES_6
     ; byte $24,$17,$63,$64,$31,$05 ; sol: 10
     ; byte $65,$72,$41,$51,$43,$02 ; sol: 10
 
+
     ORG $FC00
 
 SKY_PALETTE
@@ -2466,8 +2465,15 @@ LAYOUT_EXTRA = . - LAYOUTS
     byte $f8,0
 
 gx_end
+            lda player_health
+            bmi _player_lose
             lda frame
             sta COLUP0
+            jmp _gx_end_wait
+_player_lose
+            lda #1
+            sta sky_palette
+_gx_end_wait
             ; wait for song
             lda audio_tracker
             bne _wait_for_reset
@@ -2512,6 +2518,79 @@ _clock_save_out
             lda #0
 _clock_save
             sta player_clock 
+            rts
+
+gx_select_footer
+            ldx #10
+            jsr sub_wsync_loop
+
+            lda difficulty_level
+            and #$03
+            asl
+            asl
+            asl
+            asl
+            tax
+            clc
+            adc #<SYMBOL_GRAPHICS_EZPZ_0
+            sta draw_s0_addr
+            adc #8
+            sta draw_s1_addr
+            lda #>SYMBOL_GRAPHICS_EZPZ_0
+            sta draw_s0_addr + 1
+            sta draw_s0_addr + 1
+            txa
+            clc
+            adc #34
+            ldy #$ff
+            jsr sub_steps_respxx
+            sta WSYNC
+            lda #$24
+            sta HMP1
+            sta HMOVE
+            ldx #3
+            ldy #7
+            jsr sub_show_motto
+            lda #$90
+            sta HMP0
+            sta HMP1
+            sta WSYNC
+            sta HMOVE
+            ldx #3
+            jsr sub_show_motto
+
+            ldx #2
+            jsr sub_wsync_loop
+            lda #3
+            sta NUSIZ0
+            sta NUSIZ1
+
+            jmp gx_title_end
+
+sub_show_motto
+_gx_show_select_motto_loop
+            sta WSYNC
+            lda (draw_s0_addr),y
+            sta GRP0
+            lda (draw_s1_addr),y
+            sta GRP1
+            sta WSYNC
+            dey
+            dex
+            bpl _gx_show_select_motto_loop  ;2   7
+            rts
+
+sub_squirrel_refpxx
+            lda frame
+            rol
+            rol
+            rol
+            and #$03
+            tax
+            lda SQUIRREL_MOVE_PAT_0,x
+            sta REFP0
+            lda SQUIRREL_MOVE_PAT_1,x
+            sta REFP1
             rts
 
     ORG $FD00
@@ -2670,6 +2749,7 @@ SYMBOL_GRAPHICS_ACORN
     byte $0,$10,$38,$7c,$7c,$0,$7c,$38; 8
 SYMBOL_GRAPHICS_CROWN
     byte $0,$7c,$7c,$0,$7c,$7c,$54,$54; 8
+SYMBOL_MOTTOS = $10
 SYMBOL_GRAPHICS_EZPZ_0
     byte $0,$8e,$ec,$ee,$0,$ea,$ce,$ee; 8
 SYMBOL_GRAPHICS_EZPZ_1
@@ -2861,6 +2941,11 @@ GX_JUMP_HI
     byte >(gx_scroll-1)
     byte >(gx_fall-1)
     byte >(gx_end-1)
+
+SQUIRREL_MOVE_PAT_0
+    byte $00
+SQUIRREL_MOVE_PAT_1
+    byte $08,$08,$00,$00
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
