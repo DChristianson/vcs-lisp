@@ -54,6 +54,7 @@ SCANLINES = 262
 
 ZARA_COLOR = WHITE_WATER
 GROUND_COLOR = GREEN
+LAVA_COLOR = RED
 
 CLOCK_HZ = 60
 STAIRS_MARGIN = 2
@@ -69,6 +70,9 @@ JUMP_SOLUTION_BYTES = JUMP_TABLE_SIZE / 8
 FLIGHTS_TABLE_SIZE = 16
 FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
 
+LAVA_TIME_MODULUS = 8
+PLAYER_STEP_HEALTH = ZARA_COLOR * 8
+
 GAME_START_SECONDS = 3
 
 GAME_STATE_TITLE   = 0
@@ -78,7 +82,7 @@ GAME_STATE_CLIMB   = 3
 GAME_STATE_JUMP    = 4
 GAME_STATE_SCROLL  = 5
 GAME_STATE_FALL    = 6
-GAME_STATE_WIN     = 7
+GAME_STATE_END     = 7
 
 DIFFICULTY_LEVEL_ARRAY_MASK = $3
 DIFFICULTY_LEVEL_LAVA = $4
@@ -121,14 +125,15 @@ player_goal          ds 1 ; next goal
 player_score         ds 1 ; decimal score
 player_clock         ds 1 ; for player timer
 player_timer         ds 2 ; game timer
+player_health        ds 1 ; health left
 
 ; night_mode
 sky_palette          ds 1 ; 
 
 ; lava control
-lava_speed           ds 1
 lava_clock           ds 1
-lava_height          ds 1
+lava_height          ds 1 ; height on screen
+lava_jump_offset     ds 1 ; height vs jump table
 
 ; game state
 jump_table           ds JUMP_TABLE_BYTES 
@@ -160,6 +165,7 @@ draw_lava_counter   ds 1 ; how far to lava counter
 draw_player_sprite  ds 1 
 draw_table          ds DRAW_TABLE_SIZE
 draw_table_top      ds 1 ; steps to skip at start
+draw_step_colors    ds DRAW_TABLE_SIZE
 
 ; draw vars used during draw kernels
 draw_hmove_a        ds 1 ; initial HMOVE
@@ -286,17 +292,24 @@ draw_t1_data_addr  ds 2
 ;  - glitches
 ;   - frame rate low 243 in select
 ;   - frame rate high 270+ at top of tower
-; RC 1
+;   - counter has a glitch before dropoff
+;   - player at second to last step has glitch
+;   - dark mode doesn't handle ground
+;   - select screen glitch
+;   - select screen design, shows lava, etc
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
+;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
+;      - need fail state condition
 ;   - dark mode - limited step visibility, double button press "plays" solution musically
+;      - sky black
+;      - steps obscured
+; RC 1
 ;  - glitches
-;   - counter has a glitch
 ;   - leftmost step cut off
-;   - select screen glitch
 ;  - sprinkles 1
-;   - select screen design, shows lava, etc
 ;   - some kind of celebration on win (fireworks?)
+;   - some kind of lose song
 ;   - animated squirrels in title and select
 ; CONSIDER
 ;  - sprinkles 2
@@ -522,25 +535,6 @@ _jx_update_end
             pha
             rts
 
-GX_JUMP_LO
-    byte <(gx_title-1)
-    byte <(gx_select-1)
-    byte <(gx_start-1)
-    byte <(gx_climb-1)
-    byte <(gx_jump-1)
-    byte <(gx_scroll-1)
-    byte <(gx_fall-1)
-    byte <(gx_win-1)
-GX_JUMP_HI
-    byte >(gx_title-1)
-    byte >(gx_select-1)
-    byte >(gx_start-1)
-    byte >(gx_climb-1)
-    byte >(gx_jump-1)
-    byte >(gx_scroll-1)
-    byte >(gx_fall-1)
-    byte >(gx_win-1)
-
 gx_climb
             lda #<SYMBOL_GRAPHICS_ZARA
             sta draw_player_sprite
@@ -588,6 +582,36 @@ gx_update_return
 
             ldx #1
             jsr gx_player_clock
+_update_lava
+            ; lava
+            lda lava_height
+            beq _skip_lava_update
+            lda lava_jump_offset
+            sec
+            sbc jump_table_offset
+            bmi _update_lava_speedup
+            clc
+            sbc player_step
+            bmi _skip_player_health_drain
+            dec player_health
+            bpl _skip_player_health_drain
+            jsr sub_steps_lose
+            jmp gx_continue
+_skip_player_health_drain
+            lda frame
+            and #LAVA_TIME_MODULUS
+            beq _end_lava_update            
+            dec lava_clock
+            bne _end_lava_update            
+_update_lava_speedup
+            inc lava_height
+            lda difficulty_level
+            and #$03
+            tax
+            lda LAVA_SPEED,x
+            sta lava_clock
+_end_lava_update
+_skip_lava_update
 
 gx_continue
             jsr sub_calc_respx
@@ -600,24 +624,41 @@ gx_continue
             ldx #8
             jsr sub_write_digit
 
-            ; colors
-            lda #ZARA_COLOR
+            ; player colors
+            lda player_health ; trick: color * 8
+            lsr
+            lsr
+            lsr
             sta COLUP0
 
+            ; step colors
+            ldx #(DRAW_TABLE_SIZE - 1)
+            lda #$1f
+_gx_continue_step_colors_loop
+            sta draw_step_colors,x
+_gx_continue_step_colors_skip_0f
+            clc
+            adc #$10
+            cmp #$0f
+            beq _gx_continue_step_colors_skip_0f
+            dex
+            bpl _gx_continue_step_colors_loop
+
             ; altitude
+            ldx #LAVA_COLOR
+            lda lava_height
+            cmp #10 ; BUGBUG: check flight
+            bpl _gx_continue_ground_calc
+            ldx draw_colubk
             lda draw_base_flight
             ora draw_step_offset
             bne _gx_continue_ground_calc
-            lda #GROUND_COLOR
-            byte #$2c ; skip next 2 bytes
+            ldx #GROUND_COLOR
 _gx_continue_ground_calc
-            lda #SKY_BLUE
-            sta draw_ground_color
-            lda lava_height
-            asl
-            asl
-            asl
-            adc #255
+            stx draw_ground_color
+            lda #138 ; BUGBUG: magic number
+            sec
+            sbc lava_height
             sta draw_lava_counter
 
 ;---------------------
@@ -709,9 +750,9 @@ sub_write_stair_b
             lda #<SYMBOL_GRAPHICS_BLANK       ;2  66
 ._gx_draw_skip_blank
             sta draw_s1_addr                  ;3  69
-            ldy STEP_COLOR,x                  ;4  73 - 5
+            ldy draw_step_colors,x            ;4  73 - 5
             bcc ._gx_draw_alt_color           ;2  75 - 5
-            ldy #SKY_BLUE                     ;2  77 - 5; NOTE: very tight timing, current max 72
+            ldy draw_colubk                   ;3  78 - 5; NOTE: very tight timing, current max 72
 ._gx_draw_alt_color
             sta WSYNC                         ; 
             sta HMOVE                         ;3   3
@@ -732,7 +773,8 @@ _gx_draw_loop
 sub_draw_stair
             dec draw_lava_counter
             bne ._gx_draw_skip_lava
-            lda #RED
+            stx lava_jump_offset
+            lda #LAVA_COLOR
             sta draw_colubk
 ._gx_draw_skip_lava
             lda (draw_s0_addr),y
@@ -771,10 +813,10 @@ sub_draw_stair
 
 gx_timer
             sta WSYNC
-            lda #0
-            sta GRP0
-            sta GRP1
-            sta GRP0
+            inx  ; SPACE: was -1
+            stx GRP0
+            stx GRP1
+            stx GRP0
             sta REFP0
             ; place digits
             lda #94 ; BUGBUG: magic number
@@ -808,7 +850,7 @@ gx_timer
 _gx_timer_color
             sta COLUP0
             sta COLUP1
-            ldy #(CHAR_HEIGHT) ; go one higher
+            ldy #(CHAR_HEIGHT) ; go one higher to create top line
 _gx_timer_loop
             sta WSYNC
             SLEEP 3; 
@@ -936,20 +978,7 @@ _start_game
             lda #GAME_STATE_CLIMB
             sta game_state
             jmp gx_continue
-            
-gx_win    
-            lda frame
-            sta COLUP0
-            ; wait for song
-            lda audio_tracker
-            bne _wait_for_reset
-            ; on button press restart
-            bit player_input_latch
-            bpl _reset_game
-_wait_for_reset
-            jmp gx_continue
-_reset_game
-            jmp Reset
+
 
 ;
 ; game control subroutines
@@ -997,6 +1026,8 @@ sub_write_digit
             rts
 
 sub_steps_init
+            lda #PLAYER_STEP_HEALTH
+            sta player_health
             lda difficulty_level
             and #$03
             tay
@@ -1109,6 +1140,15 @@ _steps_draw_flights_end
             adc jump_table_offset
             tay
 _steps_draw_jumps
+            lda #$08
+            bit difficulty_level
+            beq _steps_draw_all_jumps
+            txa
+            sec
+            sbc player_step
+            lsr
+            bne _steps_draw_jump_skip
+_steps_draw_all_jumps
             lda jump_table,x
             and #$0f
             bne _steps_draw_goal_skip
@@ -1116,47 +1156,13 @@ _steps_draw_jumps
 _steps_draw_goal_skip
             ora draw_table,y
             sta draw_table,y
+_steps_draw_jump_skip
             dey
             bmi _steps_end_jumps ; if offset is negative exit this loop
             dex
             bpl _steps_draw_jumps
 _steps_end_jumps
             jsr sub_draw_player_step
-            rts
-
-gx_player_clock    
-            ; x = 1 or -1 for count up or down
-            ; does not handle counting down minutes
-            lda player_clock
-            clc
-            adc #1
-            cmp #CLOCK_HZ
-            bmi _clock_save
-            sed
-            lda player_timer
-            cpx #0
-            bpl _clock_add
-            sec
-            sbc #1
-            sta player_timer
-            jmp _clock_save_out
-_clock_add
-            clc
-            adc #1
-            cmp #$60
-            bne _clock_save_sec
-            lda #0
-            sec
-_clock_save_sec
-            sta player_timer
-            lda player_timer + 1
-            adc #0
-            sta player_timer + 1
-_clock_save_out
-            cld
-            lda #0
-_clock_save
-            sta player_clock 
             rts
 
 gx_difficulty_up
@@ -1176,14 +1182,17 @@ gx_difficulty_set
             ; setup visuals
             lsr
             lsr
+            tax
             lsr
             sta sky_palette
             lda #$00
+            sta lava_jump_offset
             bcc _gx_select_skip_lava
             lda #1
 _gx_select_skip_lava
             sta lava_height
-            ldy #5 ; BUGBUG: magic number
+            sta lava_clock
+            ldy SELECT_ROW,x
             ldx #11
 _gx_select_setup_loop
             lda #>SELECT_GRAPHICS
@@ -1197,77 +1206,6 @@ _gx_select_setup_loop
             lda #>gx_select_return
             sta draw_t0_jump_addr + 1
             jmp gx_show_select
-
-sub_steps_respxx
-            ; a is respx, y is direction
-            sec
-            sta WSYNC               ; --
-_respxx_loop
-            sbc #15                 ;2    2
-            sbcs _respxx_loop       ;2/3  4
-            tax                     ;2    6
-            lda LOOKUP_STD_HMOVE,x  ;5   11
-            sta HMP0                ;3   14
-            sta HMP1                ;3   17
-            tya                     ;2   19
-            sbpl _respxx_swap        ;2   21
-            sta.w RESP0             ;4   25
-            sta RESP1               ;3   28
-            sta WSYNC               ;
-            sta HMOVE               ;3    3
-            lda #$70                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$90                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$10                ;2   
-            sta HMP0                ;3   
-            lda #$30
-            sta HMP1                ;3   
-            rts                     ;6   
-_respxx_swap            
-            sta RESP1               ;3   25
-            sta RESP0               ;3   28
-            sta WSYNC
-            sta HMOVE
-            lda #$90                ;2    5
-            sta draw_hmove_a        ;3    8
-            lda #$70                ;2   10
-            sta draw_hmove_b        ;3   13
-            SLEEP 10 ; BUGBUG: kludge
-            lda #$30                ;3   
-            sta HMP0                ;3   
-            lda #$10                ;3   
-            sta HMP1                ;3   
-            rts                     ;6  
-
-; BUGBUG: alternate?
-;             bmi _respxx_exit
-; _respxx_swap            
-;             sta RESP1               ;3   25
-;             sta RESP0               ;3   28
-;             sta WSYNC
-;             sta HMOVE               ;2    2
-; _respxx_exit
-;             lda RESPXX_HMOVE_A,y    ;4    6
-;             sta draw_hmove_a        ;3    9
-;             lda RESPXX_HMOVE_B,y    ;4   13
-;             sta draw_hmove_b        ;3   16
-;             lda RESPXX_HMP0,y       ;4   20
-;             ldx RESPXX_HMP1,y       ;4   24
-;             sta HMP0                ;3   27   
-;             stx HMP1                ;3   30
-;             rts                     ;6  
-;     byte $70
-; RESPXX_HMOVE_A
-;     byte $90
-; RESPXX_HMOVE_B
-;     byte $70
-;     byte $10
-; RESPXX_HMP0
-;     byte $30
-; RESPXX_HMP1
-;     byte $10
 
 sub_steps_advance
             ldx #0
@@ -1296,6 +1234,8 @@ _sub_steps_advance_save
             sta jump_table_offset
             lda #0
             sta player_step
+            lda #PLAYER_STEP_HEALTH ; restore health
+            sta player_health
             txa ; next flight size / 2
             asl ; x2
             beq sub_steps_win
@@ -1307,14 +1247,58 @@ _sub_steps_advance_save
             sta draw_player_dir
             jmp sub_steps_refresh ; redraw steps (will rts from there)
 
+sub_steps_lose
+            lda #SEQ_LOSE_GAME
+            byte $2c
 sub_steps_win
             lda #SEQ_WIN_GAME
             sta audio_sequence
-            lda #GAME_STATE_WIN
+            lda #GAME_STATE_END
             sta game_state
             rts
 
+sub_steps_respxx
+            ; a is respx, y is direction (-1 or 0)
+            sec
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop       ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            tya                     ;2   19
+            sbpl _respxx_swap       ;2   21
+            sta.w RESP0             ;4   25
+            sta RESP1               ;3   28
+            sta WSYNC               ;
+            sta HMOVE               ;3    3
+            ldy #1                  ;2    5
+            bpl _respxx_exit        ;3    9 always true
+_respxx_swap            
+            sta RESP1               ;3   25
+            sta RESP0               ;3   28
+            sta WSYNC
+            sta HMOVE               ;3    3
+_respxx_exit
+            lda RESPXX_HMOVE_A,y    ;4    7/+5
+            sta draw_hmove_a        ;3   10
+            lda RESPXX_HMOVE_B,y    ;4   14
+            sta draw_hmove_b        ;3   17
+            lda RESPXX_HMP0,y       ;4   21
+            ldx RESPXX_HMP1,y       ;4   25
+            sta HMP0                ;3   28   
+            stx HMP1                ;3   31
+            rts                     ;6  
+
 sub_steps_scroll
+            ldx lava_height
+            beq _skip_lava_scroll
+            dex
+            beq _skip_lava_scroll
+            stx lava_height
+_skip_lava_scroll
             lda draw_steps_wsync
             clc
             adc #1
@@ -1588,7 +1572,7 @@ _gx_process_jump_arrive
             sta player_score ; collect prize
             cld
             jsr sub_steps_advance
-            jmp _gx_go_redraw_player
+            jmp gx_update_return
 _gx_go_fall_down
             lda #0
             sta player_step
@@ -1608,17 +1592,17 @@ _gx_go_fall
             jsr _gx_go_redraw_player ; will continue back
             jmp gx_process_jump
 _gx_go_redraw_player
-            jsr sub_redraw_player_step
+            jsr sub_steps_refresh
             jmp gx_update_return
 
-sub_redraw_player_step
-            ldx draw_table_top
-_sub_redraw_player_loop
-            lda #$7f
-            and draw_table+1,x
-            sta draw_table+1,x
-            dex
-            bpl _sub_redraw_player_loop
+; sub_redraw_player_step
+;             ldx draw_table_top
+; _sub_redraw_player_loop
+;             lda #$7f
+;             and draw_table+1,x
+;             sta draw_table+1,x
+;             dex
+;             bpl _sub_redraw_player_loop
 sub_draw_player_step
             lda player_step
             clc 
@@ -1637,23 +1621,6 @@ gx_show_select
 
             ; select
             jmp gx_title_start_draw
-
-; SELECT SYMS
-SELECT_GRAPHICS
-SELECT_SYMBOL_V
-    byte $38,$44,$82,$92,$92,$92,$92,$fe; 8
-SELECT_SYMBOL_E
-    byte $fe,$82,$9e,$82,$9a,$82,$82;,$fe; 8
-SELECT_SYMBOL_L
-    byte $fe,$82,$82,$9e,$90,$90,$90;,$f0; 8
-
-SELECT_ROW_0_DATA
-    byte <SELECT_SYMBOL_L
-    byte <SELECT_SYMBOL_E
-    byte <SELECT_SYMBOL_V
-    byte <SELECT_SYMBOL_E
-    byte <SELECT_SYMBOL_L
-    byte <gx_select_return
 
 ; ----------------------------------
 ; TITLE
@@ -1901,9 +1868,9 @@ sub_gen_steps
             lsr
             sta temp_maze_ptr ; save for multiply
             jsr sub_galois
-            and #$f8 ; 32 get top 32 bits
+            and #$f0 ; 16 mazes
             sta temp_rand
-            ldx #4
+            ldx #3 ; 4 shifts
             lda #0
 _sub_gen_steps_mul
             asl 
@@ -2138,7 +2105,7 @@ _draw_tx_end_loop
             lda lava_height
             beq _draw_tx_skip_lava
             sta WSYNC
-            lda #RED
+            lda #LAVA_COLOR
             sta COLUBK
             dex
 _draw_tx_skip_lava
@@ -2426,83 +2393,46 @@ TITLE_ROW_H_DATA
     byte <gx_title_end
     byte <TITLE_ROW_H_DATA
 
-MAZES_4
-
-    byte $15,$32,$31,$01 ; sol: 7
-    byte $15,$14,$43,$03 ; sol: 8
-    byte $15,$42,$41,$02 ; sol: 7
-    byte $43,$14,$24,$05 ; sol: 7
-    byte $25,$35,$42,$02 ; sol: 8
-    byte $22,$24,$13,$05 ; sol: 8
-    byte $25,$15,$14,$05 ; sol: 7
-    byte $25,$14,$33,$05 ; sol: 8
-    byte $35,$41,$42,$04 ; sol: 7
-    byte $15,$24,$33,$02 ; sol: 6
-    byte $55,$42,$41,$04 ; sol: 8
-    byte $35,$42,$31,$03 ; sol: 6
-    byte $42,$54,$13,$05 ; sol: 7
-    byte $43,$32,$13,$05 ; sol: 7
-    byte $35,$44,$31,$02 ; sol: 7
-    byte $51,$23,$13,$04 ; sol: 7
-    byte $15,$42,$42,$03 ; sol: 8
-    byte $35,$42,$41,$05 ; sol: 6
-    byte $52,$43,$41,$02 ; sol: 8
-    byte $25,$31,$43,$02 ; sol: 7
-    byte $15,$32,$41,$01 ; sol: 8
-    byte $52,$13,$43,$03 ; sol: 8
-    byte $43,$35,$12,$05 ; sol: 8
-    byte $43,$35,$31,$02 ; sol: 7
-    byte $13,$35,$41,$02 ; sol: 8
-    byte $25,$44,$31,$05 ; sol: 7
-    byte $35,$32,$41,$01 ; sol: 7
-    byte $15,$24,$43,$02 ; sol: 7
-    byte $35,$35,$41,$04 ; sol: 8
-    byte $35,$44,$31,$05 ; sol: 8
-    byte $51,$21,$13,$04 ; sol: 8
-    byte $52,$24,$13,$03 ; sol: 7
-
-
-    ORG $FC00
-
 MAZES_6
 
     byte $36,$76,$42,$43,$31,$05 ; sol: 11
     byte $27,$14,$65,$31,$17,$03 ; sol: 11
     byte $46,$65,$27,$14,$57,$03 ; sol: 11
     byte $27,$57,$31,$64,$34,$01 ; sol: 12
+
     byte $37,$64,$31,$54,$27,$05 ; sol: 12
     byte $27,$16,$45,$35,$42,$06 ; sol: 11
     byte $27,$57,$31,$65,$14,$04 ; sol: 12
     byte $57,$42,$63,$54,$41,$02 ; sol: 11
+
     byte $57,$52,$63,$54,$41,$07 ; sol: 12
     byte $57,$31,$46,$51,$53,$02 ; sol: 11
     byte $37,$26,$17,$54,$31,$07 ; sol: 11
     byte $27,$57,$31,$65,$34,$07 ; sol: 11
+
     byte $37,$72,$42,$51,$63,$02 ; sol: 11
     byte $57,$63,$14,$64,$25,$03 ; sol: 11
     byte $57,$53,$27,$64,$51,$03 ; sol: 11
     byte $73,$25,$75,$15,$74,$06 ; sol: 10
-    byte $27,$17,$74,$35,$37,$06 ; sol: 10
-    byte $57,$62,$73,$54,$13,$07 ; sol: 11
-    byte $57,$13,$25,$64,$13,$03 ; sol: 11
-    byte $57,$63,$27,$64,$14,$04 ; sol: 11
-    byte $47,$62,$31,$65,$37,$04 ; sol: 10
-    byte $57,$72,$35,$61,$64,$01 ; sol: 11
-    byte $25,$47,$36,$15,$56,$07 ; sol: 10
-    byte $57,$62,$23,$54,$13,$07 ; sol: 11
-    byte $57,$62,$23,$54,$13,$05 ; sol: 12
-    byte $47,$17,$24,$35,$37,$06 ; sol: 11
-    byte $47,$62,$52,$51,$13,$07 ; sol: 11
-    byte $24,$17,$53,$67,$43,$02 ; sol: 10
-    byte $56,$72,$41,$61,$73,$02 ; sol: 10
-    byte $57,$63,$21,$64,$13,$04 ; sol: 10
-    byte $24,$17,$63,$64,$31,$05 ; sol: 10
-    byte $65,$72,$41,$51,$43,$02 ; sol: 10
 
-STEP_COLOR
-    byte $0f,$1f,$2f,$3f,$4f,$5f,$6f,$7f
-    byte $8f,$9f,$af,$bf,$cf,$df,$ef,$ff
-    byte $0f,$1f
+    ; byte $27,$17,$74,$35,$37,$06 ; sol: 10
+    ; byte $57,$62,$73,$54,$13,$07 ; sol: 11
+    ; byte $57,$13,$25,$64,$13,$03 ; sol: 11
+    ; byte $57,$63,$27,$64,$14,$04 ; sol: 11
+    ; byte $47,$62,$31,$65,$37,$04 ; sol: 10
+    ; byte $57,$72,$35,$61,$64,$01 ; sol: 11
+    ; byte $25,$47,$36,$15,$56,$07 ; sol: 10
+    ; byte $57,$62,$23,$54,$13,$07 ; sol: 11
+    ; byte $57,$62,$23,$54,$13,$05 ; sol: 12
+    ; byte $47,$17,$24,$35,$37,$06 ; sol: 11
+    ; byte $47,$62,$52,$51,$13,$07 ; sol: 11
+    ; byte $24,$17,$53,$67,$43,$02 ; sol: 10
+    ; byte $56,$72,$41,$61,$73,$02 ; sol: 10
+    ; byte $57,$63,$21,$64,$13,$04 ; sol: 10
+    ; byte $24,$17,$63,$64,$31,$05 ; sol: 10
+    ; byte $65,$72,$41,$51,$43,$02 ; sol: 10
+
+    ORG $FC00
 
 SKY_PALETTE
     byte SKY_BLUE, BLACK
@@ -2535,43 +2465,172 @@ LAYOUT_EXTRA = . - LAYOUTS
 ;    byte 0,0,0,0,0,16
     byte $f8,0
 
+gx_end
+            lda frame
+            sta COLUP0
+            ; wait for song
+            lda audio_tracker
+            bne _wait_for_reset
+            ; on button press restart
+            bit player_input_latch
+            bpl _reset_game
+_wait_for_reset
+            jmp gx_continue
+_reset_game
+            jmp Reset
+
+gx_player_clock    
+            ; x = 1 or -1 for count up or down
+            ; does not handle counting down minutes
+            lda player_clock
+            clc
+            adc #1
+            cmp #CLOCK_HZ
+            bmi _clock_save
+            sed
+            lda player_timer
+            cpx #0
+            bpl _clock_add
+            sec
+            sbc #1
+            sta player_timer
+            jmp _clock_save_out
+_clock_add
+            clc
+            adc #1
+            cmp #$60
+            bne _clock_save_sec
+            lda #0
+            sec
+_clock_save_sec
+            sta player_timer
+            lda player_timer + 1
+            adc #0
+            sta player_timer + 1
+_clock_save_out
+            cld
+            lda #0
+_clock_save
+            sta player_clock 
+            rts
+
     ORG $FD00
 
 MAZES_8
 
-    byte $42,$69,$18,$84,$82,$37,$35,$08 ; sol: 13
+    byte $69,$83,$49,$76,$32,$97,$58,$01 ; sol: 15
+    byte $49,$58,$28,$28,$73,$29,$96,$01 ; sol: 15
     byte $52,$19,$83,$73,$65,$62,$69,$04 ; sol: 15
     byte $52,$69,$81,$79,$83,$62,$68,$04 ; sol: 15
+
     byte $82,$19,$83,$79,$35,$62,$61,$04 ; sol: 15
     byte $36,$86,$52,$91,$86,$27,$43,$02 ; sol: 14
     byte $87,$82,$53,$17,$68,$97,$14,$09 ; sol: 14
     byte $82,$93,$57,$61,$57,$84,$74,$04 ; sol: 14
+
     byte $74,$69,$48,$28,$36,$15,$59,$07 ; sol: 15
     byte $14,$69,$48,$28,$35,$35,$39,$07 ; sol: 16
     byte $36,$19,$48,$72,$78,$25,$67,$04 ; sol: 13
     byte $37,$96,$91,$25,$95,$75,$34,$08 ; sol: 13
+
     byte $28,$39,$86,$84,$24,$67,$14,$05 ; sol: 14
     byte $28,$47,$86,$56,$53,$69,$78,$01 ; sol: 15
     byte $73,$65,$59,$42,$86,$64,$13,$06 ; sol: 15
-    byte $17,$98,$84,$25,$95,$96,$73,$09 ; sol: 13
-    byte $35,$81,$41,$57,$93,$35,$62,$08 ; sol: 13
     byte $78,$39,$26,$64,$54,$67,$48,$01 ; sol: 14
-    byte $49,$58,$21,$28,$74,$49,$86,$03 ; sol: 13
-    byte $49,$58,$26,$97,$74,$49,$16,$03 ; sol: 14
-    byte $69,$83,$49,$76,$32,$97,$58,$01 ; sol: 15
-    byte $49,$58,$28,$28,$73,$29,$96,$01 ; sol: 15
-    byte $28,$15,$86,$86,$43,$69,$78,$05 ; sol: 13
-    byte $59,$51,$58,$72,$46,$83,$83,$03 ; sol: 15
-    byte $28,$15,$86,$76,$63,$69,$78,$05 ; sol: 15
-    byte $58,$39,$26,$64,$64,$67,$48,$01 ; sol: 13
-    byte $49,$21,$83,$59,$76,$71,$34,$08 ; sol: 15
-    byte $68,$29,$43,$57,$34,$65,$18,$04 ; sol: 13
-    byte $76,$92,$23,$53,$96,$65,$81,$04 ; sol: 14
-    byte $16,$49,$48,$72,$78,$85,$37,$04 ; sol: 13
-    byte $19,$25,$39,$76,$32,$47,$58,$03 ; sol: 14
-    byte $58,$39,$86,$24,$54,$67,$68,$01 ; sol: 14
-    byte $56,$49,$48,$62,$79,$84,$37,$01 ; sol: 14
 
+    ; byte $17,$98,$84,$25,$95,$96,$73,$09 ; sol: 13
+    ; byte $35,$81,$41,$57,$93,$35,$62,$08 ; sol: 13
+    ; byte $49,$58,$21,$28,$74,$49,$86,$03 ; sol: 13
+    ; byte $49,$58,$26,$97,$74,$49,$16,$03 ; sol: 14
+    ; byte $28,$15,$86,$86,$43,$69,$78,$05 ; sol: 13
+    ; byte $59,$51,$58,$72,$46,$83,$83,$03 ; sol: 15
+    ; byte $42,$69,$18,$84,$82,$37,$35,$08 ; sol: 13
+    ; byte $28,$15,$86,$76,$63,$69,$78,$05 ; sol: 15
+    ; byte $58,$39,$26,$64,$64,$67,$48,$01 ; sol: 13
+    ; byte $49,$21,$83,$59,$76,$71,$34,$08 ; sol: 15
+    ; byte $68,$29,$43,$57,$34,$65,$18,$04 ; sol: 13
+    ; byte $76,$92,$23,$53,$96,$65,$81,$04 ; sol: 14
+    ; byte $16,$49,$48,$72,$78,$85,$37,$04 ; sol: 13
+    ; byte $19,$25,$39,$76,$32,$47,$58,$03 ; sol: 14
+    ; byte $58,$39,$86,$24,$54,$67,$68,$01 ; sol: 14
+    ; byte $56,$49,$48,$62,$79,$84,$37,$01 ; sol: 14
+
+MAZES_4
+
+    byte $15,$32,$31,$01 ; sol: 7
+    byte $15,$14,$43,$03 ; sol: 8
+    byte $15,$42,$41,$02 ; sol: 7
+    byte $43,$14,$24,$05 ; sol: 7
+
+    byte $25,$35,$42,$02 ; sol: 8
+    byte $22,$24,$13,$05 ; sol: 8
+    byte $25,$15,$14,$05 ; sol: 7
+    byte $25,$14,$33,$05 ; sol: 8
+
+    byte $35,$41,$42,$04 ; sol: 7
+    byte $15,$24,$33,$02 ; sol: 6
+    byte $55,$42,$41,$04 ; sol: 8
+    byte $42,$54,$13,$05 ; sol: 7
+
+    byte $43,$32,$13,$05 ; sol: 7
+    byte $35,$44,$31,$02 ; sol: 7
+    byte $51,$23,$13,$04 ; sol: 7
+    byte $15,$42,$42,$03 ; sol: 8
+;    byte $35,$42,$31,$03 ; sol: 6
+;    byte $35,$42,$41,$05 ; sol: 6
+;    byte $52,$43,$41,$02 ; sol: 8
+;    byte $25,$31,$43,$02 ; sol: 7
+;    byte $15,$32,$41,$01 ; sol: 8
+;    byte $52,$13,$43,$03 ; sol: 8
+;    byte $43,$35,$12,$05 ; sol: 8
+;    byte $43,$35,$31,$02 ; sol: 7
+;    byte $13,$35,$41,$02 ; sol: 8
+;    byte $25,$44,$31,$05 ; sol: 7
+;    byte $35,$32,$41,$01 ; sol: 7
+;    byte $15,$24,$43,$02 ; sol: 7
+;    byte $35,$35,$41,$04 ; sol: 8
+;    byte $35,$44,$31,$05 ; sol: 8
+;    byte $51,$21,$13,$04 ; sol: 8
+;    byte $52,$24,$13,$03 ; sol: 7
+
+MAZES_3
+
+    byte $22,$22,$03 ; w: 0.13333333333333333 sol: 6
+    byte $31,$21,$02 ; w: 0.4 sol: 6
+    byte $14,$21,$02 ; w: 0.3 sol: 5
+    byte $43,$11,$04 ; w: 0.4 sol: 5
+
+    byte $21,$13,$03 ; w: 0.5 sol: 5
+    byte $44,$11,$02 ; w: 0.3 sol: 5
+    byte $32,$31,$01 ; w: 0.5 sol: 5
+    byte $43,$14,$03 ; w: 0.4 sol: 5
+
+    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
+    byte $44,$13,$03 ; w: 0.4 sol: 4
+    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
+    byte $24,$23,$03 ; w: 0.5 sol: 5
+
+    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
+    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
+    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
+    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
+
+    ; byte $14,$13,$03 ; w: 0.5 sol: 5
+    ; byte $34,$43,$02 ; w: 0.4 sol: 4
+    ; byte $43,$11,$04 ; w: 0.4 sol: 5
+    ; byte $21,$13,$03 ; w: 0.5 sol: 5
+    ; byte $44,$11,$02 ; w: 0.3 sol: 5
+    ; byte $32,$31,$01 ; w: 0.5 sol: 5
+    ; byte $43,$14,$03 ; w: 0.4 sol: 5
+    ; byte $44,$13,$03 ; w: 0.4 sol: 4
+    ; byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
+    ; byte $24,$23,$03 ; w: 0.5 sol: 5
+    ; byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
+    ; byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
+    ; byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
+    ; byte $14,$13,$03 ; w: 0.5 sol: 5
+    ; byte $34,$43,$02 ; w: 0.4 sol: 4
+    ; byte $43,$11,$04 ; w: 0.4 sol: 5
 
 ; ----------------------------------
 ; symbol graphics 
@@ -2651,9 +2710,12 @@ STD_HMOVE_BEGIN
     byte $80, $70, $60, $50, $40, $30, $20, $10, $00, $f0, $e0, $d0, $c0, $b0, $a0, $90
 STD_HMOVE_END
 LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
-    
+
+LAVA_SPEED
+    byte 100, 87, 50, 50
+
 TIMER_MASK
-    byte $00,$00,$00,$01,$00,$01,$00,$00
+    byte $00,$00,$00,$01,$00,$01,$00,$00,$00
 
     ; maze data LUT
 MAZE_PTR_LO = . - 2
@@ -2673,6 +2735,7 @@ MAZE_PTR_HI = . - 2
 
 AUDIO_SEQUENCES
     byte 0
+SEQ_LOSE_GAME = . - AUDIO_SEQUENCES
 SEQ_WIN_GAME = . - AUDIO_SEQUENCES
 SEQ_TITLE = . - AUDIO_SEQUENCES
     byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01
@@ -2703,48 +2766,101 @@ TRACK_FREQ_INDEX
     byte 27,26,23,20,19,17,16,15,11
     ;byte 9
 
-
 TRACK_CHAN_INDEX
     byte 12,12,12,12,12,12,12
-    byte 4,4,4,4,4,4,4,4,4,4
+    byte 04,04,04,04,04,04,04,04,04
 
 MARGINS
     byte 6,7,7,13,15,17,17,18,18
 
-MAZES_3
+; overlapping tables for respxx swaps
+RESPXX_HMOVE_A
+    byte $90
+RESPXX_HMOVE_B
+    byte $70
+    byte $90
+RESPXX_HMP0
+    byte $30
+RESPXX_HMP1
+    byte $10
+    byte $30
 
-    byte $22,$22,$03 ; w: 0.13333333333333333 sol: 6
-    byte $31,$21,$02 ; w: 0.4 sol: 6
-    byte $14,$21,$02 ; w: 0.3 sol: 5
-    byte $43,$11,$04 ; w: 0.4 sol: 5
-    byte $21,$13,$03 ; w: 0.5 sol: 5
-    byte $44,$11,$02 ; w: 0.3 sol: 5
-    byte $32,$31,$01 ; w: 0.5 sol: 5
-    byte $43,$14,$03 ; w: 0.4 sol: 5
-    byte $44,$13,$03 ; w: 0.4 sol: 4
-    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
-    byte $24,$23,$03 ; w: 0.5 sol: 5
-    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
-    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
-    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
-    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
-    byte $14,$13,$03 ; w: 0.5 sol: 5
-    byte $34,$43,$02 ; w: 0.4 sol: 4
-    byte $43,$11,$04 ; w: 0.4 sol: 5
-    byte $21,$13,$03 ; w: 0.5 sol: 5
-    byte $44,$11,$02 ; w: 0.3 sol: 5
-    byte $32,$31,$01 ; w: 0.5 sol: 5
-    byte $43,$14,$03 ; w: 0.4 sol: 5
-    byte $44,$13,$03 ; w: 0.4 sol: 4
-    byte $31,$43,$02 ; w: 0.5333333333333334 sol: 5
-    byte $24,$23,$03 ; w: 0.5 sol: 5
-    byte $24,$13,$03 ; w: 1.3333333333333333 sol: 6
-    byte $42,$12,$03 ; w: 0.6666666666666667 sol: 5
-    byte $42,$31,$03 ; w: 0.5333333333333334 sol: 4
-    byte $14,$21,$03 ; w: 0.5333333333333333 sol: 6
-    byte $14,$13,$03 ; w: 0.5 sol: 5
-    byte $34,$43,$02 ; w: 0.4 sol: 4
-    byte $43,$11,$04 ; w: 0.4 sol: 5
+; SELECT SYMS
+SELECT_GRAPHICS
+SELECT_SYMBOL_T
+    byte $38,$28,$28,$28,$28,$ee,$82;,$fe; 8
+SELECT_SYMBOL_S
+    byte $fe,$82,$e2,$24,$48,$8e,$82;,$fe; 8
+SELECT_SYMBOL_E
+    byte $fe,$82,$9e,$82,$9a,$82,$82;,$fe; 8
+SELECT_SYMBOL_L
+    byte $fe,$82,$82,$9e,$90,$90,$90;,$f0; 8
+SELECT_SYMBOL_P
+    byte $f0,$90,$9e,$82,$9a,$82,$82;,$fe; 8
+SELECT_SYMBOL_A
+    byte $fe,$92,$92,$82,$92,$82,$82;,$fe; 8
+SELECT_SYMBOL_R
+    byte $fe,$92,$92,$86,$9a,$82,$82;,$fe; 8
+SELECT_SYMBOL_K
+    byte $fe,$92,$92,$86,$82,$9a,$9a,$fe; 8
+SELECT_SYMBOL_D
+    byte $fc,$82,$9a,$9a,$9a,$9a,$82,$fc; 8
+SELECT_SYMBOL_V
+    byte $38,$44,$82,$92,$92,$92,$92,$fe; 8
+
+SELECT_ROW_0_DATA
+    byte <SELECT_SYMBOL_S
+    byte <SELECT_SYMBOL_T
+    byte <SELECT_SYMBOL_E
+    byte <SELECT_SYMBOL_P
+    byte <SELECT_SYMBOL_S
+    byte <gx_select_return
+
+SELECT_ROW_1_DATA
+    byte <SELECT_SYMBOL_L
+    byte <SELECT_SYMBOL_A
+    byte <SELECT_SYMBOL_V
+    byte <SELECT_SYMBOL_A
+    byte <SELECT_SYMBOL_S
+    byte <gx_select_return
+
+SELECT_ROW_2_DATA
+    byte <SELECT_SYMBOL_D
+    byte <SELECT_SYMBOL_A
+    byte <SELECT_SYMBOL_R
+    byte <SELECT_SYMBOL_K
+    byte <SELECT_SYMBOL_S
+    byte <gx_select_return
+
+SELECT_ROW_3_DATA
+    byte <SELECT_SYMBOL_L
+    byte <SELECT_SYMBOL_E
+    byte <SELECT_SYMBOL_E
+    byte <SELECT_SYMBOL_T
+    byte <SELECT_SYMBOL_S
+    byte <gx_select_return
+
+SELECT_ROW
+    byte 5,11,17,23
+
+GX_JUMP_LO
+    byte <(gx_title-1)
+    byte <(gx_select-1)
+    byte <(gx_start-1)
+    byte <(gx_climb-1)
+    byte <(gx_jump-1)
+    byte <(gx_scroll-1)
+    byte <(gx_fall-1)
+    byte <(gx_end-1)
+GX_JUMP_HI
+    byte >(gx_title-1)
+    byte >(gx_select-1)
+    byte >(gx_start-1)
+    byte >(gx_climb-1)
+    byte >(gx_jump-1)
+    byte >(gx_scroll-1)
+    byte >(gx_fall-1)
+    byte >(gx_end-1)
 
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
