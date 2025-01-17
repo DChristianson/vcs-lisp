@@ -47,3 +47,4 @@ Although Lisp is very different from Basic, Warren Robinette's Atari Basic Progr
  - The VCS Web IDE uses [Stellerator](https://github.com/6502ts/6502.ts/blob/master/doc/stellerator.md)
  - [Javatari](https://javatari.org)
  - [Stella](https://stella-emu.github.io/)
+ - [Gopher2600](https://github.com/JetSetIlly/Gopher2600)
