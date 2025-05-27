@@ -20,6 +20,23 @@ This is an Atari 2600 game from an alternate reality...
 <img height="180" alt="image" src="https://github.com/user-attachments/assets/e5469753-a3a3-4dbb-8c3a-95add60fc64f" />
 <img height="180" alt="image" src="https://github.com/user-attachments/assets/3c8a022f-f121-4bf2-9654-8edd7ba74353" />
 
+
+## Reviews
+
+_This is completely and utterly insane. I love it._ - [utz, AtariAge](https://forums.atariage.com/topic/353031-lisp-programming-beta-10-holiday-type-in-games-squirrels/#findComment-5285017)
+
+_This is absolutely crazy and amazing. 🙂_ - [Karl G., AtariAge](https://forums.atariage.com/topic/353031-lisp-programming-beta-10-holiday-type-in-games-squirrels/#findComment-5288241)
+
+_The box art with the astronaut is the cherry on this nerd sundae._ - [bitwize, Y Combinator](https://news.ycombinator.com/item?id=36745961)
+
+Here's what Google AI says about whether you can program Lisp on the Atari 2600:
+
+<img width="506" alt="image" src="https://github.com/user-attachments/assets/ef10bac1-65ac-44b0-ada9-0dfb8e7647fc" />
+
+But concedes:
+
+<img width="648" alt="image" src="https://github.com/user-attachments/assets/96ec903c-6a36-4a7d-ae70-d2c63e6018f1" />
+
 ## References, Credits and Inspirations
 
 This work would not be possible without the [AtariAge forums](https://www.atariage.com/forums) and all
