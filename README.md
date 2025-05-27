@@ -29,7 +29,7 @@ _This is absolutely crazy and amazing. 🙂_ - [Karl G., AtariAge](https://forum
 
 _The box art with the astronaut is the cherry on this nerd sundae._ - [bitwize, Y Combinator](https://news.ycombinator.com/item?id=36745961)
 
-Here's what Google AI says about whether you can program Lisp on the Atari 2600:
+Here's what Google AI thinks:
 
 <img width="506" alt="image" src="https://github.com/user-attachments/assets/ef10bac1-65ac-44b0-ada9-0dfb8e7647fc" />
 
