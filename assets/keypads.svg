@@ -1,0 +1,168 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" 
+                      width="112mm" 
+                      height="95mm"
+                      fill="white" 
+                      stroke="black"
+                      stroke-width="0.5mm">
+<defs>
+            <filter id="filter0">
+               <feColorMatrix
+                 in="SourceGraphic"
+                 type="matrix"
+                 color-interpolation-filters="sRGB"
+                 values="0.3333333333333333 0 0 0 0
+                         0 0.058823529411764705 0 0 0
+                         0 0 0.788235294117647 0 0
+                         0 0 0 1 0" />
+            </filter>
+            <filter id="filter1">
+               <feColorMatrix
+                 in="SourceGraphic"
+                 type="matrix"
+                 color-interpolation-filters="sRGB"
+                 values="0 0 0 0 0
+                         0 0.4392156862745098 0 0 0
+                         0 0 0.047058823529411764 0 0
+                         0 0 0 1 0" />
+            </filter>
+            <filter id="filter2">
+               <feColorMatrix
+                 in="SourceGraphic"
+                 type="matrix"
+                 color-interpolation-filters="sRGB"
+                 values="0.011764705882352941 0 0 0 0
+                         0 0.23529411764705882 0 0 0
+                         0 0 0.8392156862745098 0 0
+                         0 0 0 1 0" />
+            </filter>
+            <filter id="filter3">
+               <feColorMatrix
+                 in="SourceGraphic"
+                 type="matrix"
+                 color-interpolation-filters="sRGB"
+                 values="0.596078431372549 0 0 0 0
+                         0 0.07450980392156863 0 0 0
+                         0 0 0 0 0
+                         0 0 0 1 0" />
+            </filter>
+            <filter id="filter4">
+               <feColorMatrix
+                 in="SourceGraphic"
+                 type="matrix"
+                 color-interpolation-filters="sRGB"
+                 values="0 0 0 0 0
+                         0 0 0 0 0
+                         0 0 0 0 0
+                         0 0 0 1 0" />
+            </filter>
+        </defs>  <g>
+    <!-- Keypad Keypad 0 -->
+    <rect x="0mm" y="0mm" width="51mm" height="95mm" rx="5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="7.5mm" y="24.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMElEQVR4nGP8//8/AwMDw38GBgZGJBoOmKCCDFhouAK8gAnJSHSanlbglGRgYGAAAAhTCw9JyUwwAAAAAElFTkSuQmCC" />
+    <circle cx="9.5mm" cy="34.5mm" r="4.5mm" />
+     <text x="25.5mm" y="26.5mm" text-anchor="middle" dominant-baseline="middle">↑</text>
+    <circle cx="25.5mm" cy="34.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="39.5mm" y="24.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4nGP8//8/Az7AhFcWTQFWo5AVMOJT8B+NxlDAiEZjtQIrIKgAAMIPBg32CdO5AAAAAElFTkSuQmCC" />
+    <circle cx="41.5mm" cy="34.5mm" r="4.5mm" />
+     <text x="9.5mm" y="42.5mm" text-anchor="middle" dominant-baseline="middle">←</text>
+    <circle cx="9.5mm" cy="50.5mm" r="4.5mm" />
+     <text x="25.5mm" y="42.5mm" text-anchor="middle" dominant-baseline="middle"></text>
+    <circle cx="25.5mm" cy="50.5mm" r="4.5mm" />
+     <text x="41.5mm" y="42.5mm" text-anchor="middle" dominant-baseline="middle">→</text>
+    <circle cx="41.5mm" cy="50.5mm" r="4.5mm" />
+     <text x="9.5mm" y="58.5mm" text-anchor="middle" dominant-baseline="middle"></text>
+    <circle cx="9.5mm" cy="66.5mm" r="4.5mm" />
+     <text x="25.5mm" y="58.5mm" text-anchor="middle" dominant-baseline="middle">↓</text>
+    <circle cx="25.5mm" cy="66.5mm" r="4.5mm" />
+     <image image-rendering="pixelated" filter="url(#filter0)" x="37.125mm" y="58.75mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nI2NMRIAQAwByf//7MqgyaUx2AlKEgBiL/xY6AoHWCUb8DDK74l+rQbOiQ7DPx46DA/MhRlyAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated" filter="url(#filter0)" x="40.375mm" y="58.75mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMklEQVR4nGP8//8/AxT8Z2BgYGRAA0zoAiQrYIEajWwNA7JVLEgcGrkBWQGG8QwMDAwAxLcHEoWZmJYAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated" filter="url(#filter0)" x="43.625mm" y="58.75mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJklEQVR4nGP8//8/Az7AhFeWGAUsDAwM2OxgRFbAiEUBFd1AUAEAvCEEElAdEVsAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated" filter="url(#filter1)" x="46.5mm" y="61.625mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4nGP8//8/AwMDw38GCGBkQANMuCTQFeAEdFTwH42GAxYojdMXAIU4Bg+I9Of1AAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="46.5mm" y="64.875mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMUlEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3SiABV0HNgUodqIDoqxgwGINXl+gAADPSwcYmiY2YgAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="46.5mm" y="68.125mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKElEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3SiABV0HNgUDYAUKAABCwAgWov4wvwAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="34.25mm" y="61.625mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOUlEQVR4nIWOQQoAIAzDMvH/X64XGaUq5lIooVtJAhBQls3YpaMUKoRjwcuUWzimU9BL+j45b3edBVhjDA3Sb8dOAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="34.25mm" y="64.875mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAO0lEQVR4nIWPQQoAMAjDouz/X+4OwyGVsZ7EphZDkjgKoM8ApC2u4cBT2VLjfAFuyIFvRU/JgWWd44sNC2oKEWPB/AUAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="34.25mm" y="68.125mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/AxKAcRhhAkxQQRRVyIAJn250BThNYEQT+4+uAB1gtQLdFDhgwaUTBgD7rggQgazyegAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="37.125mm" y="71mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nH2OsQ0AQAgC4eP+K/MtYgIlOfQoCS0DIAkmwADk3VhZX/iVBb9qaA6+OpKn9Hx66gka79x+7wAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="40.375mm" y="71mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAL0lEQVR4nGP8//8/Az7AxMDAgFcFE17tDAwMLFAa2RRGbAqQBf8j86ljBYoAOgAARTMHFuJX1IEAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="43.625mm" y="71mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/Az7AhFeWgYGBBUojG8OIruA/miAKH5sVKCZgU4DiahaoDrxuwBBEBgCVdQgXcPboBwAAAABJRU5ErkJggg==" />
+    <circle cx="41.5mm" cy="66.5mm" r="4.5mm" />
+     <text x="9.5mm" y="74.5mm" text-anchor="middle" dominant-baseline="middle">eval</text>
+    <circle cx="9.5mm" cy="82.5mm" r="4.5mm" />
+     <text x="25.5mm" y="74.5mm" text-anchor="middle" dominant-baseline="middle">expr</text>
+    <circle cx="25.5mm" cy="82.5mm" r="4.5mm" />
+    <path stroke="rgb(3, 60, 214)" d="M 173.21837423690417 328.1778742369042 A 23.1494375 23.1494375, 0, 0, 1, 140.48012576309586 328.1778742369042" stroke-width="12.283375"/>
+    <path stroke="rgb(152, 19, 0)" d="M 140.48012576309586 328.1778742369042 A 23.1494375 23.1494375, 0, 0, 1, 140.48012576309586 295.4396257630959" stroke-width="12.283375"/>
+    <path stroke="rgb(85, 15, 201)" d="M 140.48012576309586 295.4396257630959 A 23.1494375 23.1494375, 0, 0, 1, 173.21837423690417 295.4396257630959" stroke-width="12.283375"/>
+    <path stroke="rgb(0, 112, 12)" d="M 173.21837423690417 295.4396257630959 A 23.1494375 23.1494375, 0, 0, 1, 173.21837423690417 328.1778742369042" stroke-width="12.283375"/>
+     <image x="40.375mm" y="74.75mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nHWPMQ4AQAjC0P//uTe4eES6IU2IBUgSGkpGp8KFiAskgTTTR4kLm/MLP375AdfICA+XL4DMAAAAAElFTkSuQmCC" />
+     <image x="46.5mm" y="80.875mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwZMwAhjsKALoAMmXBLoJiBbw4hNAflWEKUAp/EMDAwMAL7qBRbZWyGuAAAAAElFTkSuQmCC" />
+     <image x="34.25mm" y="80.875mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOElEQVR4nGP8//8/AwMDw38GVMAIY7BAJRkZcAAmXBLIJsAAsjVwE5nQBDGsIsoKRlzGI7sBpy8A03YHGc9D31oAAAAASUVORK5CYII=" />
+     <image x="40.375mm" y="87mm" width="3.25mm" height="3.25mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwYGBkYGBEDhMzEQAAQVsCAZi1cBuhuIt4IoBYxoYih8AB9zBxLJx4+FAAAAAElFTkSuQmCC" />
+    <circle cx="41.5mm" cy="82.5mm" r="4.5mm" />
+  </g>
+  <g transform="translate(230.5495 0)">
+    <!-- Keypad Keypad 1 -->
+    <rect x="0mm" y="0mm" width="51mm" height="95mm" rx="5mm" fill="white"/>
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="2.1966991411008925mm" y="27.196699141100893mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nI2NMRIAQAwByf//7MqgyaUx2AlKEgBiL/xY6AoHWCUb8DDK74l+rQbOiQ7DPx46DA/MhRlyAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="7.499999999999998mm" y="25mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4nGP8//8/AwMDw38GCGBkQANMuCTQFeAEdFTwH42GAxYojdMXAIU4Bg+I9Of1AAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="12.803300858899105mm" y="27.196699141100893mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nH2OsQ0AQAgC4eP+K/MtYgIlOfQoCS0DIAkmwADk3VhZX/iVBb9qaA6+OpKn9Hx66gka79x+7wAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="15mm" y="32.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOUlEQVR4nIWOQQoAIAzDMvH/X64XGaUq5lIooVtJAhBQls3YpaMUKoRjwcuUWzimU9BL+j45b3edBVhjDA3Sb8dOAAAAAElFTkSuQmCC" />
+    <circle cx="9.5mm" cy="34.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="18.196699141100893mm" y="27.196699141100893mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMklEQVR4nGP8//8/AxT8Z2BgYGRAA0zoAiQrYIEajWwNA7JVLEgcGrkBWQGG8QwMDAwAxLcHEoWZmJYAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="23.5mm" y="25mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMUlEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3SiABV0HNgUodqIDoqxgwGINXl+gAADPSwcYmiY2YgAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="28.803300858899107mm" y="27.196699141100893mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAL0lEQVR4nGP8//8/Az7AxMDAgFcFE17tDAwMLFAa2RRGbAqQBf8j86ljBYoAOgAARTMHFuJX1IEAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="31mm" y="32.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAO0lEQVR4nIWPQQoAMAjDouz/X+4OwyGVsZ7EphZDkjgKoM8ApC2u4cBT2VLjfAFuyIFvRU/JgWWd44sNC2oKEWPB/AUAAAAASUVORK5CYII=" />
+    <circle cx="25.5mm" cy="34.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="34.19669914110089mm" y="27.196699141100893mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJklEQVR4nGP8//8/Az7AhFeWGAUsDAwM2OxgRFbAiEUBFd1AUAEAvCEEElAdEVsAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="39.5mm" y="25mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKElEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3SiABV0HNgUDYAUKAABCwAgWov4wvwAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="44.80330085889911mm" y="27.196699141100893mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/Az7AhFeWgYGBBUojG8OIruA/miAKH5sVKCZgU4DiahaoDrxuwBBEBgCVdQgXcPboBwAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="47mm" y="32.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/AxKAcRhhAkxQQRRVyIAJn250BThNYEQT+4+uAB1gtQLdFDhgwaUTBgD7rggQgazyegAAAABJRU5ErkJggg==" />
+    <circle cx="41.5mm" cy="34.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="2.1966991411008925mm" y="43.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANUlEQVR4nH3NQQoAMAgDwdX//zk9CTbV5iazYEjCJiDqyAGv5Q970DE8WNFfPNiDEStYEeAAuZEIDodxZEMAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="7.499999999999998mm" y="41mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwYGBkYGBEDhMzEQAAQVsCAZi1MBI5oYimLK3YBNAYqVAB9aBxF05zxzAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="12.803300858899105mm" y="43.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAI0lEQVR4nGP8//8/Az7AhMTGqpIJmyDZChixWYNuAiP13QAAZu4FDZ5M1pAAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="15mm" y="48.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOklEQVR4nH2OMQ4AMAgCD///Zzq0g1pbFolcCLINYEBsZU+cqxNciuRHKNKzVPeGMXxt0AR8N6hBRQvcigwP7uCamAAAAABJRU5ErkJggg==" />
+    <circle cx="9.5mm" cy="50.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="18.196699141100893mm" y="43.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nHWNMRIAIAjDqOf/vxwHF6wlGyQHAqiLKrDCjhSoSXkwyn4BC59glP4ism3+4gPc4QsQknql2QAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="23.5mm" y="41mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nGP8////fwZMwAhjsKALoAMmXBLoJqBbg2IFuvEoiomyApsvUBTg9AEDAwMDAG0RBxhJ/z3rAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="28.803300858899107mm" y="43.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8////fwZMwAhjsKALMDAwoGhgQpPEACxIbGxWoShAtwpuBU5JdAVYrSBoAgDDbAcV4Je04gAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="31mm" y="48.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOUlEQVR4nIWPQQoAMAjD4tj/v9xdJsi0TCj0kEIMSQICc6t0/YCYoAR006Bd1hTIOjTZ12GUtC8CHD9wCw8NTE5MAAAAAElFTkSuQmCC" />
+    <circle cx="25.5mm" cy="50.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="34.19669914110089mm" y="43.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKUlEQVR4nGP8//8/Az7AhFeWgYGBhYGBAd0IRnQFjAx4AOUmEHQkQQUAX/YFF2u42lwAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="39.5mm" y="41mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALklEQVR4nGP8////fwZMwAhjsKALoAMmXBLoJqBbg9cKFMVkW4GiAKcPGBgYGABpEQcYGMnM3QAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="44.80330085889911mm" y="43.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANUlEQVR4nGP8////fwYEYGRAA0y4JNAV4AQwBf+R6P/oChiRrMDpBoJWwMB/dAUsSGysPgEAEjUIEFMrRCgAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="47mm" y="48.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8////fwZMwAhjMGGRRAEwBYzIupABCy6jcVnxH4oxTMDmUKwmYHUDVsfBAABeqgcUSGBeoQAAAABJRU5ErkJggg==" />
+    <circle cx="41.5mm" cy="50.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="2.1966991411008925mm" y="59.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nGP8////fwYIYGTAApiQJP7jUsCATxETEhurImQFWN3ChE8SpgCvL1hwScAAAE/2ChC1hB8DAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="7.499999999999998mm" y="57mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAIklEQVR4nGP8////fwZMwAhjsCBzoABFAxMW3QxDQQGKrwDxSQUQatS/GQAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="12.803300858899105mm" y="59.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANklEQVR4nGP8//8/AwMDw38GVMAIYzChCTKiKURRgBWgK0C3ioEJmyBJVrCg8TEcyYJNEBkAAC8jBhNOU0/SAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="15mm" y="64.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nKWMsQ0AIAzDKOr/L5uFSpEZ8ZQqTgtgvdSEjoMshn2LBAtelYW/D60FltoLcwDOUQsUrsI9kAAAAABJRU5ErkJggg==" />
+    <circle cx="9.5mm" cy="66.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="18.196699141100893mm" y="59.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4nGP8//8/AxKAcRhhAkz4JJEVYJWEKcApCVMAk/iPSwEDPkXIjsSqiAVNA4Y7AEPqChAqAjPvAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="23.5mm" y="57mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALklEQVR4nGP8////fwZMwAhjsKALMDAwoGhgwqIbBcBMwGYNPa1gxCXJwMDAAAA6wAgW+Fv+lQAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="28.803300858899107mm" y="59.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMUlEQVR4nGP8//8/AxT8Z2BgYGRAA0zoAmQr+I9GwwELFrtR+AStYMFlNLICDK8hAwBxAwkRp1LjrQAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="31mm" y="64.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAL0lEQVR4nGP8////fwZMwAhjsOCSgAEmLBL/sSlAFmTEpoByE5B1o5jAgq4DHQAAmSAKEd0N/NoAAAAASUVORK5CYII=" />
+    <circle cx="25.5mm" cy="66.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="34.19669914110089mm" y="59.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOklEQVR4nG2NuQ0AMAwCIfL+K5PGSP6uoeCjJCQCQAxeGiqhRqSuZl3gWFkL5/e8qO0W9gUv04GzaT7AQwsULre08gAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="39.5mm" y="57mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMElEQVR4nGP8////fwZMwAhjsKALMDAwoGhgwqIbBcBMwGYNXAEjmhhpVpClAMVKAAAoBxPCEj9SAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="44.80330085889911mm" y="59.19669914110089mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKUlEQVR4nGP8////fwYGBkYGBgZ0moGBgYGBCYmDTsMV/Iey0emhYwIARigPEK090NYAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="47mm" y="64.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAMklEQVR4nGP8////fwZMwAhjMEE5jFgUwRUgm4ChkAlNEMM6yk1gwSaIrgCnDxgYGBgAhuMJE922RikAAAAASUVORK5CYII=" />
+    <circle cx="41.5mm" cy="66.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="2.1966991411008925mm" y="75.1966991411009mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAIklEQVR4nGP8//8/AxT8Z2BgYGRAA0zoAkNeAYYXGRgYGAAUgwQOxWZIXAAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="7.499999999999998mm" y="73mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJElEQVR4nGP8//8/AxT8Z2BgYGRAA0xIbAxJdAX/CSkYtCYAAHz1Bw4FlOvdAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="12.803300858899105mm" y="75.1966991411009mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwZMwAhjsKALoAMmXBLoJiBbw4hNAflWEKUAp/EMDAwMAL7qBRbZWyGuAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="15mm" y="80.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAL0lEQVR4nGP8//8/Az7AxMDAgFcFE17tDAwMLFAa2RRGbAqQBf8j86ljBYoAOgAARTMHFuJX1IEAAAAASUVORK5CYII=" />
+    <circle cx="9.5mm" cy="82.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="18.196699141100893mm" y="75.1966991411009mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJklEQVR4nGP8//8/AxT8Z2BgYGRAA0zoArRVgGE/uoL/hBSQZwUAa6QFDl7gGG0AAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="23.5mm" y="73mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALklEQVR4nGP8//8/AwMDw38GBGBEYjOwQCWRBVH4TAwEAB0UsEAdhNcXGILIAAALWwcVPvEtHAAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="28.803300858899107mm" y="75.1966991411009mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAOElEQVR4nGP8//8/AwMDw38GVMAIY7BAJRkZcAAmXBLIJsAAsjVwE5nQBDGsIsoKRlzGI7sBpy8A03YHGc9D31oAAAAASUVORK5CYII=" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="31mm" y="80.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/Az7AhFeWgYGBBUojG8OIruA/miAKH5sVKCZgU4DiahaoDrxuwBBEBgCVdQgXcPboBwAAAABJRU5ErkJggg==" />
+    <circle cx="25.5mm" cy="82.5mm" r="4.5mm" />
+     <image image-rendering="pixelated"  filter="url(#filter0)" x="34.19669914110089mm" y="75.1966991411009mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAANElEQVR4nGP8//8/AxTAGIwMSIAJiY0igU0BVsAENfo/LgUsuIwmyQoY+I9Gw62AAaxWAQC3kQgQRA3/UwAAAABJRU5ErkJggg==" />
+     <image image-rendering="pixelated"  filter="url(#filter1)" x="39.5mm" y="73mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4nGP8//8/AwMDw38GCGBkQANMuCTQFeAEdFTwH42GAxYojdMXAIU4Bg+I9Of1AAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter2)" x="44.80330085889911mm" y="75.1966991411009mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALUlEQVR4nGP8////fwYGBkYGBEDhMzEQAAQVsCAZi1cBuhuIt4IoBYxoYih8AB9zBxLJx4+FAAAAAElFTkSuQmCC" />
+     <image image-rendering="pixelated"  filter="url(#filter3)" x="47mm" y="80.5mm" width="4mm" height="4mm" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAALElEQVR4nGP8//8/Az7AhEXsPyEFKIAFmy50Bf8ZGBgYKbKCkZAVDGhWoAAAs9IIE9mBSQkAAAAASUVORK5CYII=" />
+    <circle cx="41.5mm" cy="82.5mm" r="4.5mm" />
+  </g>
+</svg>

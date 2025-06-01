@@ -80,27 +80,6 @@ LispMachine = function (ram, stellerator, symbols) {
     var REF_TYPE_SYMBOL_PREFIX = 0xc0;
     var SYMBOL_INDEX_MASK = 0x3f;
 
-    var _key_mappings_0 = [
-        ['#', 'up', 'del'],
-        ['left', '', 'right'],
-        ['', 'down', '*/# f/&'],
-        ['eval', 'expr', 'E/F G/H'],
-    ]
-
-    var _key_shifts_1 = [
-        [0, 0, 0, 0],
-        [0x20, 0x20, 0x20, 0x20 - 11],
-        [0x0f, 0x1c - 4, 0x13 - 7, 0x2a - 10],
-        [0x15, 0x15, 0x0d - 7, 0x2b - 10],
-    ]
-
-    var _key_mappings_game = [
-        ['', 'up', ''],
-        ['left', '', 'right'],
-        ['', 'down', ''],
-        ['', '', ''],
-    ]
-
     var _modes = [
         'calc',
         'song',
@@ -289,53 +268,18 @@ LispMachine = function (ram, stellerator, symbols) {
         await ram.restore(0x80, 0xc5);
     };
 
-    this.getKeyMap0 = async function () {
-        const keyMap = {};
-        for (let row = 0; row <= 3; row++) {
-            for (let col = 0; col <= 2; col++) {
-                const label = `keypad0r${row}c${col}`;
-                keyMap[label] = _key_mappings_0[row][col];
-            }
-        }
-        return keyMap;
-    }
-
-    this.getKeyMap1 = async function () {
-        await ram.snapshot();
-        const gs = ram.read(_registers['game_state']);
-        const keyMap = {};
-        if (gs & 0x80) {
-            // eval mode
-            for (let row = 0; row <= 3; row++) {
-                for (let col = 0; col <= 2; col++) {
-                    const label = `keypad1r${row}c${col}`;
-                    keyMap[label] = _key_mappings_game[row][col];
-                }
-            }
-        } else {
-            // repl mode
-            const shiftMode = (gs & 0x0f) >> 1;
-            const rowShifts = _key_shifts_1[shiftMode];
-            for (let row = 0; row <= 3; row++) {
-                const b = rowShifts[row];
-                for (let col = 0; col <= 2; col++) {
-                    const label = `keypad1r${row}c${col}`;
-                    const p = b + (row * 3) + col + 1;
-                    keyMap[label] = symbols.get(p).name;
-                }
-            }    
-        }
-        return keyMap;        
-    }
-
     this.symbols = symbols;
 
-    this.getGameMode = async function() {
+
+    this.getGameState = async function() {
         await ram.snapshot();
         const ref = _registers['game_state'];
-        const currentState = ram.read(ref);
+        return ram.read(ref);
+    }
+
+    this.getGameMode = async function() {
+        const currentState = await this.getGameState();
         const stateIndex = (currentState & 0x70) >> 4;
-        console.log(`game mode ${stateIndex}`);
         return _modes[stateIndex];
     }
 
@@ -534,10 +478,10 @@ SymbolReference = function() {
                 synonyms: spec.synonyms,
                 src: spec.src,
             };
-            if (data.code) {
+            if (typeof data.code === 'number') {
                 codes[data.code] = data;
             }
-            refdata[name] = data;
+            refdata[data.name] = data;
             for (const sym of data.synonyms) {
                 refdata[sym] = data;
             }
@@ -759,6 +703,27 @@ LispIde = function (lisp) {
         h: NullRef
     };
 
+    var _key_mappings_0 = [
+        ['#', '\u2191', 'del'],
+        ['\u2190', '', '\u2192'],
+        ['', '\u2193', 'shift'],
+        ['eval', 'expr', 'E/F/G/H'],
+    ]
+
+    var _key_shifts_1 = [
+        [0, 0, 0, 0],
+        [0x20, 0x20, 0x20, 0x20 - 11],
+        [0x29, 0x1c - 4, 0x13 - 7, 0x0f - 9],
+        [0x15, 0x15, 0x0d - 7, 0x2b - 10],
+    ]
+
+    var _key_mappings_game = [
+        ['', 'up', ''],
+        ['left', '', 'right'],
+        ['', 'down', ''],
+        ['', '', ''],
+    ]
+
     this.openWindow = function(event, id) {
 
         // hide/show content
@@ -801,16 +766,12 @@ LispIde = function (lisp) {
     };
 
     this.updateKeyMaps = async function() {
-        const keyMap0 = await lisp.getKeyMap0();
-        const keyMap1 = await lisp.getKeyMap1();
+        const keyMap0 = await this._getKeyMap0();
+        const keyMap1 = await this._getKeyMap1();
         for (const [key, value] of Object.entries({...keyMap0, ...keyMap1})) {
             document.getElementById(key).textContent = value;
         }
     };
-
-
-    this.getKeyMap0 = lisp.getKeyMap0;
-    this.getKeyMap1 = lisp.getKeyMap1;
 
     this.storeMemory = async function(register, data) {
         var parsedFunctions = self._parseFunctionExpressions();
@@ -1024,6 +985,222 @@ LispIde = function (lisp) {
         }
 
     };
+
+    this._getKeyMap0 = async function () {
+        const keyMap = {};
+        for (let row = 0; row <= 3; row++) {
+            for (let col = 0; col <= 2; col++) {
+                const label = `keypad0r${row}c${col}`;
+                keyMap[label] = _key_mappings_0[row][col];
+            }
+        }
+        return keyMap;
+    }
+
+    this._getKeyMap1 = async function () {
+        const gs = await lisp.getGameState();
+        const keyMap = {};
+        if (gs & 0x80) {
+            // eval mode
+            for (let row = 0; row <= 3; row++) {
+                for (let col = 0; col <= 2; col++) {
+                    const label = `keypad1r${row}c${col}`;
+                    keyMap[label] = _key_mappings_game[row][col];
+                }
+            }
+        } else {
+            // repl mode
+            const shiftMode = (gs & 0x0f) >> 1;
+            for (let row = 0; row <= 3; row++) {
+                for (let col = 0; col <= 2; col++) {
+                    const label = `keypad1r${row}c${col}`;
+                    keyMap[label] = this._lookupKey1(shiftMode, row, col).name;
+                }
+            }    
+        }
+        return keyMap;        
+    }
+
+    this._lookupKey1 = function (shiftMode, row, col) {
+        const rowShifts = _key_shifts_1[shiftMode];
+        const b = rowShifts[row];
+        const p = b + (row * 3) + col + 1;
+        return lisp.symbols.get(p);
+    }
+
+    this._keyPadSvg = async function () {
+        // experimental and very sketchy: dump SVG of keypads to console
+        const keys_1 = [];
+        for (let row = 0; row <= 3; row++) {
+            const rkeys = [];
+            for (let col = 0; col <= 2; col++) {
+                const keys = [];
+                for (let shiftMode = 0; shiftMode <= 3; shiftMode++) {
+                    keys.push(this._lookupKey1(shiftMode, row, col).src);    
+                }
+                rkeys.push(keys)
+            }
+            keys_1.push(rkeys);
+        }
+
+        const buttonRadius = 4.5;
+        const colSpacingX = 7;
+        const rowSpacingY = 7;
+        const marginX = 5;
+        const topMarginY = 30;
+        const overlayWidth = 51;
+        const overlayHeight = 95;
+        const overlayRx = 5;
+        const overlaySpacing = 10;
+        const symbolDx = 4;
+        const symbolDxSm = 3.25;
+
+        const escapeXml = (unsafe) => {
+            return unsafe.replace(/[<>&'"]/g, function (c) {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        };
+
+        const mmToPx = (x) => x * 3.7795;
+
+        const onCircle = (x, y, r, a) => {
+            return [ x + r * Math.cos(a),  y + r * Math.sin(a) ];
+          }
+
+        const arc = (x, y, r, s, e, w, c) => {
+            x = mmToPx(x);
+            y = mmToPx(y);
+            r = mmToPx(r);
+            w = mmToPx(w);
+            const [ x0, y0 ] = onCircle(x, y, r, s);
+            const [ x1, y1 ] = onCircle(x, y, r, e);
+            path = `M ${x0} ${y0} ` +
+                   `A ${r} ${r}, 0, 0, 1, ${x1} ${y1}`;
+            return `    <path stroke="${c}" d="${path}" stroke-width="${w}"/>\n`;
+        }
+        const filter = (name, color) => {
+            const [r, g, b] = color.slice(4, color.length - 1).split(',').map(parseFloat).map(x => x / 255);
+            return `<filter id="${name}">
+               <feColorMatrix
+                 in="SourceGraphic"
+                 type="matrix"
+                 color-interpolation-filters="sRGB"
+                 values="${r} 0 0 0 0
+                         0 ${g} 0 0 0
+                         0 0 ${b} 0 0
+                         0 0 0 1 0" />
+            </filter>`;
+        };
+        const renderPad = (name, keys) => {
+            var fragment = `    <!-- Keypad ${name} -->\n`
+            fragment += `    <rect x="0mm" y="0mm" width="${overlayWidth}mm" height="${overlayHeight}mm" rx="${overlayRx}mm" />\n`
+            var y = topMarginY;
+            for (let row = 0; row <= 3; row++) {
+                x = marginX;
+                for (let col = 0; col <= 2; col++) {
+                    const s = keys[row][col];
+                    if (typeof s === 'string') {
+                        let sx = x + buttonRadius;
+                        let sy = y - rowSpacingY / 2.0;
+                        if (row > 1 && col == 2) {
+                            const tx = x + buttonRadius - symbolDxSm / 2.0 + 0.5;
+                            const ty = y - symbolDxSm;
+                            const rx = x + 2.0 * buttonRadius + 0.5;
+                            const ry = y + buttonRadius - symbolDxSm / 2.0;
+                            const lx = x - symbolDxSm + 0.5;
+                            const ly = ry;
+                            const bx = tx;
+                            const by = y + 2.0 * buttonRadius;
+                            if (row == 2) {
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx - symbolDxSm}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 0).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 1).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx + symbolDxSm}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 2).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry - symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 0).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 1).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry + symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 2).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly - symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 0).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 1).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly + symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 2).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx - symbolDxSm}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 0).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 1).src}" />\n`;
+                                fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx + symbolDxSm}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 2).src}" />\n`;
+
+                            } else {
+                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * .25, Math.PI * .75, symbolDxSm, g);
+                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * .75, Math.PI * 1.25, symbolDxSm, h);
+                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * 1.25, Math.PI * 1.75, symbolDxSm, e);
+                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * 1.75, Math.PI * .25, symbolDxSm, f);
+                                fragment += `     <image x="${tx}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.lookup('lambda').src}" />\n`;
+                                fragment += `     <image x="${rx}mm" y="${ry}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(16).src}" />\n`;
+                                fragment += `     <image x="${lx}mm" y="${ly}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(17).src}" />\n`;
+                                fragment += `     <image x="${bx}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(18).src}" />\n`;
+                            }
+                        } else if (row == 0 && col == 0) {
+                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter1)" x="${sx - symbolDx / 2.0}mm" y="${sy - symbolDx / 2.0}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${lisp.symbols.lookup('hash').src}" />\n`;
+                        } else if (row == 0 && col == 2) {
+                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter0)" x="${sx - symbolDx / 2.0}mm" y="${sy - symbolDx / 2.0}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${lisp.symbols.get(0).src}" />\n`;
+                        } else {
+                            fragment += `     <text x="${sx}mm" y="${sy}mm" text-anchor="middle" dominant-baseline="middle">${escapeXml(s)}</text>\n`;
+                        }
+                    } else if (typeof s === 'object') {
+                        const rx = buttonRadius + symbolDx / 2.0 + 1;
+                        for (let i = 0; i < s.length; i++) {
+                            const [sx, sy] = onCircle(x + buttonRadius - symbolDx / 2.0, y + buttonRadius - symbolDx / 2.0, rx, Math.PI * (1.25 + i * .25));
+                            const data = s[i];
+                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter${i})" x="${sx}mm" y="${sy}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${data}" />\n`;
+                        }
+                    }
+                    fragment += `    <circle cx="${x + buttonRadius}mm" cy="${y + buttonRadius}mm" r="${buttonRadius}mm" />\n`
+                    x += buttonRadius * 2.0 + colSpacingX;
+                }
+                y += buttonRadius * 2.0 + rowSpacingY;
+            }
+            return fragment
+        }
+
+
+        const e = 'rgb(85, 15, 201)';
+        const f = 'rgb(0, 112, 12)';
+        const g = 'rgb(3, 60, 214)';
+        const h = 'rgb(152, 19, 0)';
+
+        var svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" 
+                      width="${overlayWidth * 2.0 + overlaySpacing}mm" 
+                      height="${overlayHeight}mm"
+                      fill="white" 
+                      stroke="black"
+                      stroke-width="0.5mm">\n`;                      
+        svg += `<defs>
+            ${filter('filter0', e)}
+            ${filter('filter1', f)}
+            ${filter('filter2', g)}
+            ${filter('filter3', h)}
+            <filter id="filter4">
+               <feColorMatrix
+                 in="SourceGraphic"
+                 type="matrix"
+                 color-interpolation-filters="sRGB"
+                 values="0 0 0 0 0
+                         0 0 0 0 0
+                         0 0 0 0 0
+                         0 0 0 1 0" />
+            </filter>
+        </defs>`;
+        svg += `  <g>\n`;
+        svg += renderPad('Keypad 0', _key_mappings_0);
+        svg += `  </g>\n`;
+        svg += `  <g transform="translate(${mmToPx(overlayWidth + overlaySpacing)} 0)">\n`
+        svg += renderPad('Keypad 1', keys_1);
+        svg += `  </g>\n`
+        svg += '</svg>\n';
+        console.log(svg);
+    }
 
     this.showExamples = async function(event) {
         let examplesDropdown = document.getElementById("examples_dropdown");

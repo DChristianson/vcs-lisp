@@ -832,14 +832,27 @@ PROMPT_HMP_OFFSETS
     byte $b0, $a0, $10, $00
 
 
+#if SYSTEM = NTSC
+; -- NTSC colors
 MUSIC_COLORS
-DISPLAY_REPL_COLOR_SCHEME ; BUGBUG: make pal safe
-    byte $6A,$6E,$BA,$BE,$5A,$5E,$3A,$3E
+DISPLAY_REPL_COLOR_SCHEME 
+    byte $6A,$6E,$BA,$BE,$8A,$8E,$3A,$3E
 CURSOR_COLORS
 DISPLAY_REPL_COLOR_MENU
-    byte $60,$B0
+    byte $64,$B4
 SPRITE_COLORS
-    byte $50,$30 ; BUGBUG: make pal safe
+    byte $84,$34
+#else
+; -- PAL colors
+MUSIC_COLORS
+DISPLAY_REPL_COLOR_SCHEME 
+    byte $CA,$CE,$5A,$5E,$BA,$BE,$4A,$4E
+CURSOR_COLORS
+DISPLAY_REPL_COLOR_MENU
+    byte $C4,$54
+SPRITE_COLORS
+    byte $B4,$44
+#endif
 
 ; -- NON space-sensitive routines follow
 
@@ -903,7 +916,7 @@ REPL_KEY_SHIFT_0
 REPL_KEY_SHIFT_1
     byte $20, $20, $20, ($20 - 11)
 REPL_KEY_SHIFT_2
-    byte $0f, $1c - 4, $13 - 7, ($2a - 10) 
+    byte $29, $1c - 4, $13 - 7, ($0f - 9) 
 REPL_KEY_SHIFT_3
     byte $15, $15, $0d - 7, ($2b - 10)
 
