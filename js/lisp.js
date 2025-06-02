@@ -1100,53 +1100,59 @@ LispIde = function (lisp) {
         const renderPad = (name, keys) => {
             var fragment = `    <!-- Keypad ${name} -->\n`
             fragment += `    <rect x="0mm" y="0mm" width="${overlayWidth}mm" height="${overlayHeight}mm" rx="${overlayRx}mm" />\n`
+            fragment += `    <text x="${overlayWidth / 2.0}mm" y="${(topMarginY - rowSpacingY)/ 2.0}mm" class="title"  text-anchor="middle" dominant-baseline="middle">VCS Lisp</text>\n`;
+            fragment += `    <text x="${overlayWidth / 2.0}mm" y="${topMarginY - rowSpacingY}mm" class="title"  text-anchor="middle" dominant-baseline="bottom">${name}</text>\n`;
             var y = topMarginY;
             for (let row = 0; row <= 3; row++) {
                 x = marginX;
                 for (let col = 0; col <= 2; col++) {
                     const s = keys[row][col];
                     if (typeof s === 'string') {
-                        let sx = x + buttonRadius;
-                        let sy = y - rowSpacingY / 2.0;
-                        if (row > 1 && col == 2) {
-                            const tx = x + buttonRadius - symbolDxSm / 2.0 + 0.5;
-                            const ty = y - symbolDxSm;
-                            const rx = x + 2.0 * buttonRadius + 0.5;
-                            const ry = y + buttonRadius - symbolDxSm / 2.0;
-                            const lx = x - symbolDxSm + 0.5;
-                            const ly = ry;
-                            const bx = tx;
-                            const by = y + 2.0 * buttonRadius;
-                            if (row == 2) {
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx - symbolDxSm}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 0).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 1).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx + symbolDxSm}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 2).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry - symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 0).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 1).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry + symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 2).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly - symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 0).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 1).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly + symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 2).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx - symbolDxSm}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 0).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 1).src}" />\n`;
-                                fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx + symbolDxSm}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 2).src}" />\n`;
+                        const tx = x + buttonRadius - symbolDxSm / 2.0 + 0.5;
+                        const ty = y - symbolDxSm;
+                        const rx = x + 2.0 * buttonRadius + 0.5;
+                        const ry = y + buttonRadius - symbolDxSm / 2.0;
+                        const lx = x - symbolDxSm + 0.5;
+                        const ly = ry;
+                        const bx = tx;
+                        const by = y + 2.0 * buttonRadius;
+                        if (row == 1 && col == 1) {
+                            fragment += `     <text x="${x + buttonRadius}mm" y="${y - rowSpacingY / 2.0}mm" text-anchor="middle" dominant-baseline="middle">\u2191</text>\n`;
+                            fragment += `     <text x="${x - colSpacingX / 2.0}mm" y="${y + buttonRadius}mm" text-anchor="middle" dominant-baseline="middle">\u2190</text>\n`;
+                            fragment += `     <text x="${x + buttonRadius * 2.0 + colSpacingX / 2.0}mm" y="${y + buttonRadius}mm" text-anchor="middle" dominant-baseline="middle">\u2192</text>\n`;
+                            fragment += `     <text x="${x + buttonRadius}mm" y="${y + buttonRadius * 2.0 + rowSpacingY / 2.0}mm" text-anchor="middle" dominant-baseline="middle">\u2193</text>\n`;
 
-                            } else {
-                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * .25, Math.PI * .75, symbolDxSm, g);
-                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * .75, Math.PI * 1.25, symbolDxSm, h);
-                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * 1.25, Math.PI * 1.75, symbolDxSm, e);
-                                fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * 1.75, Math.PI * .25, symbolDxSm, f);
-                                fragment += `     <image x="${tx}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.lookup('lambda').src}" />\n`;
-                                fragment += `     <image x="${rx}mm" y="${ry}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(16).src}" />\n`;
-                                fragment += `     <image x="${lx}mm" y="${ly}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(17).src}" />\n`;
-                                fragment += `     <image x="${bx}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(18).src}" />\n`;
-                            }
-                        } else if (row == 0 && col == 0) {
-                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter1)" x="${sx - symbolDx / 2.0}mm" y="${sy - symbolDx / 2.0}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${lisp.symbols.lookup('hash').src}" />\n`;
-                        } else if (row == 0 && col == 2) {
-                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter0)" x="${sx - symbolDx / 2.0}mm" y="${sy - symbolDx / 2.0}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${lisp.symbols.get(0).src}" />\n`;
-                        } else {
-                            fragment += `     <text x="${sx}mm" y="${sy}mm" text-anchor="middle" dominant-baseline="middle">${escapeXml(s)}</text>\n`;
+                        } else if (row == 2 && col == 2) {
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx - symbolDxSm}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 0).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 1).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter0)" x="${tx + symbolDxSm}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(0, 0, 2).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry - symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 0).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 1).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter1)" x="${rx}mm" y="${ry + symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(1, 0, 2).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly - symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 0).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 1).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter3)" x="${lx}mm" y="${ly + symbolDxSm}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(3, 0, 2).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx - symbolDxSm}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 0).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 1).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" filter="url(#filter2)" x="${bx + symbolDxSm}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${this._lookupKey1(2, 0, 2).src}" />\n`;
+
+                        } else if (row == 3 && col == 2) {
+                            fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * .25, Math.PI * .75, symbolDxSm, g);
+                            fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * .75, Math.PI * 1.25, symbolDxSm, h);
+                            fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * 1.25, Math.PI * 1.75, symbolDxSm, e);
+                            fragment += arc(x + buttonRadius, y + buttonRadius, buttonRadius + symbolDxSm / 2.0, Math.PI * 1.75, Math.PI * .25, symbolDxSm, f);
+                            fragment += `     <image image-rendering="pixelated" x="${tx}mm" y="${ty}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.lookup('lambda').src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" x="${rx}mm" y="${ry}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(16).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" x="${lx}mm" y="${ly}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(17).src}" />\n`;
+                            fragment += `     <image image-rendering="pixelated" x="${bx}mm" y="${by}mm" width="${symbolDxSm}mm" height="${symbolDxSm}mm" href="${lisp.symbols.get(18).src}" />\n`;
+                        } else if (s === '#') {
+                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter1)" x="${tx}mm" y="${y - rowSpacingY / 2.0 - symbolDx / 3.0}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${lisp.symbols.lookup('hash').src}" />\n`;
+                        } else if (s === 'del') {
+                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter3)" x="${x + buttonRadius - symbolDx * .75}mm" y="${y - rowSpacingY / 2.0 - symbolDx / 1.5}mm" width="${symbolDx * 2}mm" height="${symbolDx * 2}mm" href="${lisp.symbols.lookup('null').src}" />\n`;
+                        } else if (s === 'eval') {
+                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter0)" x="${x + buttonRadius - symbolDx / 2.0}mm" y="${y + buttonRadius * 2.0 + rowSpacingY / 2.0 - symbolDx / 2.0}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${lisp.symbols.lookup('lambda').src}" />\n`;
+                        } else if (s === 'expr') {
+                            fragment += `     <image image-rendering="pixelated"  filter="url(#filter2)" x="${x + buttonRadius - symbolDx / 2.0}mm" y="${y + buttonRadius * 2.0 + rowSpacingY / 2.0 - symbolDx / 2.0}mm" width="${symbolDx}mm" height="${symbolDx}mm" href="${lisp.symbols.lookup('cell').src}" />\n`;
                         }
                     } else if (typeof s === 'object') {
                         const rx = buttonRadius + symbolDx / 2.0 + 1;
@@ -1175,7 +1181,17 @@ LispIde = function (lisp) {
                       height="${overlayHeight}mm"
                       fill="white" 
                       stroke="black"
-                      stroke-width="0.5mm">\n`;                      
+                      stroke-width="0.5mm">\n`;   
+        svg += `<style>
+            .label {
+                font:  13px sans-serif;
+                stroke-width: 1px;
+            }
+            .title {
+                font:  26px sans-serif;
+                stroke-width: 1px;
+            }
+        </style>`;                   
         svg += `<defs>
             ${filter('filter0', e)}
             ${filter('filter1', f)}
@@ -1193,10 +1209,10 @@ LispIde = function (lisp) {
             </filter>
         </defs>`;
         svg += `  <g>\n`;
-        svg += renderPad('Keypad 0', _key_mappings_0);
+        svg += renderPad('L', _key_mappings_0);
         svg += `  </g>\n`;
         svg += `  <g transform="translate(${mmToPx(overlayWidth + overlaySpacing)} 0)">\n`
-        svg += renderPad('Keypad 1', keys_1);
+        svg += renderPad('R', keys_1);
         svg += `  </g>\n`
         svg += '</svg>\n';
         console.log(svg);
