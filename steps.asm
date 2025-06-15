@@ -306,28 +306,31 @@ draw_t1_data_addr  ds 2
 ;      - steps obscured
 ;  - sprinkles 1
 ;   - animated squirrels in title and select
-; RC 1
+; RC 2
 ;  - sprinkles 1
-;   - some kind of lose song
+;   - some kind of theme on lose
 ;   - some kind of celebration on win (fireworks?)
+;  - sprinkles 2
+;   - should be no step edge in ground?
+;   - lava sound if it is close
+;   - decorations in sky
+;      - gradient/lightened sky background
+;      - clouds? moon?
+;  - sprinkles 3
+;   - scroll of menu
 ;  - glitches
 ;   - extra line in scroll
 ;   - leftmost step cut off
 ; CONSIDER
-;  - sprinkles 2
-;   - some kind of theme on lose
-;   - gradient/lightened sky background
-;   - should be no step edge in ground?
+;  - sprinkles 4
+;   - color flashes in titles
+;   - horizontal screen transitions
 ;  - code 
 ;   - algorithmic maze gen
 ;   - use incremental maze construction to conserve VBLANK
 ;   - shrink maze size (replace with generation) - 678 bytes data + code
 ;   - less data + code for title - 798 bytes data + code
 ;   - shrink audio size - 256 bytes + 122 bytes code
-;  - sprinkles 3
-;   - color flashes in titles
-;   - some kind of graphic in sky (cloud? bird?)
-;   - horizontal screen transitions
 ;  - visual 3
 ;   - jump animation (Q: is that even feasible with this kernel)
 ;   - size 1 stairs no number?
