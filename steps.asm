@@ -709,7 +709,6 @@ _gx_steps_resp_skip_invert
 
 _gx_step_draw_loop
 
-sub_write_stair_a
             ; x is stair #
             ; first process if we're going to flip
             lda draw_steps_mask               ;3   3
@@ -770,7 +769,7 @@ sub_write_stair_b
             beq ._gx_draw_skip_stair          ;2  27
             cpx draw_table_top                ;2
             beq _gx_draw_loop                 ;2
-            lda #$ff                          ;2
+            lda #$ff                          ;2 BUGBUG: don't need?
             sta GRP1                          ;3
 
 _gx_draw_loop
@@ -804,7 +803,7 @@ sub_draw_stair
             cpy temp_step_end            ;3  32
             bne _gx_draw_loop            ;2  34
 ._gx_draw_skip_stair
-            dex                          ;2  36
+            dex                         ;2  36
             bmi gx_timer                 ;2
             bne ._gx_draw_skip_stop      ;2
             lda draw_ground_color 
@@ -819,20 +818,21 @@ sub_draw_stair
 gx_timer
             sta WSYNC
             inx  ; SPACE: was -1
-            stx GRP0
             stx GRP1
             stx GRP0
-            sta REFP0
-            ; place digits
-            lda #94 ; BUGBUG: magic number
-            ldy #$ff
-            jsr sub_steps_respxx
-            sta WSYNC ; shim
+            stx REFP0
             ; set hi digits for timer
-            ldx #0
-            stx COLUBK
+            ;ldx #0 SPACE: x already 0
             lda player_timer + 1
             jsr sub_write_digit
+            ; place digits
+            lda #94 ; BUGBUG: magic number
+            ldy #$ff ; SPACE, is -1
+            jsr sub_steps_respxx
+            sta WSYNC ; shim
+            ;ldy #0 SPACE: y already 0
+            sty COLUBK
+
             ; set up for 32px display
             lda #3
             sta NUSIZ0
@@ -1273,29 +1273,28 @@ _respxx_loop
             lda LOOKUP_STD_HMOVE,x  ;5   11
             sta HMP0                ;3   14
             sta HMP1                ;3   17
-            tya                     ;2   19
-            sbpl _respxx_swap       ;2   21
+            iny                     ;2   19
+            sbne _respxx_swap       ;2   21
             sta.w RESP0             ;4   25
             sta RESP1               ;3   28
             sta WSYNC               ;
             sta HMOVE               ;3    3
-            ldy #1                  ;2    5
-            bpl _respxx_exit        ;3    9 always true
+            bpl _respxx_exit        ;3    6 always true
 _respxx_swap            
             sta RESP1               ;3   25
             sta RESP0               ;3   28
             sta WSYNC
             sta HMOVE               ;3    3
 _respxx_exit
-            lda RESPXX_HMOVE_A,y    ;4    7/+5
+            lda RESPXX_HMOVE_A,y    ;4    7/+3
             sta draw_hmove_a        ;3   10
             lda RESPXX_HMOVE_B,y    ;4   14
             sta draw_hmove_b        ;3   17
             lda RESPXX_HMP0,y       ;4   21
             ldx RESPXX_HMP1,y       ;4   25
-            sta HMP0                ;3   28   
+            sta HMP0                ;3   28  
             stx HMP1                ;3   31
-            rts                     ;6  
+            rts                     ;6   37
 
 sub_steps_scroll
             ldx lava_height
@@ -2858,15 +2857,15 @@ MARGINS
 
 ; overlapping tables for respxx swaps
 RESPXX_HMOVE_A
-    byte $90
-RESPXX_HMOVE_B
     byte $70
+RESPXX_HMOVE_B
     byte $90
+    byte $70
 RESPXX_HMP0
-    byte $30
-RESPXX_HMP1
     byte $10
+RESPXX_HMP1
     byte $30
+    byte $10
 
 ; SELECT SYMS
 SELECT_GRAPHICS
