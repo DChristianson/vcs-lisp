@@ -120,7 +120,7 @@ player_input_latch   ds 1
 player_special_latch ds 1 ; latch for detecting sequences
 player_step          ds 1 ; step the player is at
 player_jump          ds 1 ; jump counter
-player_inc           ds 1 ; direction of movement
+player_invert        ds 1 ; player's last move
 player_goal          ds 1 ; next goal
 player_score         ds 1 ; decimal score
 player_clock         ds 1 ; for player timer
@@ -153,13 +153,12 @@ draw_registers_start
 ; steps drawing registers
 draw_steps_respx    ds 1
 draw_steps_dir      ds 1 ; top of steps direction
-draw_steps_mask     ds 1
 draw_steps_wsync    ds 1 ; amount to shim steps up/down
 draw_base_dir       ds 1 ; base of steps direction
 draw_base_lr        ds 1 ; base of steps lr position
 draw_base_flight    ds 1
-draw_player_dir     ds 1 ; player travel direction
-draw_step_offset    ds 1 ; what step # do we start drawing at
+draw_player_dir     ds 1 ; player's travel direction toward goal
+draw_step_offset    ds 1 ; what step # do we start drawing at 
 draw_ground_color   ds 1 ; ground color
 draw_lava_counter   ds 1 ; how far to lava counter
 draw_player_sprite  ds 1 
@@ -168,9 +167,6 @@ draw_table_top      ds 1 ; steps to skip at start
 draw_step_colors    ds DRAW_TABLE_SIZE
 
 ; draw vars used during draw kernels
-draw_hmove_a        ds 1 ; initial HMOVE
-draw_hmove_b        ds 1 ; reverse HMOVE
-draw_hmove_next     ds 1 ; next queued HMOVE
 draw_s0_addr        ds 2
 draw_s1_addr        ds 2
 draw_s2_addr        ds 2
@@ -179,9 +175,9 @@ draw_s4_addr        ds 2
 draw_s5_addr        ds 2
 
 ; temp vars
+temp_cloud_pf
 temp_select_index
 temp_solve_current
-temp_step_start
 temp_step_offset
 temp_margin
 temp_level_ptr    ; (ds 2)
@@ -189,12 +185,12 @@ temp_maze_ptr     ; (ds 2)
 temp_y  ds 1
 temp_select_repeat
 temp_layout_repeat
-temp_step_end
+temp_step_start
 temp_solve_jump
 temp_p4 ds 1
+temp_step_counter
 temp_select_mask
 temp_timer_stack
-temp_solve_stack
 temp_rand ds 1
 
    ; draw registers for title and select screen
@@ -364,10 +360,9 @@ CleanStart
             ; PF and background
             lda #0
             sta COLUPF
-            lda #01
             sta CTRLPF
-            lda #$70
-            sta PF0
+            ; lda #$70
+            ; sta PF0
 
             ; audio
             lda #AUDIO_VOLUME
@@ -546,7 +541,7 @@ gx_climb
 gx_update
             ldx player_step
             lda jump_table,x ; load jump distance for any moves
-            and #$0f
+            ;and #$0f SPACE: don't need
             tay
             lda player_input
             bpl _gx_update_special_latch
@@ -636,19 +631,6 @@ gx_continue
             lsr
             sta COLUP0
 
-            ; step colors
-            ldx #(DRAW_TABLE_SIZE - 1)
-            lda #$1f
-_gx_continue_step_colors_loop
-            sta draw_step_colors,x
-_gx_continue_step_colors_skip_0f
-            clc
-            adc #$10
-            cmp #$0f
-            beq _gx_continue_step_colors_skip_0f
-            dex
-            bpl _gx_continue_step_colors_loop
-
             ; altitude
             ldx #LAVA_COLOR
             lda lava_height
@@ -678,160 +660,202 @@ gx_step_draw
             beq gx_steps_resp_a
             tax
 _gx_step_draw_sky_loop
-            ldy #9
+            ldy #9; BUGBUG: magic number
 _gx_step_skip_step_loop
             sta WSYNC
             dey 
             bpl _gx_step_skip_step_loop
             dex
             bne _gx_step_draw_sky_loop
-            byte $2c ; skip next WSYNC
 gx_steps_resp_a
-            sta WSYNC
-gx_steps_resp_b
-            lda draw_player_dir
-            bit player_inc
+            lda draw_steps_respx
+            ldy draw_steps_dir
+            jsr sub_steps_respxx; ; BUGBUG: set HMP0/1
+            lda RESPXX_HMP0,y       ;4   13
+            ldx RESPXX_HMP1,y       ;4   17
+            tay                     ;2   19
+            ; tweak player position
+            lda draw_player_dir     ;3   22
+            sty HMP0                ;3   25 
+            stx HMP1                ;3   28
+            bit player_invert
             bpl _gx_steps_resp_skip_invert
             eor #$ff
 _gx_steps_resp_skip_invert
             sta REFP0
-            lda draw_steps_respx
-            ldy draw_steps_dir
-            jsr sub_steps_respxx
+            tya
+            ldy draw_player_dir            
+            sec
+            bne _gx_steps_shim_p0_r
+            sbc #-16
+            byte $2c
+_gx_steps_shim_p0_r
+            sbc #16
+            sta HMP0           
+
+            ; make room for PF
+            ; TRY
+            ;  HMOVE every time - can make PF its own color
+            ;  remove mask decision - separate L/R draw?
+            ;  cut down flip times... avoid swap completely?
+            ;  make steps_dir be 0 and 1
+            ; DONE 
+            ;  simplify start/end logic (always to zero) - separate last step draw?
+            ; 
+
+            ; BUGBUG: glitch when last is a swap
+
             ; intentional 
-            ldy draw_steps_wsync
-            sty temp_step_start
-            ldy #$0
-            sty temp_step_end
-            ldx draw_table_top
             sta WSYNC
-            jmp sub_write_stair_b
+            sta HMOVE
+            lda draw_table_top                ;3   3
+            sta temp_step_counter             ;3   6
+            lda draw_steps_wsync              ;3   9 
+            sta temp_step_start
+
+            ; setup PF addressing
+            lda #>CLOUD_PAT_PF1
+            sta draw_s2_addr+1
+            sta draw_s3_addr+1
+            lda #<CLOUD_PAT_BLANK
+            sta draw_s2_addr
+            sta draw_s3_addr
+
+            ; BUGBUG: move this
+            lda #40                  
+            sta COLUPF               
+
+            sta HMCLR
 
 _gx_step_draw_loop
-
-            ; x is stair #
-            ; first process if we're going to flip
-            lda draw_steps_mask               ;3   3
-            ldy draw_hmove_next               ;3   6
-            sty HMP0                          ;3   9
-            cpy draw_hmove_a                  ;3  12
-            sta WSYNC                         ; max here is 68
-            beq ._gx_draw_skip_flip           ;2   2
-            eor #$81                          ;2   4
-            sta draw_steps_mask               ;3   7
-            lda draw_hmove_a                  ;3  10
-            sty draw_hmove_a                  ;3  13
-            tay                               ;2  15
-            sty draw_hmove_b                  ;3  18
-            lda #0 ; BUGBUG: kludge           ;2  20
-._gx_draw_skip_flip
-            sta GRP1                          ;3  23
-            lda #0                            ;2  25 
-            sta GRP0                          ;3  28
-            sty HMP1                          ;3  31
-sub_write_stair_b
-            ; read graphics from a
-            ; phg.ssss
-            lda draw_table,x                  ;4  35
-            ; get player graphic 
-            ldy #(<SYMBOL_GRAPHICS_BLANK)     ;2  37
-            asl                               ;2  39
-            bcc ._gx_draw_set_p0              ;2  41
-            ldy draw_player_sprite            ;3  44
-._gx_draw_set_p0
-            sty draw_s0_addr                  ;3  47
-            ; swap directions
-            asl                               ;2  49
-            ldy draw_hmove_a                  ;3  52
-            bcc ._gx_draw_end_swap_direction  ;2  54
-            ldy draw_hmove_b                  ;3  57
-._gx_draw_end_swap_direction
-            sty draw_hmove_next               ;3  60
-            ; shift ground bit, check later
-            asl                               ;2  62
-            ; get step graphic
-            bne ._gx_draw_skip_blank          ;2  64
-            lda #<SYMBOL_GRAPHICS_BLANK       ;2  66
-._gx_draw_skip_blank
-            sta draw_s1_addr                  ;3  69
-            ldy draw_step_colors,x            ;4  73 - 5
-            bcc ._gx_draw_alt_color           ;2  75 - 5
-            ldy draw_colubk                   ;3  78 - 5; NOTE: very tight timing, current max 72
-._gx_draw_alt_color
-            sta WSYNC                         ; 
+            sta WSYNC                         ;-----
             sta HMOVE                         ;3   3
-            sty COLUP1                        ;3   6
-            lda draw_colubk                   ;3  16 ; SPACE could set this earlier and save a byte
-            sta COLUBK                        ;3  19
+            ; x is stair #
+            ; read graphics from a
+            ; pch.ssss
+            ldx temp_step_counter             ;3   6
+            lda draw_table,x                  ;4  10
+            ; get step colors
+            ldy draw_step_colors,x            ;4  14
+            sty COLUP1                        ;3  17
+            ; get player graphic 
+            ldy #(<SYMBOL_GRAPHICS_BLANK)     ;2  19 
+            asl                               ;2  21
+            bcc ._gx_draw_set_p0              ;2  23
+            ldy draw_player_sprite            ;3  26
+._gx_draw_set_p0
+            sty draw_s0_addr                  ;3  29
+            ; cloud bit
+            ldy #(<CLOUD_PAT_BLANK)           ;2  31
+            asl                               ;2  33
+            bcc ._gx_draw_skip_cloud          ;2  35
+            ldy #(<CLOUD_PAT_PF1)             ;2  37
+._gx_draw_skip_cloud
+            sty temp_cloud_pf                 ;3  40 ; BUGBUG: use
+            ; save hmove swap bit
+            asl                               ;2  42
+            ; set step graphic
+            sta draw_s1_addr                  ;3  45
+            ; swap shift directions
+            lax draw_steps_dir                ;3  48
+            bcc ._gx_draw_end_swap_direction  ;2  50
+            eor #$01                          ;2  52
+._gx_draw_end_swap_direction
+            sta draw_steps_dir                ;3  55
+            tay                               ;2  57
+            lda RESPXX_HMOVE_A,y              ;4  61
+            ldy RESPXX_HMOVE_A,x              ;4  65
+            sta HMP0                          ;3  68
+            sty HMP1                          ;3  71
 
-            ldy temp_step_start               ;3  22
-            cpy temp_step_end                 ;3  25
-            beq ._gx_draw_skip_stair          ;2  27
-            cpx draw_table_top                ;2
-            beq _gx_draw_loop                 ;2
-            lda #$ff                          ;2 BUGBUG: don't need?
-            sta GRP1                          ;3
-
+            sta WSYNC                         ;-----
+            sta HMOVE                         ;3   3
+            lda #$ff                          ;2   5
+            sta GRP1                          ;3   8
+            lda draw_colubk                   ;3  11
+            sta COLUBK                        ;3  14
+            txa                               ;2  16
+            asl                               ;2  18
+            tax                               ;2  20
+            lda temp_cloud_pf                 ;3  23
+            sta draw_s2_addr,x                ;4  27
+            sta HMCLR ; must reset            ;3  30
+            ldy temp_step_start               ;2  32
+            beq ._gx_draw_skip_stair          ;2  34
+            
 _gx_draw_loop
 
-sub_draw_stair
-            dec draw_lava_counter
-            bne ._gx_draw_skip_lava
-            stx lava_jump_offset
-            lda #LAVA_COLOR
-            sta draw_colubk
-._gx_draw_skip_lava
-            lda (draw_s0_addr),y
-            bit player_inc
-            bmi ._gx_draw_player_r
-            asl
-            byte $80 ; skip one byte
-._gx_draw_player_r
-            lsr
-            sta WSYNC
-            sta GRP0                     ;3   3
-            lda (draw_s1_addr),y         ;5   8
-            bit draw_steps_mask          ;3  11
-            bpl ._gx_draw_stair_l        ;2  13
-            lsr                          ;2  15
-._gx_draw_stair_l
-            ora draw_steps_mask          ;3  18
-            sta GRP1                     ;3  21
-            lda draw_colubk              ;3  24
-            sta COLUBK                   ;3  27
-            dey                          ;2  29
-            cpy temp_step_end            ;3  32
-            bne _gx_draw_loop            ;2  34
+            dec draw_lava_counter             ;5  36/37/41
+            beq gx_lava                       ;2  38/39/43
+            ; BUGBUG: macro? cloud a
+            lda (draw_s3_addr),y              ;5  42/48
+            sta PF1                           ;3  41/49
+            lda (draw_s2_addr),y              ;5  46/54
+            tax
+            ; end cloud a
+            lda (draw_s0_addr),y              ;5  60/67
+            sta WSYNC                         ;--------
+            sta HMOVE
+            sta GRP0                          ;3   3
+            stx PF1                           ;3   6
+            lda (draw_s1_addr),y              ;5  11
+            ldx draw_steps_dir                ;3  14 ; BUGBUG: fix
+            beq ._gx_draw_skip_shift_r        ;2  16
+            lsr                               ;2  18
+._gx_draw_skip_shift_r
+            ora STEP_MASK,x                   ;4  22/19
+            sta GRP1                          ;3  25/22
+            dey                               ;2  27/24
+            bne _gx_draw_loop                 ;2  29/26
 ._gx_draw_skip_stair
-            dex                         ;2  36
-            bmi gx_timer                 ;2
-            bne ._gx_draw_skip_stop      ;2
-            lda draw_ground_color 
-            sta draw_colubk
-            ldy draw_steps_wsync
-._gx_draw_skip_stop
-            sty temp_step_end
-            ldy #CHAR_HEIGHT
-            sty temp_step_start
-            jmp _gx_step_draw_loop
+            lda #CHAR_HEIGHT                  ;3  32
+            ldx draw_colubk                   ;3  35
+            dec temp_step_counter             ;2  37
+            bmi gx_timer                      ;2  39
+            sec                               ;2  41
+            bne ._gx_draw_skip_last           ;2  43
+            ldx draw_ground_color             ;3  46
+            sbc draw_steps_wsync              ;3  49
+._gx_draw_skip_last
+            stx draw_colubk                   ;3  52
+            sta temp_step_start               ;3  55
+            ;ldy #0                           ;2  54 already 0
+            ; cloud b
+            sty PF1                           ;3  58
+            sty GRP0                          ;3  61
+            sty GRP1                          ;3  64
+            jmp _gx_step_draw_loop            ;3  67
+
+
+gx_lava
+            ; BUGBUG: fix up
+            lda #LAVA_COLOR              ;2  47
+            sta draw_colubk              ;3  50
+            jsr sub_clear_gx
+            ldx lava_height
+            jsr sub_wsync_loop
 
 gx_timer
-            sta WSYNC
-            inx  ; SPACE: was -1
-            stx GRP1
-            stx GRP0
-            stx REFP0
+            sty PF1                           ;3  58
+            sty GRP0
+            sty GRP1
             ; set hi digits for timer
             ;ldx #0 SPACE: x already 0
             lda player_timer + 1
             jsr sub_write_digit
             ; place digits
             lda #94 ; BUGBUG: magic number
-            ldy #$ff ; SPACE, is -1
-            jsr sub_steps_respxx
+            ldy #1 ; SPACE, is -1
+            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
             sta WSYNC ; shim
             ;ldy #0 SPACE: y already 0
             sty COLUBK
+            
+            ; set up HMP shim
+            lda #$30 ; BUGBUG: is this too soon
+            sta HMP0
+            lda #$10
+            sta HMP1
 
             ; set up for 32px display
             lda #3
@@ -839,6 +863,11 @@ gx_timer
             sta NUSIZ1
             sta VDELP0
             sta VDELP1
+
+            ; restore s2 addr
+            lda #>SYMBOL_GRAPHICS
+            sta draw_s2_addr + 1
+            sta draw_s3_addr + 1
 
             tsx
             stx temp_timer_stack
@@ -1078,13 +1107,26 @@ _steps_addr_loop
             sta draw_base_dir
             txa ; first flight
             jsr sub_gen_steps    ; gen steps
+
+            ; step colors
+            ldx #(DRAW_TABLE_SIZE - 1)
+_gx_continue_step_colors_loop
+            dex
+            bpl _gx_continue_step_colors_loop
+
 sub_steps_refresh
-            ; clear draw table
+            ; clear draw table and set colors
             ldx #(DRAW_TABLE_SIZE - 1)
             stx draw_table_top
-            lda #0
+            ldy #$40 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
+            lda #$1f
 _steps_draw_clear_loop
-            sta draw_table,x
+            sty draw_table,x
+            sta draw_step_colors,x
+_steps_draw_step_colors_skip_0f
+            clc
+            adc #$10 ; move up a color class
+            bvs _steps_draw_step_colors_skip_0f
             dex
             bpl _steps_draw_clear_loop
 sub_steps_flights
@@ -1096,8 +1138,8 @@ sub_steps_flights
             bne _steps_draw_flights
             lda draw_base_flight  ; KLUDGE: trick to find bottom of stairs
             beq _steps_draw_flights
-            lda #$40
-            sta draw_table + 1
+            lda #$20 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
+            sta draw_table
 _steps_draw_flights
             stx temp_step_offset
             lda LAYOUTS,y
@@ -1108,8 +1150,8 @@ _steps_draw_flights
             cmp #DRAW_TABLE_SIZE
             bpl _steps_draw_flights_end
             tax
-            lda #$40
-            sta draw_table,x
+            lda #$20 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8)
+            sta draw_table-1,x
             dex
             dec temp_layout_repeat
             bpl _steps_draw_flights
@@ -1123,17 +1165,19 @@ _steps_draw_flights
             sta temp_layout_repeat      
             jmp _steps_draw_flights 
 _steps_draw_last_flight
-            lda #$00 + ((SYMBOL_GRAPHICS_CROWN - SYMBOL_GRAPHICS) / 8) ; force crown stair (NOTE: should be $0f)
+            lda #$20 + ((SYMBOL_GRAPHICS_CROWN - SYMBOL_GRAPHICS) / 8) ; force crown stair (NOTE: should be $0f)
             sta draw_table,x
-            stx draw_table_top
+            stx draw_table_top ; BUGBUG can set just once? - no 
             ldy #1
 _steps_draw_last_flight_loop
             inx
             cpx #(DRAW_TABLE_SIZE)
             bpl _steps_draw_flights_end
-            lda #$60 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8) ; force blank stair
+            lda #$20 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8) ; force blank stair
             sta draw_table,x
-            stx draw_table_top
+            lda draw_colubk
+            sta draw_step_colors,x ; BUGBUG can set here?
+            stx draw_table_top ; BUGBUG can set just once?
             dey
             bpl _steps_draw_last_flight_loop
 _steps_draw_flights_end
@@ -1154,8 +1198,13 @@ _steps_draw_jumps
             lsr
             bne _steps_draw_jump_skip
 _steps_draw_all_jumps
+            lda draw_table,y
+            cmp #$2f ; KLUDGE: skip crown stair
+            beq _steps_draw_jump_skip
+            and #$f0
+            sta draw_table,y
             lda jump_table,x
-            and #$0f
+            ; and #$0f ;SPACE: don't need
             bne _steps_draw_goal_skip
             lda #((SYMBOL_GRAPHICS_ACORN - SYMBOL_GRAPHICS) / 8) ; acorn stair (NOTE: should be $0e)
 _steps_draw_goal_skip
@@ -1273,28 +1322,19 @@ _respxx_loop
             lda LOOKUP_STD_HMOVE,x  ;5   11
             sta HMP0                ;3   14
             sta HMP1                ;3   17
-            iny                     ;2   19
-            sbne _respxx_swap       ;2   21
+            cpy #0                  ;2   19 ; BUGBUG: assumes $ff/$00
+            sbeq _respxx_swap       ;2   21
             sta.w RESP0             ;4   25
             sta RESP1               ;3   28
-            sta WSYNC               ;
+            sta WSYNC               ;------
             sta HMOVE               ;3    3
-            bpl _respxx_exit        ;3    6 always true
-_respxx_swap            
+            rts                     ;6    9
+_respxx_swap
             sta RESP1               ;3   25
             sta RESP0               ;3   28
-            sta WSYNC
+            sta WSYNC               ;------
             sta HMOVE               ;3    3
-_respxx_exit
-            lda RESPXX_HMOVE_A,y    ;4    7/+3
-            sta draw_hmove_a        ;3   10
-            lda RESPXX_HMOVE_B,y    ;4   14
-            sta draw_hmove_b        ;3   17
-            lda RESPXX_HMP0,y       ;4   21
-            ldx RESPXX_HMP1,y       ;4   25
-            sta HMP0                ;3   28  
-            stx HMP1                ;3   31
-            rts                     ;6   37
+            rts                     ;6    9
 
 sub_steps_scroll
             ldx lava_height
@@ -1303,9 +1343,9 @@ sub_steps_scroll
             beq _skip_lava_scroll
             stx lava_height
 _skip_lava_scroll
-            lda draw_steps_wsync
-            clc
-            adc #1
+            ldx draw_steps_wsync
+            inx
+            txa
             and #$07
             sta draw_steps_wsync
             bne _sub_scroll_cont
@@ -1365,34 +1405,34 @@ _sub_inc_layout_continue
             rts
 
 sub_calc_respx
-            ldx #0
+            ldx #-1
             ldy draw_base_lr
             bit draw_base_dir
             bmi _calc_respx_right
 _calc_respx_left
-            lda draw_table + 1,x
-            and #$40
+            inx
+            lda draw_table,x
+            and #$20
             bne _calc_respx_switch_right
 _calc_respx_switch_left
             dey
-            inx
             cpx draw_table_top
-            bne _calc_respx_left
+            bmi _calc_respx_left
             tya
             ldy #$00
             jmp _calc_respx_end
 _calc_respx_right
-            lda draw_table + 1,x
-            and #$40
+            inx
+            lda draw_table,x
+            and #$20
             bne _calc_respx_switch_left
 _calc_respx_switch_right
             iny
-            inx
             cpx draw_table_top
-            bne _calc_respx_right
+            bmi _calc_respx_right
             dey
             tya
-            ldy #$ff
+            ldy #$01
 _calc_respx_end
             sta temp_margin
             asl
@@ -1404,11 +1444,6 @@ _calc_respx_end
             adc #STAIRS_MARGIN
             sta draw_steps_respx
             sty draw_steps_dir
-            iny
-            bne _calc_respx_mask
-            ldy #$80
-_calc_respx_mask
-            sty draw_steps_mask
             rts 
 
 ; solver (NOT USED)
@@ -1519,13 +1554,13 @@ gx_go_down
             lda #-1
 _gx_go_add_step
             sty player_jump
-            sta player_inc
+            sta player_invert
             lda #GAME_STATE_JUMP
             sta game_state
             ; intentional fallthrough to jump process
 
 gx_process_jump
-            lda player_inc
+            lda player_invert
             clc
             adc player_step
             ; move player
@@ -1580,7 +1615,7 @@ _gx_process_jump_arrive
 _gx_go_fall_down
             lda #0
             sta player_step
-            sta player_inc
+            sta player_invert
             inc player_jump
             jmp _gx_go_fall
 _gx_go_fall_up
@@ -1588,7 +1623,7 @@ _gx_go_fall_up
             sta player_step
             sta player_jump
             lda #-1
-            sta player_inc
+            sta player_invert
 _gx_go_fall
             ; fall and recover
             ldx #GAME_STATE_FALL
@@ -1599,14 +1634,6 @@ _gx_go_redraw_player
             jsr sub_steps_refresh
             jmp gx_update_return
 
-; sub_redraw_player_step
-;             ldx draw_table_top
-; _sub_redraw_player_loop
-;             lda #$7f
-;             and draw_table+1,x
-;             sta draw_table+1,x
-;             dex
-;             bpl _sub_redraw_player_loop
 sub_draw_player_step
             lda player_step
             clc 
@@ -1939,8 +1966,10 @@ _gx_title_setup_loop
 gx_title_start_draw
             sta WSYNC
             lda #32 ; BUGBUG: magic number
-            ldy #$ff
-            jsr sub_steps_respxx
+            ldy #1
+            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
+            lda #$30 ; BUGBUG: is this too soon
+            sta HMP0
             sta WSYNC
             lda #$20
             sta HMP1
@@ -2093,8 +2122,8 @@ gx_title_end
             sta VDELP0
             sta VDELP1
             lda #46 ; BUGBUG: magic number
-            ldy #$ff
-            jsr sub_steps_respxx
+            ldy #1
+            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
             ldy #7                       
 _draw_tx_end_loop
             sta WSYNC
@@ -2174,8 +2203,8 @@ gx_select_return
 _gx_show_select_flights_repeat
             ldx temp_select_repeat
             lda SELECT_FLIGHTS_RESPX,x
-            ldy #$ff
-            jsr sub_steps_respxx
+            ldy #1
+            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
             lda temp_select_index
             ldy #0
             cmp difficulty_level
@@ -2544,10 +2573,10 @@ gx_select_footer
             txa
             clc
             adc #34
-            ldy #$ff
-            jsr sub_steps_respxx
+            ldy #1
+            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
             sta WSYNC
-            lda #$24
+            lda #$24 ; BUGBUG?
             sta HMP1
             sta HMOVE
             ldx #3
@@ -2745,6 +2774,7 @@ SYMBOL_GRAPHICS_TUMBLE_0
     byte $0,$38,$1c,$e,$3e,$7e,$7e,$68; 8
 SYMBOL_GRAPHICS_TUMBLE_1
     byte $0,$c,$8c,$d8,$d8,$7c,$78,$38; 8
+SYMBOL_BLANK= $0d
 SYMBOL_GRAPHICS_BLANK
     byte $0,$0,$0,$0,$0,$0,$0,$0; 8
 SYMBOL_GRAPHICS_ACORN
@@ -2768,7 +2798,7 @@ SYMBOL_GRAPHICS_MEGA_0
     byte $0,$ea,$ee,$aa,$0,$32,$13,$1b; 8
 SYMBOL_GRAPHICS_MEGA_1
     byte $0,$a4,$e4,$ee,$0,$90,$b8,$a8; 8
-SYMBOL_GRAPHICS_LETSGO_0
+SYMBOL_GRAPHICS_LETSGO_0 ; BUGBUG: used?
     byte $0,$d,$19,$1d,$0,$ee,$8c,$8e; 8
 SYMBOL_GRAPHICS_LETSGO_1
     byte $0,$d0,$48,$c8,$0,$4c,$44,$e6; 8
@@ -2776,7 +2806,7 @@ SYMBOL_GRAPHICS_GOODJOB_0
     byte $0,$ce,$4a,$ee,$0,$6e,$ca,$ee; 8
 SYMBOL_GRAPHICS_GOODJOB_1
     byte $0,$e8,$e4,$84,$0,$ec,$aa,$ee; 8
-SYMBOL_GRAPHICS_STEPS_0
+SYMBOL_GRAPHICS_STEPS_0  ; BUGBUG: used?
     byte $0,$80,$c4,$64,$ec,$cc,$66,$22; 8
 SYMBOL_GRAPHICS_STEPS_1
     byte $0,$80,$c8,$a8,$cc,$ee,$66,$22; 8
@@ -2795,9 +2825,6 @@ LOOKUP_STD_HMOVE = STD_HMOVE_END - 256
 
 LAVA_SPEED
     byte 100, 87, 50, 50
-
-TIMER_MASK
-    byte $00,$00,$00,$01,$00,$01,$00,$00,$00
 
     ; maze data LUT
 MAZE_PTR_LO = . - 2
@@ -2857,15 +2884,13 @@ MARGINS
 
 ; overlapping tables for respxx swaps
 RESPXX_HMOVE_A
-    byte $70
-RESPXX_HMOVE_B
     byte $90
     byte $70
 RESPXX_HMP0
-    byte $10
-RESPXX_HMP1
     byte $30
+RESPXX_HMP1
     byte $10
+    byte $30
 
 ; SELECT SYMS
 SELECT_GRAPHICS
@@ -2944,11 +2969,30 @@ GX_JUMP_HI
     byte >(gx_fall-1)
     byte >(gx_end-1)
 
+STEP_MASK
+    byte $01,$80
 SQUIRREL_MOVE_PAT_0
     byte $00
 SQUIRREL_MOVE_PAT_1
-    byte $08,$08,$00,$00
+    byte $08,$08;,$00,$00
 
+TIMER_MASK
+    byte $00,$00,$00,$01,$00,$01;,$00,$00;,$00
+
+CLOUD_PAT_BLANK ; BUGBUG: can merge to other page?
+    byte $00,$00,$00,$00,$00,$00,$00,$00;,$00
+CLOUD_PAT_PF1
+    byte #$00
+    byte #$1f
+    byte #$1f
+    byte #$1f
+    byte #$08
+    byte #$08
+    byte #$7c
+    byte #$7c
+    byte #$7c
+
+    
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
 
