@@ -302,24 +302,39 @@ draw_t1_data_addr  ds 2
 ;      - steps obscured
 ;  - sprinkles 1
 ;   - animated squirrels in title and select
+;  - sprinkles 2
+;   - clouds in sky
 ; RC 2
+; - glitches
+;   - block HMOVEs on title and select screens
+;   - space the clouds out
+;   - top step shows a line, either make it background color or fix for real
+;   - steps screen 263 lines
+;   - steps screen clear GPx delay registers before timer
+;   - steps screen gaps in HMOVE coverage
+;   - review scroll for any glitches and jumps
+;   - leftmost step cut off
+;   - rightmost step cut off
 ;  - sprinkles 1
 ;   - some kind of theme on lose
-;   - some kind of celebration on win (fireworks?)
+;   - some kind of celebration on win
+;      - fireworks
+;      - good job text
+;      - go from dark to light?
+;      - sun/moon in sky?
 ;  - sprinkles 2
 ;   - should be no step edge in ground?
 ;   - lava sound if it is close
-;   - decorations in sky
-;      - gradient/lightened sky background
-;      - clouds? moon?
 ;  - sprinkles 3
-;   - scroll of menu
-;  - glitches
-;   - extra line in scroll
-;   - leftmost step cut off
+;   - speech stems
+;   - good job / let's go encouragement
 ; CONSIDER
 ;  - sprinkles 4
+;   - sky background color changes
+;      - go from dark to light?
+;      - gradient/lightened sky background
 ;   - color flashes in titles
+;   - scroll of menu
 ;   - horizontal screen transitions
 ;  - code 
 ;   - algorithmic maze gen
@@ -327,8 +342,9 @@ draw_t1_data_addr  ds 2
 ;   - shrink maze size (replace with generation) - 678 bytes data + code
 ;   - less data + code for title - 798 bytes data + code
 ;   - shrink audio size - 256 bytes + 122 bytes code
+; NOT DO
 ;  - visual 3
-;   - jump animation (Q: is that even feasible with this kernel)
+;   - jump animation 
 ;   - size 1 stairs no number?
 ;   - addressible colors on stairs
 ;  - gameplay 5
@@ -341,7 +357,6 @@ draw_t1_data_addr  ds 2
 ;      **2T3G
 ;   - breakable stairs - 1 or two touches cause break?
 ;   - flight jumping mechanic
-; NODO
 ;  - second player
 ;  - flag at goal step?
 ;   - no fall penalty from start step?
@@ -356,13 +371,6 @@ Reset
 CleanStart
     ; do the clean start macro
             CLEAN_START
-
-            ; PF and background
-            lda #0
-            sta COLUPF
-            sta CTRLPF
-            ; lda #$70
-            ; sta PF0
 
             ; audio
             lda #AUDIO_VOLUME
@@ -405,7 +413,6 @@ newFrame
             bne _end_switches
             jmp CleanStart
 _end_switches
-
 
 ;---------------------
 ;  update kernels
@@ -616,14 +623,6 @@ _skip_lava_update
 gx_continue
             jsr sub_calc_respx
 
-            ; prep timer gx
-            lda player_timer
-            ldx #4
-            jsr sub_write_digit
-            lda player_score
-            ldx #8
-            jsr sub_write_digit
-
             ; player colors
             lda player_health ; trick: color * 8
             lsr
@@ -657,8 +656,8 @@ gx_step_draw
             lda #(DRAW_TABLE_SIZE - 1)
             sec
             sbc draw_table_top
-            beq gx_steps_resp_a
             tax
+            beq gx_steps_resp_a
 _gx_step_draw_sky_loop
             ldy #9; BUGBUG: magic number
 _gx_step_skip_step_loop
@@ -668,6 +667,7 @@ _gx_step_skip_step_loop
             dex
             bne _gx_step_draw_sky_loop
 gx_steps_resp_a
+            sta PF0
             lda draw_steps_respx
             ldy draw_steps_dir
             jsr sub_steps_respxx; ; BUGBUG: set HMP0/1
@@ -692,18 +692,6 @@ _gx_steps_resp_skip_invert
 _gx_steps_shim_p0_r
             sbc #16
             sta HMP0           
-
-            ; make room for PF
-            ; TRY
-            ;  HMOVE every time - can make PF its own color
-            ;  remove mask decision - separate L/R draw?
-            ;  cut down flip times... avoid swap completely?
-            ;  make steps_dir be 0 and 1
-            ; DONE 
-            ;  simplify start/end logic (always to zero) - separate last step draw?
-            ; 
-
-            ; BUGBUG: glitch when last is a swap
 
             ; intentional 
             sta WSYNC
@@ -819,7 +807,7 @@ _gx_draw_loop
 ._gx_draw_skip_last
             stx draw_colubk                   ;3  52
             sta temp_step_start               ;3  55
-            ;ldy #0                           ;2  54 already 0
+            ;ldy #0                           ;2  54 SPACE:already 0
             ; cloud b
             sty PF1                           ;3  58
             sty GRP0                          ;3  61
@@ -828,33 +816,38 @@ _gx_draw_loop
 
 
 gx_lava
-            ; BUGBUG: fix up
-            lda #LAVA_COLOR              ;2  47
-            sta draw_colubk              ;3  50
-            jsr sub_clear_gx
-            ldx lava_height
-            jsr sub_wsync_loop
+            ; ; BUGBUG: fix up
+            ; lda #LAVA_COLOR              ;2  47
+            ; sta draw_colubk              ;3  50
+            ; jsr sub_clear_gx
+            ; ldx lava_height
+            ; jsr sub_wsync_loop
 
 gx_timer
             sty PF1                           ;3  58
             sty GRP0
             sty GRP1
-            ; set hi digits for timer
-            ;ldx #0 SPACE: x already 0
+            ; prep timer gx
+            ldx #0
             lda player_timer + 1
+            jsr sub_write_digit
+            lda player_timer
+            ldx #4
+            jsr sub_write_digit
+            lda player_score
+            ldx #8
             jsr sub_write_digit
             ; place digits
             lda #94 ; BUGBUG: magic number
-            ldy #1 ; SPACE, is -1
-            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
             sta WSYNC ; shim
             ;ldy #0 SPACE: y already 0
             sty COLUBK
             
             ; set up HMP shim
-            lda #$30 ; BUGBUG: is this too soon
+            lda #$10 ; BUGBUG: is this too soon
             sta HMP0
-            lda #$10
+            lda #$30
             sta HMP1
 
             ; set up for 32px display
@@ -1311,6 +1304,8 @@ sub_steps_win
             sta game_state
             rts
 
+sub_steps_respxx_r
+            ldy #1 ; most common direction: RESPO first
 sub_steps_respxx
             ; a is respx, y is direction (-1 or 0)
             sec
@@ -1966,8 +1961,7 @@ _gx_title_setup_loop
 gx_title_start_draw
             sta WSYNC
             lda #32 ; BUGBUG: magic number
-            ldy #1
-            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
             lda #$30 ; BUGBUG: is this too soon
             sta HMP0
             sta WSYNC
@@ -2122,8 +2116,7 @@ gx_title_end
             sta VDELP0
             sta VDELP1
             lda #46 ; BUGBUG: magic number
-            ldy #1
-            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
             ldy #7                       
 _draw_tx_end_loop
             sta WSYNC
@@ -2203,8 +2196,7 @@ gx_select_return
 _gx_show_select_flights_repeat
             ldx temp_select_repeat
             lda SELECT_FLIGHTS_RESPX,x
-            ldy #1
-            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r ; BUGBUG: set HMP0/1
             lda temp_select_index
             ldy #0
             cmp difficulty_level
@@ -2573,8 +2565,7 @@ gx_select_footer
             txa
             clc
             adc #34
-            ldy #1
-            jsr sub_steps_respxx ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r ; BUGBUG: set HMP0/1
             sta WSYNC
             lda #$24 ; BUGBUG?
             sta HMP1
