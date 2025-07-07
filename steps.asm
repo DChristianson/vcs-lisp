@@ -298,6 +298,9 @@ draw_t1_data_addr  ds 2
 ;   - dark mode doesn't handle ground
 ;   - select screen glitch
 ;   - select screen design, shows lava, etc
+;   - no need block HMOVEs on title and select screens
+;   - space the clouds out
+;   - steps screen gaps in HMOVE coverage
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
@@ -311,36 +314,31 @@ draw_t1_data_addr  ds 2
 ;   - clouds in sky
 ; RC 2
 ; - glitches
-;   - block HMOVEs on title and select screens
-;   - space the clouds out
-;   - top step shows a line, either make it background color or fix for real
-;   - steps screen 263 lines
-;   - steps screen clear GPx delay registers before timer
-;   - steps screen gaps in HMOVE coverage
+;   - lava broken
+;   - steps screen 263+ lines
+;   - timer glitchy
+;     -  clear GPx delay registers before timer
 ;   - review scroll for any glitches and jumps
+;   - top step pop in / shows a line, either remove or fix for real
 ;   - leftmost step cut off
 ;   - rightmost step cut off
 ;  - sprinkles 1
-;   - some kind of theme on lose
+;   - some kind of dirge on lose
 ;   - some kind of celebration on win
 ;      - fireworks
 ;      - good job text
 ;      - go from dark to light?
 ;      - sun/moon in sky?
-;  - sprinkles 2
-;   - should be no step edge in ground?
-;   - lava sound if it is close
+; CONSIDER
 ;  - sprinkles 3
 ;   - speech stems
 ;   - good job / let's go encouragement
-; CONSIDER
+;   - lava sound if it is close
 ;  - sprinkles 4
-;   - sky background color changes
-;      - go from dark to light?
-;      - gradient/lightened sky background
 ;   - color flashes in titles
 ;   - scroll of menu
-;   - horizontal screen transitions
+;   - should be no step edge in ground?
+; ONLY IF NEEDED
 ;  - code 
 ;   - algorithmic maze gen
 ;   - use incremental maze construction to conserve VBLANK
@@ -352,6 +350,10 @@ draw_t1_data_addr  ds 2
 ;   - jump animation 
 ;   - size 1 stairs no number?
 ;   - addressible colors on stairs
+;   - horizontal screen transitions
+;   - sky background color changes
+;      - go from dark to light?
+;      - gradient/lightened sky background
 ;  - gameplay 5
 ;   - player builds maze by dropping numbers?
 ;     - player builds maze as numbers drop?
