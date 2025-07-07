@@ -301,6 +301,8 @@ draw_t1_data_addr  ds 2
 ;   - no need block HMOVEs on title and select screens
 ;   - space the clouds out
 ;   - steps screen gaps in HMOVE coverage
+;   - lava broken
+;   - no clouds in lava
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
@@ -312,16 +314,17 @@ draw_t1_data_addr  ds 2
 ;   - animated squirrels in title and select
 ;  - sprinkles 2
 ;   - clouds in sky
+;  - sprinkles 3
+;   - lava move up and down a bit
 ; RC 2
 ; - glitches
-;   - lava broken
 ;   - steps screen 263+ lines
 ;   - timer glitchy
 ;     -  clear GPx delay registers before timer
 ;   - review scroll for any glitches and jumps
 ;   - top step pop in / shows a line, either remove or fix for real
-;   - leftmost step cut off
-;   - rightmost step cut off
+;   - leftmost step cut off?
+;   - rightmost step cut off?
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
 ;   - some kind of celebration on win
@@ -654,10 +657,23 @@ gx_continue
             ldx #GROUND_COLOR
 _gx_continue_ground_calc
             stx draw_ground_color
-            lda #138 ; BUGBUG: magic number
+            lda frame
+            lsr
+            lsr
+            and #$01
+            clc
+            adc #138 ; BUGBUG: magic number
             sec
             sbc lava_height
             sta draw_lava_counter
+            
+            ldx lava_jump_offset
+_gx_continue_erase_clouds
+            lda #$bf
+            and draw_table,x
+            sta draw_table,x
+            dex
+            bpl _gx_continue_erase_clouds
 
 ;---------------------
 ; climb screen
@@ -817,9 +833,9 @@ _gx_draw_loop
             ldx #WHITE                        ;2  20
             sta PF1                           ;3  23
             stx COLUPF                        ;3  26
-
-            dey                               ;2  28/24
-            bne _gx_draw_loop                 ;2  30/26
+._gx_draw_skip_lava
+            dey                               ;2  28
+            bne _gx_draw_loop                 ;2  30
 ._gx_draw_skip_stair
             lda #CHAR_HEIGHT                  ;3  33
             ldx draw_colubk                   ;3  36
@@ -840,14 +856,19 @@ _gx_draw_loop
             sty GRP1                          ;3  68
             jmp _gx_step_draw_loop            ;3  71
 
-
 gx_lava
-            ; ; BUGBUG: fix up
-            ; lda #LAVA_COLOR              ;2  47
-            ; sta draw_colubk              ;3  50
-            ; jsr sub_clear_gx
-            ; ldx lava_height
-            ; jsr sub_wsync_loop
+            lda temp_step_counter            ;3  42-43
+            sta lava_jump_offset             ;3  45-46
+            lda #0
+            sta PF1
+            sta COLUPF
+            sta WSYNC                        ;--------
+            lda (draw_s0_addr),y             ;5   5
+            sta GRP0                         ;3   8
+            lda #LAVA_COLOR                  ;2  10
+            sta draw_colubk                  ;3  13
+            sta COLUBK                       ;3  16
+            bne ._gx_draw_skip_lava          ;3  19
 
 gx_timer
             sty PF1                           ;3  58
@@ -1037,20 +1058,6 @@ _start_game
 ;
 ; game control subroutines
 ;
-
-sub_write_digit
-            ; a is digit, x is zero page offset
-            tay
-            and #$0f
-            asl
-            asl
-            asl
-            sta draw_s1_addr,x
-            tya
-            and #$f0
-            lsr
-            sta draw_s0_addr,x
-            rts
 
 sub_steps_init
             lda #9 ; BUGBUG: magic number
@@ -1322,33 +1329,6 @@ sub_steps_win
             lda #GAME_STATE_END
             sta game_state
             rts
-
-sub_steps_respxx_r
-            ldy #1 ; most common direction: RESPO first
-sub_steps_respxx
-            ; a is respx, y is direction (-1 or 0)
-            sec
-            sta WSYNC               ; --
-_respxx_loop
-            sbc #15                 ;2    2
-            sbcs _respxx_loop       ;2/3  4
-            tax                     ;2    6
-            lda LOOKUP_STD_HMOVE,x  ;5   11
-            sta HMP0                ;3   14
-            sta HMP1                ;3   17
-            cpy #0                  ;2   19 ; BUGBUG: assumes $ff/$00
-            sbeq _respxx_swap       ;2   21
-            sta.w RESP0             ;4   25
-            sta RESP1               ;3   28
-            sta WSYNC               ;------
-            sta HMOVE               ;3    3
-            rts                     ;6    9
-_respxx_swap
-            sta RESP1               ;3   25
-            sta RESP0               ;3   28
-            sta WSYNC               ;------
-            sta HMOVE               ;3    3
-            rts                     ;6    9
 
 sub_steps_scroll
             ldx lava_height
@@ -2465,8 +2445,6 @@ MAZES_6
     ; byte $24,$17,$63,$64,$31,$05 ; sol: 10
     ; byte $65,$72,$41,$51,$43,$02 ; sol: 10
 
-
-
 sub_vblank_loop
             ldx #$00
 _end_vblank_loop          
@@ -2787,6 +2765,7 @@ MAZES_3
     ; byte $34,$43,$02 ; w: 0.4 sol: 4
     ; byte $43,$11,$04 ; w: 0.4 sol: 5
 
+
     ORG $FDF0
 CLOUD_PAT_BLANK = . - 1 
     byte $00,$00,$00,$00,$00,$00,$00;,$00
@@ -2858,22 +2837,49 @@ SYMBOL_GRAPHICS_MEGA_0
     byte $0,$ea,$ee,$aa,$0,$32,$13,$1b; 8
 SYMBOL_GRAPHICS_MEGA_1
     byte $0,$a4,$e4,$ee,$0,$90,$b8,$a8; 8
-SYMBOL_GRAPHICS_LETSGO_0 ; BUGBUG: used?
-    byte $0,$d,$19,$1d,$0,$ee,$8c,$8e; 8
-SYMBOL_GRAPHICS_LETSGO_1
-    byte $0,$d0,$48,$c8,$0,$4c,$44,$e6; 8
-SYMBOL_GRAPHICS_GOODJOB_0
-    byte $0,$ce,$4a,$ee,$0,$6e,$ca,$ee; 8
-SYMBOL_GRAPHICS_GOODJOB_1
-    byte $0,$e8,$e4,$84,$0,$ec,$aa,$ee; 8
-SYMBOL_GRAPHICS_STEPS_0  ; BUGBUG: used?
-    byte $0,$80,$c4,$64,$ec,$cc,$66,$22; 8
-SYMBOL_GRAPHICS_STEPS_1
-    byte $0,$80,$c8,$a8,$cc,$ee,$66,$22; 8
-SYMBOL_GRAPHICS_STEPS_2
-    byte $0,$84,$c0,$64,$e4,$c4,$64,$20; 8
-SYMBOL_GRAPHICS_STEPS_3
-    byte $0,$e2,$6,$ee,$0,$ce,$a8,$ee; 8
+; SYMBOL_GRAPHICS_LETSGO_0 ; BUGBUG: used?
+;     byte $0,$d,$19,$1d,$0,$ee,$8c,$8e; 8
+; SYMBOL_GRAPHICS_LETSGO_1
+;     byte $0,$d0,$48,$c8,$0,$4c,$44,$e6; 8
+; SYMBOL_GRAPHICS_GOODJOB_0
+;     byte $0,$ce,$4a,$ee,$0,$6e,$ca,$ee; 8
+; SYMBOL_GRAPHICS_GOODJOB_1
+;     byte $0,$e8,$e4,$84,$0,$ec,$aa,$ee; 8
+; SYMBOL_GRAPHICS_STEPS_0  ; BUGBUG: used?
+;     byte $0,$80,$c4,$64,$ec,$cc,$66,$22; 8
+; SYMBOL_GRAPHICS_STEPS_1
+;     byte $0,$80,$c8,$a8,$cc,$ee,$66,$22; 8
+; SYMBOL_GRAPHICS_STEPS_2
+;     byte $0,$84,$c0,$64,$e4,$c4,$64,$20; 8
+; SYMBOL_GRAPHICS_STEPS_3
+;     byte $0,$e2,$6,$ee,$0,$ce,$a8,$ee; 8
+
+sub_steps_respxx_r
+            ldy #1 ; most common direction: RESPO first
+sub_steps_respxx
+            ; a is respx, y is direction (-1 or 0)
+            sec
+            sta WSYNC               ; --
+_respxx_loop
+            sbc #15                 ;2    2
+            sbcs _respxx_loop       ;2/3  4
+            tax                     ;2    6
+            lda LOOKUP_STD_HMOVE,x  ;5   11
+            sta HMP0                ;3   14
+            sta HMP1                ;3   17
+            cpy #0                  ;2   19 ; BUGBUG: assumes $ff/$00
+            sbeq _respxx_swap       ;2   21
+            sta.w RESP0             ;4   25
+            sta RESP1               ;3   28
+            sta WSYNC               ;------
+            sta HMOVE               ;3    3
+            rts                     ;6    9
+_respxx_swap
+            sta RESP1               ;3   25
+            sta RESP0               ;3   28
+            sta WSYNC               ;------
+            sta HMOVE               ;3    3
+            rts                     ;6    9
 
     ORG $FF00
 
@@ -3037,8 +3043,23 @@ SQUIRREL_MOVE_PAT_1
     byte $08,$08;,$00,$00
 
 TIMER_MASK
-    byte $00,$00,$00,$01,$00,$01;,$00,$00;,$00
+    byte $00,$00,$00,$01,$00,$01,$00,$00,$00
 
+; SPACE: finding space
+
+sub_write_digit
+            ; a is digit, x is zero page offset
+            tay
+            and #$0f
+            asl
+            asl
+            asl
+            sta draw_s1_addr,x
+            tya
+            and #$f0
+            lsr
+            sta draw_s0_addr,x
+            rts
     
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
