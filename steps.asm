@@ -317,6 +317,13 @@ draw_t1_data_addr  ds 2
 ;  - sprinkles 3
 ;   - lava move up and down a bit
 ; RC 2
+;  - sprinkles 1
+;   - some kind of dirge on lose
+;   - some kind of celebration on win
+;      - sun/moon in sky?
+;      - go from dark to light?
+;      - fireworks
+;      - good job text
 ; - glitches
 ;   - steps screen 263+ lines
 ;   - timer glitchy
@@ -325,13 +332,6 @@ draw_t1_data_addr  ds 2
 ;   - top step pop in / shows a line, either remove or fix for real
 ;   - leftmost step cut off?
 ;   - rightmost step cut off?
-;  - sprinkles 1
-;   - some kind of dirge on lose
-;   - some kind of celebration on win
-;      - fireworks
-;      - good job text
-;      - go from dark to light?
-;      - sun/moon in sky?
 ; CONSIDER
 ;  - sprinkles 3
 ;   - speech stems
@@ -657,9 +657,7 @@ gx_continue
             ldx #GROUND_COLOR
 _gx_continue_ground_calc
             stx draw_ground_color
-            lda frame
-            lsr
-            lsr
+            lda lava_clock
             and #$01
             clc
             adc #138 ; BUGBUG: magic number
@@ -679,21 +677,48 @@ _gx_continue_erase_clouds
 ; climb screen
 
             jsr sub_vblank_loop
-
+            lda #5
+            sta draw_table_top
 gx_step_draw           
             lda #(DRAW_TABLE_SIZE - 1)
             sec
             sbc draw_table_top
-            tax
             beq gx_steps_resp_a
-_gx_step_draw_sky_loop
-            ldy #9; BUGBUG: magic number
-_gx_step_skip_step_loop
+            asl
+            sta temp_step_counter
+            asl
+            asl
+            adc temp_step_counter
+            sta temp_step_counter
+            lda #$0b
+            sta REFP1
+            sta CTRLPF
+            lda #30
+            jsr sub_steps_respxx_r
+            lda #YELLOW
+            sta COLUP0
+            sta COLUP1
+            ldx temp_step_counter
+_gx_steps_sky_loop
             sta WSYNC
-            dey 
-            bpl _gx_step_skip_step_loop
+            cpx #$50
+            bpl _gx_steps_sky_skip_loop
+            cpx #$40
+            bmi _gx_steps_sky_skip_loop
+            lda #(CLOUD_PAT_PF1-$40),x
+            sta PF1
+            ldy #WHITE
+            lda #(SUN_PAT_SKY-$40),x
+            sty COLUPF
+            sta GRP0
+            sta GRP1
+_gx_steps_sky_skip_loop
+            lda #0
+            sta PF1
+            sta COLUPF
             dex
-            bne _gx_step_draw_sky_loop
+            bpl _gx_steps_sky_loop
+            sta REFP1
 gx_steps_resp_a
             lda draw_steps_respx
             ldy draw_steps_dir
@@ -1513,35 +1538,7 @@ _calc_respx_end
 ; _sub_solve_failed
 ;             ldx temp_solve_stack
 ;             txs
-;             rts
-
-sub_galois  ; 16 bit lfsr from: https:;github.com/bbbradsmith/prng_6502/tree/master
-            lda seed+1
-            tay ; store copy of high byte
-            ; compute seed+1 ($39>>1 = %11100)
-            lsr ; shift to consume zeroes on left...
-            lsr
-            lsr
-            sta seed+1 ; now recreate the remaining bits in reverse order... %111
-            lsr
-            eor seed+1
-            lsr
-            eor seed+1
-            eor seed+0 ; recombine with original low byte
-            sta seed+1
-            ; compute seed+0 ($39 = %111001)
-            tya ; original high byte
-            sta seed+0
-            asl
-            eor seed+0
-            asl
-            eor seed+0
-            asl
-            asl
-            asl
-            eor seed+0
-            sta seed+0
-            rts            
+;             rts        
 
 gx_go_up
             lda #1
@@ -1925,8 +1922,6 @@ _sub_gen_steps_loop
             bpl _sub_gen_steps_loop
             ;jmp sub_solve_puzzle
             rts
-
-   ORG $F800
     
 ;--------------------
 ; Title Screen Kernel
@@ -2229,6 +2224,26 @@ _gx_show_select_stairs_loop
 
             jmp gx_select_footer
 
+sub_show_motto
+_gx_show_select_motto_loop
+            sta WSYNC
+            lda (draw_s0_addr),y
+            sta GRP0
+            lda (draw_s1_addr),y
+            sta GRP1
+            sta WSYNC
+            dey
+            dex
+            bpl _gx_show_select_motto_loop  ;2   7
+            rts
+            
+sub_wsync_loop
+_header_loop
+            sta WSYNC
+            dex
+            bpl _header_loop
+            rts
+
 ; ------------------------
 ; audio tracks
 
@@ -2464,26 +2479,17 @@ sub_clear_gx
             stx VDELP1
             rts
 
-sub_wsync_loop
-_header_loop
-            sta WSYNC
-            dex
-            bpl _header_loop
-            rts
-
-    ORG $FC00
-
 SKY_PALETTE
     byte SKY_BLUE, BLACK
 
 SELECT_FLIGHTS_RESPX
     byte 64,80,96,112
 
-LEVELS
-    byte LAYOUT_EASY  ; EASY
-    byte LAYOUT_MED   ; MED
-    byte LAYOUT_HARD  ; HARD
-    byte LAYOUT_EXTRA ; EXTRA
+    ORG $FC00
+
+SUN_PAT_SKY
+    byte $00,$07,$0f,$1f,$3f,$3f,$3f,$3f
+    byte $3f,$3f,$3f,$3f,$1f,$0f,$07,$00
 
     ; layouts
     ; nnnnffff = flight of length 2f, repeat n times (n+1 total)
@@ -2606,38 +2612,38 @@ gx_select_footer
 
             jmp gx_title_end
 
-sub_show_motto
-_gx_show_select_motto_loop
-            sta WSYNC
-            lda (draw_s0_addr),y
-            sta GRP0
-            lda (draw_s1_addr),y
-            sta GRP1
-            sta WSYNC
-            dey
-            dex
-            bpl _gx_show_select_motto_loop  ;2   7
-            rts
-
-sub_squirrel_refpxx
-            lda frame
-            rol
-            rol
-            rol
-            and #$03
-            tax
-            lda SQUIRREL_MOVE_PAT_0,x
-            sta REFP0
-            lda SQUIRREL_MOVE_PAT_1,x
-            sta REFP1
-            rts
+sub_galois  ; 16 bit lfsr from: https:;github.com/bbbradsmith/prng_6502/tree/master
+            lda seed+1
+            tay ; store copy of high byte
+            ; compute seed+1 ($39>>1 = %11100)
+            lsr ; shift to consume zeroes on left...
+            lsr
+            lsr
+            sta seed+1 ; now recreate the remaining bits in reverse order... %111
+            lsr
+            eor seed+1
+            lsr
+            eor seed+1
+            eor seed+0 ; recombine with original low byte
+            sta seed+1
+            ; compute seed+0 ($39 = %111001)
+            tya ; original high byte
+            sta seed+0
+            asl
+            eor seed+0
+            asl
+            eor seed+0
+            asl
+            asl
+            asl
+            eor seed+0
+            sta seed+0
+            rts    
 
     ORG $FCF0
     ; this is duplicated at FDFO to simplify cloud display
-CLOUD_PAT_BLANK_PF5 = . - 1         
-    byte $00,$00,$00,$00,$00,$00,$00;,$00
-CLOUD_PAT_PF5
-    byte #$00
+CLOUD_PAT_PF5 = . - 1
+;   byte #$00
     byte #$7c
     byte #$7c
     byte #$7c
@@ -2646,6 +2652,8 @@ CLOUD_PAT_PF5
     byte #$1f
     byte #$1f
     byte #$1f
+CLOUD_PAT_BLANK_PF5
+    byte $00,$00,$00,$00,$00,$00,$00,$00
 
     ORG $FD00
 
@@ -2765,12 +2773,9 @@ MAZES_3
     ; byte $34,$43,$02 ; w: 0.4 sol: 4
     ; byte $43,$11,$04 ; w: 0.4 sol: 5
 
-
     ORG $FDF0
-CLOUD_PAT_BLANK = . - 1 
-    byte $00,$00,$00,$00,$00,$00,$00;,$00
-CLOUD_PAT_PF1
-    byte #$00
+CLOUD_PAT_PF1 = . - 1
+;    byte #$00
     byte #$1f
     byte #$1f
     byte #$1f
@@ -2779,7 +2784,8 @@ CLOUD_PAT_PF1
     byte #$7c
     byte #$7c
     byte #$7c
-
+CLOUD_PAT_BLANK = . - 1
+    byte $00,$00,$00,$00,$00,$00,$00,$00
 
 ; ----------------------------------
 ; symbol graphics 
@@ -2813,14 +2819,12 @@ SYMBOL_GRAPHICS_TUMBLE_0
     byte $0,$38,$1c,$e,$3e,$7e,$7e,$68; 8
 SYMBOL_GRAPHICS_TUMBLE_1
     byte $0,$c,$8c,$d8,$d8,$7c,$78,$38; 8
-SYMBOL_BLANK= $0d
 SYMBOL_GRAPHICS_BLANK
     byte $0,$0,$0,$0,$0,$0,$0,$0; 8
 SYMBOL_GRAPHICS_ACORN
     byte $0,$10,$38,$7c,$7c,$0,$7c,$38; 8
 SYMBOL_GRAPHICS_CROWN
     byte $0,$7c,$7c,$0,$7c,$7c,$54,$54; 8
-SYMBOL_MOTTOS = $10
 SYMBOL_GRAPHICS_EZPZ_0
     byte $0,$8e,$ec,$ee,$0,$ea,$ce,$ee; 8
 SYMBOL_GRAPHICS_EZPZ_1
@@ -2853,6 +2857,20 @@ SYMBOL_GRAPHICS_MEGA_1
 ;     byte $0,$84,$c0,$64,$e4,$c4,$64,$20; 8
 ; SYMBOL_GRAPHICS_STEPS_3
 ;     byte $0,$e2,$6,$ee,$0,$ce,$a8,$ee; 8
+
+SQUIRREL_MOVE_PAT_0 = AUDIO_TRACKS
+SQUIRREL_MOVE_PAT_1 = AUDIO_TRACKS + $1
+
+sub_squirrel_refpxx
+            lda frame
+            lsr
+            and #$70
+            tax
+            lda SQUIRREL_MOVE_PAT_0,x
+            sta REFP0
+            lda SQUIRREL_MOVE_PAT_1,x
+            sta REFP1
+            rts
 
 sub_steps_respxx_r
             ldy #1 ; most common direction: RESPO first
@@ -3037,13 +3055,15 @@ GX_JUMP_HI
 
 STEP_MASK
     byte $01,$80
-SQUIRREL_MOVE_PAT_0
-    byte $00
-SQUIRREL_MOVE_PAT_1
-    byte $08,$08;,$00,$00
 
 TIMER_MASK
     byte $00,$00,$00,$01,$00,$01,$00,$00,$00
+
+LEVELS
+    byte LAYOUT_EASY  ; EASY
+    byte LAYOUT_MED   ; MED
+    byte LAYOUT_HARD  ; HARD
+    byte LAYOUT_EXTRA ; EXTRA
 
 ; SPACE: finding space
 
@@ -3060,7 +3080,7 @@ sub_write_digit
             lsr
             sta draw_s0_addr,x
             rts
-    
+
 ;-----------------------------------------------------------------------------------
 ; the CPU reset vectors
 
