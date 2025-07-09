@@ -148,6 +148,7 @@ jump_layout_repeat   ds 1 ; number of repeats left for jump table
 base_layout_repeat   ds 1 ; number of repeats left for base of stairs
 
 draw_colubk          ds 1
+draw_ground_color    ds 1 ; ground color
 
 draw_registers_start
 
@@ -160,7 +161,6 @@ draw_base_lr        ds 1 ; base of steps lr position
 draw_base_flight    ds 1
 draw_player_dir     ds 1 ; player's travel direction toward goal
 draw_step_offset    ds 1 ; what step # do we start drawing at 
-draw_ground_color   ds 1 ; ground color
 draw_lava_counter   ds 1 ; how far to lava counter
 draw_player_sprite  ds 1 
 draw_table          ds DRAW_TABLE_SIZE
@@ -316,13 +316,14 @@ draw_t1_data_addr  ds 2
 ;   - clouds in sky
 ;  - sprinkles 3
 ;   - lava move up and down a bit
+;   - some kind of celebration on win
+;      - sun/moon in sky?
 ; RC 2
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
 ;   - some kind of celebration on win
-;      - sun/moon in sky?
 ;      - go from dark to light?
-;      - fireworks
+;      - fireworks / rainbow
 ;      - good job text
 ; - glitches
 ;   - steps screen 263+ lines
@@ -648,7 +649,7 @@ gx_continue
             ; altitude
             ldx #LAVA_COLOR
             lda lava_height
-            cmp #10 ; BUGBUG: check flight
+            cmp #10 ; check if past first flight
             bpl _gx_continue_ground_calc
             ldx draw_colubk
             lda draw_base_flight
@@ -660,7 +661,7 @@ _gx_continue_ground_calc
             lda lava_clock
             and #$01
             clc
-            adc #138 ; BUGBUG: magic number
+            adc #138 ; magic number
             sec
             sbc lava_height
             sta draw_lava_counter
@@ -677,8 +678,6 @@ _gx_continue_erase_clouds
 ; climb screen
 
             jsr sub_vblank_loop
-            lda #5
-            sta draw_table_top
 gx_step_draw           
             lda #(DRAW_TABLE_SIZE - 1)
             sec
@@ -690,7 +689,7 @@ gx_step_draw
             asl
             adc temp_step_counter
             sta temp_step_counter
-            lda #$0b
+            lda #$0d
             sta REFP1
             sta CTRLPF
             lda #30
@@ -698,14 +697,19 @@ gx_step_draw
             lda #YELLOW
             sta COLUP0
             sta COLUP1
+            lda #$00 ; shim
+            ldy #$10 ; shim
             ldx temp_step_counter
+            sta HMP0
+            sty HMP1
 _gx_steps_sky_loop
             sta WSYNC
+            sta HMOVE
             cpx #$50
             bpl _gx_steps_sky_skip_loop
             cpx #$40
             bmi _gx_steps_sky_skip_loop
-            lda #(CLOUD_PAT_PF1-$40),x
+            lda #(CLOUD_PAT_PF1-$3f),x
             sta PF1
             ldy #WHITE
             lda #(SUN_PAT_SKY-$40),x
@@ -716,17 +720,19 @@ _gx_steps_sky_skip_loop
             lda #0
             sta PF1
             sta COLUPF
+            sta HMP1
             dex
             bpl _gx_steps_sky_loop
             sta REFP1
 gx_steps_resp_a
             lda draw_steps_respx
             ldy draw_steps_dir
-            jsr sub_steps_respxx; ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx; 
+            ; set HMP0/1
             lda RESPXX_HMP0,y       ;4   13
             ldx RESPXX_HMP1,y       ;4   17
             tay                     ;2   19
-            ; tweak player position
+            ; tweak player reflection
             lda draw_player_dir     ;3   22
             sty HMP0                ;3   25 
             stx HMP1                ;3   28
@@ -837,7 +843,7 @@ _gx_draw_loop
 
             dec draw_lava_counter             ;5  36-37
             beq gx_lava                       ;2  38-39
-            ; BUGBUG: macro? cloud a
+            ; cloud a
             lda (draw_s3_addr),y              ;5  43
             sta PF1                           ;3  46
             lda (draw_s2_addr),y              ;5  51
@@ -854,32 +860,32 @@ _gx_draw_loop
             sta GRP1                          ;3   7
             lda (draw_s0_addr),y              ;5  12
             sta GRP0                          ;3  15
-            pla                               ;3  18
-            ldx #WHITE                        ;2  20
-            sta PF1                           ;3  23
-            stx COLUPF                        ;3  26
+            pla                               ;4  19
+            ldx #WHITE                        ;2  21
+            sta PF1                           ;3  24
+            stx COLUPF                        ;3  27
 ._gx_draw_skip_lava
-            dey                               ;2  28
-            bne _gx_draw_loop                 ;2  30
+            dey                               ;2  29
+            bne _gx_draw_loop                 ;2  31
 ._gx_draw_skip_stair
-            lda #CHAR_HEIGHT                  ;3  33
-            ldx draw_colubk                   ;3  36
-            dec temp_step_counter             ;2  38
+            lda #CHAR_HEIGHT                  ;2  33
+            dec temp_step_counter             ;5  38
             bmi gx_timer                      ;2  40
-            sec                               ;2  42
+            sec                               ;2  42; BUGBUG: extra line
             bne ._gx_draw_skip_last           ;2  44
-            ldx draw_ground_color             ;3  47
+            sta temp_step_start               ;3  47
             sbc draw_steps_wsync              ;3  50
+            ldx draw_ground_color             ;3  53
+            stx draw_colubk                   ;3  56
 ._gx_draw_skip_last
-            stx draw_colubk                   ;3  53
-            sta temp_step_start               ;3  56
+            sta temp_step_start               ;3  59
             ;ldy #0                           ;2  58 TIME:SPACE:already 0
             ; cloud b
-            sty PF1                           ;3  59
-            sty COLUPF                        ;3  61
-            sty GRP0                          ;3  65
-            sty GRP1                          ;3  68
-            jmp _gx_step_draw_loop            ;3  71
+            sty PF1                           ;3  62
+            sty COLUPF                        ;3  65
+            sty GRP0                          ;3  68
+            sty GRP1                          ;3  71
+            jmp _gx_step_draw_loop            ;3  74
 
 gx_lava
             lda temp_step_counter            ;3  42-43
@@ -912,7 +918,7 @@ gx_timer
             jsr sub_write_digit
             ; place digits
             lda #94 ; BUGBUG: magic number
-            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r
             sta WSYNC ; shim
             ;ldy #0 SPACE: y already 0
             sty COLUBK
@@ -993,7 +999,7 @@ gx_overscan
 ;
 
 gx_fall
-            lda #1 ; BUGBUG: magic number (noise voice)
+            lda #1 ; (noise voice)
             sta AUDC0
             lda frame
             and #$0f
@@ -1085,7 +1091,7 @@ _start_game
 ;
 
 sub_steps_init
-            lda #9 ; BUGBUG: magic number
+            lda #9 ; magic number, first cloud pos
             sta draw_cloud_index
             lda #PLAYER_STEP_HEALTH
             sta player_health
@@ -1189,7 +1195,7 @@ _steps_draw_flights
 _steps_draw_last_flight
             lda #$20 + ((SYMBOL_GRAPHICS_CROWN - SYMBOL_GRAPHICS) / 8) ; force crown stair (NOTE: should be $0f)
             sta draw_table,x
-            stx draw_table_top ; BUGBUG can set just once? - no 
+            stx draw_table_top ; adjust table top for last flight
             ldy #1
 _steps_draw_last_flight_loop
             inx
@@ -1198,8 +1204,8 @@ _steps_draw_last_flight_loop
             lda #$20 + ((SYMBOL_GRAPHICS_BLANK - SYMBOL_GRAPHICS) / 8) ; force blank stair
             sta draw_table,x
             lda draw_colubk
-            sta draw_step_colors,x ; BUGBUG can set here?
-            stx draw_table_top ; BUGBUG can set just once?
+            sta draw_step_colors,x ; erase top steps
+            stx draw_table_top ; move table top up
             dey
             bpl _steps_draw_last_flight_loop
 _steps_draw_flights_end
@@ -2103,7 +2109,7 @@ gx_title_end
             sta VDELP0
             sta VDELP1
             lda #46 ; BUGBUG: magic number
-            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r
             ldy #7                       
 _draw_tx_end_loop
             sta WSYNC
@@ -2183,7 +2189,7 @@ gx_select_return
 _gx_show_select_flights_repeat
             ldx temp_select_repeat
             lda SELECT_FLIGHTS_RESPX,x
-            jsr sub_steps_respxx_r ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r 
             lda temp_select_index
             ldy #0
             cmp difficulty_level
@@ -2588,10 +2594,12 @@ gx_select_footer
             txa
             clc
             adc #34
-            jsr sub_steps_respxx_r ; BUGBUG: set HMP0/1
+            jsr sub_steps_respxx_r ;
+            lda #$00 ; BUGBUG?
+            ldx #$10 ; BUGBUG?
             sta WSYNC
-            lda #$24 ; BUGBUG?
-            sta HMP1
+            sta HMP0
+            stx HMP1
             sta HMOVE
             ldx #3
             ldy #7
