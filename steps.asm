@@ -303,6 +303,11 @@ draw_t1_data_addr  ds 2
 ;   - steps screen gaps in HMOVE coverage
 ;   - lava broken
 ;   - no clouds in lava
+;   - steps screen 263+ lines
+;   - top step pop in / shows a line, either remove or fix for real
+;   - timer glitchy
+;     -  clear GPx delay registers before timer
+;     -  number display timing is funky, and we have a page boundary potentially
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
@@ -322,15 +327,11 @@ draw_t1_data_addr  ds 2
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
 ;   - some kind of celebration on win
-;      - go from dark to light?
-;      - fireworks / rainbow
+;      - go from dark to light for night missions?
+;      - fireworks / rainbow / flashing
 ;      - good job text
-; - glitches
-;   - steps screen 263+ lines
-;   - timer glitchy
-;     -  clear GPx delay registers before timer
+;  - glitches
 ;   - review scroll for any glitches and jumps
-;   - top step pop in / shows a line, either remove or fix for real
 ;   - leftmost step cut off?
 ;   - rightmost step cut off?
 ; CONSIDER
@@ -776,8 +777,8 @@ _gx_steps_shim_p0_r
             sta draw_s3_addr         
             
             lda #$05
-            rol CXP0FB
-            bcc _gx_step_draw_cx_p0pf
+            bit CXP0FB
+            bpl _gx_step_draw_cx_p0pf
             lda #$01
 _gx_step_draw_cx_p0pf
             sta CTRLPF
@@ -830,14 +831,14 @@ _gx_step_draw_loop
             ldy temp_cloud_pf                 ;3   6
             sty draw_s2_addr,x                ;4  10
             sta temp_cloud_side               ;3  13
-            lda #$ff                          ;2  15
-            sta GRP1                          ;3  17
-            lda draw_colubk                   ;3  20
-            sta COLUBK                        ;3  23
-            ldy temp_step_start               ;2  25
-            beq ._gx_draw_skip_stair          ;2  27
-            ldx #WHITE                        ;2  29
-            stx COLUPF                        ;3  32
+            lda draw_colubk                   ;3  25
+            sta COLUBK                        ;3  28
+            ldy temp_step_start               ;2  15
+            beq ._gx_draw_skip_stair          ;2  17
+            lda #$ff                          ;2  19
+            sta GRP1                          ;3  22
+            ldx #WHITE                        ;2  30
+            stx COLUPF                        ;3  33
             
 _gx_draw_loop
 
@@ -871,21 +872,20 @@ _gx_draw_loop
             lda #CHAR_HEIGHT                  ;2  33
             dec temp_step_counter             ;5  38
             bmi gx_timer                      ;2  40
-            sec                               ;2  42; BUGBUG: extra line
+            sec                               ;2  42
             bne ._gx_draw_skip_last           ;2  44
-            sta temp_step_start               ;3  47
-            sbc draw_steps_wsync              ;3  50
-            ldx draw_ground_color             ;3  53
-            stx draw_colubk                   ;3  56
+            sbc draw_steps_wsync              ;3  47
+            ldx draw_ground_color             ;3  50
+            stx draw_colubk                   ;3  53
 ._gx_draw_skip_last
-            sta temp_step_start               ;3  59
+            sta temp_step_start               ;3  56
             ;ldy #0                           ;2  58 TIME:SPACE:already 0
             ; cloud b
-            sty PF1                           ;3  62
-            sty COLUPF                        ;3  65
-            sty GRP0                          ;3  68
-            sty GRP1                          ;3  71
-            jmp _gx_step_draw_loop            ;3  74
+            sty PF1                           ;3  61
+            sty COLUPF                        ;3  64
+            sty GRP0                          ;3  67
+            sty GRP1                          ;3  70
+            jmp _gx_step_draw_loop            ;3  73
 
 gx_lava
             lda temp_step_counter            ;3  42-43
@@ -902,10 +902,13 @@ gx_lava
             bne ._gx_draw_skip_lava          ;3  19
 
 gx_timer
-            sty PF1                           ;3  58
-            sty COLUPF                        ;3  61
-            sty GRP0
-            sty GRP1
+            sty PF1                           ;3  44
+            sty COLUPF                        ;3  47
+            sty GRP1                          ;3  50 
+            sty GRP0                          ;3  53 ; trick, GRP0 already 0, this forces vdel register clear on GRP1
+            ; place digits
+            lda #94 ; BUGBUG: magic number
+            jsr sub_steps_respxx_r
             ; prep timer gx
             ldx #0
             lda player_timer + 1
@@ -916,15 +919,9 @@ gx_timer
             lda player_score
             ldx #8
             jsr sub_write_digit
-            ; place digits
-            lda #94 ; BUGBUG: magic number
-            jsr sub_steps_respxx_r
-            sta WSYNC ; shim
-            ;ldy #0 SPACE: y already 0
-            sty COLUBK
             
-            ; set up HMP shim
-            lda #$10 ; BUGBUG: is this too soon
+            ; set up HMP shim for next HMOVE
+            lda #$10 
             sta HMP0
             lda #$30
             sta HMP1
@@ -935,6 +932,11 @@ gx_timer
             sta NUSIZ1
             sta VDELP0
             sta VDELP1
+
+            ; set background: not counting but we should be starting sl 214
+            ldx #0
+            stx COLUBK
+            stx REFP0
 
             ; restore s2 addr
             lda #>SYMBOL_GRAPHICS
@@ -959,7 +961,7 @@ _gx_timer_color
             ldy #(CHAR_HEIGHT) ; go one higher to create top line
 _gx_timer_loop
             sta WSYNC
-            SLEEP 2; 
+            SLEEP 3; 
             lda (draw_s0_addr),y   ;5   5
             sta GRP0               ;3   8
             lda (draw_s1_addr),y   ;5  13
@@ -980,7 +982,7 @@ _gx_timer_loop
             stx GRP1               ;3  62
             sta GRP0               ;3  65
             dey                    ;2  67
-            bpl _gx_timer_loop     ;3  70
+            sbpl _gx_timer_loop     ;3  70
             ldx temp_timer_stack
             txs
 
