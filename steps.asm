@@ -308,6 +308,8 @@ draw_t1_data_addr  ds 2
 ;   - timer glitchy
 ;     -  clear GPx delay registers before timer
 ;     -  number display timing is funky, and we have a page boundary potentially
+;   - 265 lines at win/lose
+;   - glitch in title
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
@@ -327,10 +329,10 @@ draw_t1_data_addr  ds 2
 ;      - go from dark to light for night missions?
 ; RC 2
 ;  - glitches
-;   - 265 lines at win/lose
-;   - jumpy looking scroll of sun and cloud
 ;   - leftmost step cut off?
 ;   - rightmost step cut off?
+;   - jumpy looking scroll of sun and cloud
+;   - player yellow on last flight
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
 ; CONSIDER
@@ -691,6 +693,7 @@ gx_step_draw
             asl
             asl
             adc temp_step_counter
+            sbc #3
             sta temp_step_counter
             lda #$0d
             sta REFP1
@@ -1936,51 +1939,6 @@ _sub_gen_steps_loop
 ;--------------------
 ; Title Screen Kernel
 
-gx_show_title
-            lda #WHITE
-            sta COLUP0
-            sta COLUP1
-            jsr sub_vblank_loop
-
-            ldx #13
-            ldy #6
-_gx_title_setup_loop
-            lda TITLE_ROW_HI,y
-            sta draw_t0,x
-            sta draw_t1,x
-            dex
-            lda TITLE_ROW_0_DATA,y     
-            sta draw_t0,x
-            dex 
-            dey
-            bpl _gx_title_setup_loop
-
-gx_title_start_draw
-            sta WSYNC
-            lda #32 ; BUGBUG: magic number
-            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
-            lda #$30 ; BUGBUG: is this too soon
-            sta HMP0
-            sta WSYNC
-            lda #$20
-            sta HMP1
-            sta HMOVE
-            lda #1
-            sta VDELP0
-            sta VDELP1
-            lda #3
-            sta NUSIZ1
-            sta NUSIZ0
-
-            ldy #7                       ;2   2
-            lda (draw_t0_p0_addr),y      ;5   7
-            sta GRP0                     ;3  10
-            lda #$80
-            sta HMP0
-            sta HMP1
-            sta WSYNC
-            jmp _gx_title_0_loop_1       ;3   3
-
 gx_title_0            
             ldy #7                       ;2   
 _gx_title_0_loop_0
@@ -2102,6 +2060,51 @@ _gx_title_11_loop_1
 _gx_title_loop_11_jmp
             SLEEP 4                      ;3  61
             jmp (draw_t1_jump_addr)      ;5  66
+
+gx_show_title
+            lda #WHITE
+            sta COLUP0
+            sta COLUP1
+            jsr sub_vblank_loop
+
+            ldx #13
+            ldy #6
+_gx_title_setup_loop
+            lda TITLE_ROW_HI,y
+            sta draw_t0,x
+            sta draw_t1,x
+            dex
+            lda TITLE_ROW_0_DATA,y     
+            sta draw_t0,x
+            dex 
+            dey
+            bpl _gx_title_setup_loop
+
+gx_title_start_draw
+            sta WSYNC
+            lda #32 ; BUGBUG: magic number
+            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
+            lda #$30 ; BUGBUG: is this too soon
+            sta HMP0
+            sta WSYNC
+            lda #$20
+            sta HMP1
+            sta HMOVE
+            lda #1
+            sta VDELP0
+            sta VDELP1
+            lda #3
+            sta NUSIZ1
+            sta NUSIZ0
+
+            ldy #7                       ;2   2
+            lda (draw_t0_p0_addr),y      ;5   7
+            sta GRP0                     ;3  10
+            lda #$80
+            sta HMP0
+            sta HMP1
+            sta WSYNC
+            jmp _gx_title_0_loop_1       ;3   3
 
 gx_title_end
             lda #ZARA_COLOR
