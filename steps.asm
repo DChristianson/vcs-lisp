@@ -323,26 +323,21 @@ draw_t1_data_addr  ds 2
 ;   - lava move up and down a bit
 ;   - some kind of celebration on win
 ;      - sun/moon in sky?
-; RC 2
-;  - sprinkles 1
-;   - some kind of dirge on lose
 ;   - some kind of celebration on win
 ;      - go from dark to light for night missions?
-;      - fireworks / rainbow / flashing
-;      - good job text
+; RC 2
 ;  - glitches
-;   - review scroll for any glitches and jumps
+;   - 265 lines at win/lose
+;   - jumpy looking scroll of sun and cloud
 ;   - leftmost step cut off?
 ;   - rightmost step cut off?
+;  - sprinkles 1
+;   - some kind of dirge on lose
 ; CONSIDER
 ;  - sprinkles 3
 ;   - speech stems
-;   - good job / let's go encouragement
-;   - lava sound if it is close
-;  - sprinkles 4
-;   - color flashes in titles
-;   - scroll of menu
-;   - should be no step edge in ground?
+;   - let's go encouragement
+;   - lava sound volume up if it is close
 ; ONLY IF NEEDED
 ;  - code 
 ;   - algorithmic maze gen
@@ -351,6 +346,10 @@ draw_t1_data_addr  ds 2
 ;   - less data + code for title - 798 bytes data + code
 ;   - shrink audio size - 256 bytes + 122 bytes code
 ; NOT DO
+;  - sprinkles 4
+;   - color flashes in titles
+;   - scroll of menu
+;   - should be no step edge in ground?
 ;  - visual 3
 ;   - jump animation 
 ;   - size 1 stairs no number?
@@ -359,6 +358,9 @@ draw_t1_data_addr  ds 2
 ;   - sky background color changes
 ;      - go from dark to light?
 ;      - gradient/lightened sky background
+;   - extra celebration on win
+;      - fireworks / rainbow / flashing
+;      - good job text
 ;  - gameplay 5
 ;   - player builds maze by dropping numbers?
 ;     - player builds maze as numbers drop?
@@ -2521,13 +2523,17 @@ LAYOUT_EXTRA = . - LAYOUTS
 gx_end
             lda player_health
             bmi _player_lose
+
             lda frame
             sta COLUP0
-            jmp _gx_end_wait
+            lda #SKY_BLUE
+            byte $2c
 _player_lose
-            lda #1
-            sta sky_palette
+            lda #BLACK
 _gx_end_wait
+            sta draw_colubk
+            ldx draw_table_top
+            sta draw_step_colors-1,x
             ; wait for song
             lda audio_tracker
             bne _wait_for_reset
