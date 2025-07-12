@@ -337,6 +337,7 @@ draw_t1_data_addr  ds 2
 ;  - glitches
 ;   - player yellow on last flight
 ;   - jumpy looking scroll of sun and cloud
+;   - l/r placement not optimal - steps cut off for extreme left and right 
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
 ;   - lava sound volume up if it is close
