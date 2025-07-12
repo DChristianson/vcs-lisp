@@ -70,6 +70,10 @@ JUMP_SOLUTION_BYTES = JUMP_TABLE_SIZE / 8
 FLIGHTS_TABLE_SIZE = 16
 FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
 
+TIMER_RESP = 94
+TITLE_RESP = 32
+SQUIRREL_GANG_RESP = 46
+
 LAVA_TIME_MODULUS = 8
 PLAYER_STEP_HEALTH = ZARA_COLOR * 8
 
@@ -836,29 +840,29 @@ _gx_step_draw_loop
             ldy temp_cloud_pf                 ;3   6
             sty draw_s2_addr,x                ;4  10
             sta temp_cloud_side               ;3  13
-            lda draw_colubk                   ;3  25
-            sta COLUBK                        ;3  28
-            ldy temp_step_start               ;2  15
-            beq ._gx_draw_skip_stair          ;2  17
-            lda #$ff                          ;2  19
-            sta GRP1                          ;3  22
+            lda draw_colubk                   ;3  16
+            sta COLUBK                        ;3  19
+            ldy temp_step_start               ;2  21
+            beq ._gx_draw_skip_stair          ;2  23
+            lda #$ff                          ;2  25
+            sta GRP1                          ;3  28 ; BUGBUG: late
             ldx #WHITE                        ;2  30
             stx COLUPF                        ;3  33
             
 _gx_draw_loop
 
-            dec draw_lava_counter             ;5  36-37
-            beq gx_lava                       ;2  38-39
+            dec draw_lava_counter             ;5  36-38
+            beq gx_lava                       ;2  38-40
             ; cloud a
-            lda (draw_s3_addr),y              ;5  43
-            sta PF1                           ;3  46
-            lda (draw_s2_addr),y              ;5  51
-            pha                               ;3  54
+            lda (draw_s3_addr),y              ;5  43-45
+            sta PF1                           ;3  46-48
+            lda (draw_s2_addr),y              ;5  51-53
+            pha                               ;3  54-56
             ; end cloud a
-            lda (draw_s1_addr),y              ;5  62
-            ldx draw_steps_dir                ;3  68
-            beq ._gx_draw_skip_shift_r        ;2  70
-            lsr                               ;2  72
+            lda (draw_s1_addr),y              ;5  59-61
+            ldx draw_steps_dir                ;3  62-64
+            beq ._gx_draw_skip_shift_r        ;2  64-66
+            lsr                               ;2  66-68
 ._gx_draw_skip_shift_r
             stx.w COLUPF                      ;3  64
             sta WSYNC                         ;--------
@@ -912,7 +916,7 @@ gx_timer
             sty GRP1                          ;3  53 
             sty GRP0                          ;3  56 ; trick, GRP0 already 0, this forces vdel register clear on GRP1
             ; place digits
-            lda #94 ; BUGBUG: magic number
+            lda #TIMER_RESP
             jsr sub_steps_respxx_r
             ; prep timer gx
             ldx #0
@@ -1140,7 +1144,7 @@ _steps_addr_loop
             tax
             eor #$ff
             clc
-            adc #22
+            adc #23 ; BUGBUG: we want to be shifted over 1 for longer ones but not too shifted
             lsr
             sta draw_base_lr
             ; jump init
@@ -2082,12 +2086,12 @@ _gx_title_setup_loop
 
 gx_title_start_draw
             sta WSYNC
-            lda #32 ; BUGBUG: magic number
-            jsr sub_steps_respxx_r; BUGBUG: set HMP0/1
-            lda #$30 ; BUGBUG: is this too soon
-            sta HMP0
+            lda #TITLE_RESP
+            jsr sub_steps_respxx_r;
+            ldx #$10 ; we are still in HMOVE after the respxx  
+            lda #$20 ; load these values for the *next* (late) hmove 
             sta WSYNC
-            lda #$20
+            stx HMP0
             sta HMP1
             sta HMOVE
             lda #1
@@ -2115,7 +2119,7 @@ gx_title_end
             lda #0
             sta VDELP0
             sta VDELP1
-            lda #46 ; BUGBUG: magic number
+            lda #SQUIRREL_GANG_RESP
             jsr sub_steps_respxx_r
             ldy #7                       
 _draw_tx_end_loop
@@ -2606,8 +2610,8 @@ gx_select_footer
             clc
             adc #34
             jsr sub_steps_respxx_r ;
-            lda #$00 ; BUGBUG?
-            ldx #$10 ; BUGBUG?
+            lda #$00 ; 0 HMOVE
+            ldx #$10 ; -1 HMOVE
             sta WSYNC
             sta HMP0
             stx HMP1
@@ -2860,7 +2864,8 @@ SYMBOL_GRAPHICS_MEGA_0
     byte $0,$ea,$ee,$aa,$0,$32,$13,$1b; 8
 SYMBOL_GRAPHICS_MEGA_1
     byte $0,$a4,$e4,$ee,$0,$90,$b8,$a8; 8
-; SYMBOL_GRAPHICS_LETSGO_0 ; BUGBUG: used?
+; SPACE: UNUSED GRAPHICS
+; SYMBOL_GRAPHICS_LETSGO_0 
 ;     byte $0,$d,$19,$1d,$0,$ee,$8c,$8e; 8
 ; SYMBOL_GRAPHICS_LETSGO_1
 ;     byte $0,$d0,$48,$c8,$0,$4c,$44,$e6; 8
@@ -2868,7 +2873,7 @@ SYMBOL_GRAPHICS_MEGA_1
 ;     byte $0,$ce,$4a,$ee,$0,$6e,$ca,$ee; 8
 ; SYMBOL_GRAPHICS_GOODJOB_1
 ;     byte $0,$e8,$e4,$84,$0,$ec,$aa,$ee; 8
-; SYMBOL_GRAPHICS_STEPS_0  ; BUGBUG: used?
+; SYMBOL_GRAPHICS_STEPS_0  
 ;     byte $0,$80,$c4,$64,$ec,$cc,$66,$22; 8
 ; SYMBOL_GRAPHICS_STEPS_1
 ;     byte $0,$80,$c8,$a8,$cc,$ee,$66,$22; 8
@@ -2894,7 +2899,7 @@ sub_squirrel_refpxx
 sub_steps_respxx_r
             ldy #1 ; most common direction: RESPO first
 sub_steps_respxx
-            ; a is respx, y is direction (-1 or 0)
+            ; a is respx, y is direction (0 or 1)
             sec
             sta WSYNC               ; --
 _respxx_loop
@@ -2904,7 +2909,7 @@ _respxx_loop
             lda LOOKUP_STD_HMOVE,x  ;5   11
             sta HMP0                ;3   14
             sta HMP1                ;3   17
-            cpy #0                  ;2   19 ; BUGBUG: assumes $ff/$00
+            cpy #0                  ;2   19 ;
             sbeq _respxx_swap       ;2   21
             sta.w RESP0             ;4   25
             sta RESP1               ;3   28
