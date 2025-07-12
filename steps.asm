@@ -310,6 +310,8 @@ draw_t1_data_addr  ds 2
 ;     -  number display timing is funky, and we have a page boundary potentially
 ;   - 265 lines at win/lose
 ;   - glitch in title
+;   - leftmost step cut off?
+;   - rightmost step cut off?
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
@@ -329,17 +331,15 @@ draw_t1_data_addr  ds 2
 ;      - go from dark to light for night missions?
 ; RC 2
 ;  - glitches
-;   - leftmost step cut off?
-;   - rightmost step cut off?
-;   - jumpy looking scroll of sun and cloud
 ;   - player yellow on last flight
+;   - jumpy looking scroll of sun and cloud
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
+;   - lava sound volume up if it is close
 ; CONSIDER
 ;  - sprinkles 3
 ;   - speech stems
 ;   - let's go encouragement
-;   - lava sound volume up if it is close
 ; ONLY IF NEEDED
 ;  - code 
 ;   - algorithmic maze gen
@@ -874,22 +874,22 @@ _gx_draw_loop
             dey                               ;2  29
             bne _gx_draw_loop                 ;2  31
 ._gx_draw_skip_stair
-            lda #CHAR_HEIGHT                  ;2  33
-            dec temp_step_counter             ;5  38
-            bmi gx_timer                      ;2  40
-            sec                               ;2  42
-            bne ._gx_draw_skip_last           ;2  44
-            sbc draw_steps_wsync              ;3  47
-            ldx draw_ground_color             ;3  50
+            ldx draw_ground_color             ;3  34
+            lda #CHAR_HEIGHT                  ;2  36
+            dec temp_step_counter             ;5  41
+            bmi gx_timer                      ;2  43
+            sec                               ;2  45
+            bne ._gx_draw_skip_last           ;2  47
+            sbc draw_steps_wsync              ;3  50
             stx draw_colubk                   ;3  53
 ._gx_draw_skip_last
             sta temp_step_start               ;3  56
-            ;ldy #0                           ;2  58 TIME:SPACE:already 0
+            ;ldy #0                           ;2  -- TIME:SPACE:already 0
             ; cloud b
-            sty PF1                           ;3  61
-            sty COLUPF                        ;3  64
-            sty GRP0                          ;3  67
-            sty GRP1                          ;3  70
+            sty PF1                           ;3  59
+            sty COLUPF                        ;3  62
+            sty.w GRP0                        ;4  66
+            sty.w GRP1                        ;4  70
             jmp _gx_step_draw_loop            ;3  73
 
 gx_lava
@@ -907,10 +907,10 @@ gx_lava
             bne ._gx_draw_skip_lava          ;3  19
 
 gx_timer
-            sty PF1                           ;3  44
-            sty COLUPF                        ;3  47
-            sty GRP1                          ;3  50 
-            sty GRP0                          ;3  53 ; trick, GRP0 already 0, this forces vdel register clear on GRP1
+            sty PF1                           ;3  47
+            sty COLUPF                        ;3  50
+            sty GRP1                          ;3  53 
+            sty GRP0                          ;3  56 ; trick, GRP0 already 0, this forces vdel register clear on GRP1
             ; place digits
             lda #94 ; BUGBUG: magic number
             jsr sub_steps_respxx_r
@@ -1140,7 +1140,7 @@ _steps_addr_loop
             tax
             eor #$ff
             clc
-            adc #23
+            adc #22
             lsr
             sta draw_base_lr
             ; jump init
