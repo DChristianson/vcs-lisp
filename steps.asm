@@ -70,8 +70,8 @@ JUMP_SOLUTION_BYTES = JUMP_TABLE_SIZE / 8
 FLIGHTS_TABLE_SIZE = 16
 FLIGHTS_TABLE_BYTES = FLIGHTS_TABLE_SIZE
 
-TIMER_RESP = 94
-TITLE_RESP = 32
+TIMER_RESP = 93
+TITLE_RESP = 31
 SQUIRREL_GANG_RESP = 46
 
 LAVA_TIME_MODULUS = 8
@@ -316,6 +316,7 @@ draw_t1_data_addr  ds 2
 ;   - glitch in title
 ;   - leftmost step cut off?
 ;   - rightmost step cut off?
+;   - player yellow on last flight
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
@@ -333,17 +334,16 @@ draw_t1_data_addr  ds 2
 ;      - sun/moon in sky?
 ;   - some kind of celebration on win
 ;      - go from dark to light for night missions?
+;   - speech stems
 ; RC 2
 ;  - glitches
-;   - player yellow on last flight
 ;   - jumpy looking scroll of sun and cloud
 ;   - l/r placement not optimal - steps cut off for extreme left and right 
+; IF WE CAN MAKE SPACE
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
 ;   - lava sound volume up if it is close
-; CONSIDER
 ;  - sprinkles 3
-;   - speech stems
 ;   - let's go encouragement
 ; ONLY IF NEEDED
 ;  - code 
@@ -649,13 +649,6 @@ _skip_lava_update
 gx_continue
             jsr sub_calc_respx
 
-            ; player colors
-            lda player_health ; trick: color * 8
-            lsr
-            lsr
-            lsr
-            sta COLUP0
-
             ; altitude
             ldx #LAVA_COLOR
             lda lava_height
@@ -708,25 +701,24 @@ gx_step_draw
             lda #YELLOW
             sta COLUP0
             sta COLUP1
-            lda #$00 ; shim
             ldy #$10 ; shim
             ldx temp_step_counter
-            sta HMP0
+            sta HMCLR
             sty HMP1
 _gx_steps_sky_loop
             sta WSYNC
-            sta HMOVE
-            cpx #$50
-            bpl _gx_steps_sky_skip_loop
-            cpx #$40
-            bmi _gx_steps_sky_skip_loop
-            lda #(CLOUD_PAT_PF1-$3f),x
-            sta PF1
-            ldy #WHITE
-            lda #(SUN_PAT_SKY-$40),x
-            sty COLUPF
-            sta GRP0
-            sta GRP1
+            sta HMOVE                    ;3   3
+            cpx #$50                     ;2   5
+            bpl _gx_steps_sky_skip_loop  ;2   7
+            cpx #$40                     ;2   9
+            bmi _gx_steps_sky_skip_loop  ;2  11
+            lda #(CLOUD_PAT_PF1-$3f),x   ;4  15
+            sta PF1                      ;3  18
+            ldy #WHITE                   ;2  20
+            lda #(SUN_PAT_SKY-$40),x     ;4  24
+            sty COLUPF                   ;3  27
+            sta GRP0                     ;3  30
+            sta GRP1                     ;3  33
 _gx_steps_sky_skip_loop
             lda #0
             sta PF1
@@ -768,14 +760,14 @@ _gx_steps_shim_p0_r
             lda draw_table_top                ;3   3
             sta temp_step_counter             ;3   6
             ; clean up side counter
-            clc                               
-            adc draw_cloud_side
-            asl
-            and #$02
-            sta temp_cloud_side
+            clc                               ;2   8
+            adc draw_cloud_side               ;3  11
+            asl                               ;2  13
+            and #$02                          ;2  15
+            sta temp_cloud_side               ;3  18
 
-            lda draw_steps_wsync              ;3   9 
-            sta temp_step_start
+            lda draw_steps_wsync              ;3  21 
+            sta temp_step_start               ;3  24
 
             ; setup PF addressing
             lda #>CLOUD_PAT_PF1
@@ -792,8 +784,15 @@ _gx_steps_shim_p0_r
             lda #$01
 _gx_step_draw_cx_p0pf
             sta CTRLPF
-
             sta CXCLR
+
+            ; player colors
+            lda player_health ; trick: color * 8
+            lsr
+            lsr
+            lsr
+            sta COLUP0
+
 
 _gx_step_draw_loop
             sta WSYNC                         ;-----
@@ -918,7 +917,7 @@ gx_timer
             sty GRP0                          ;3  56 ; trick, GRP0 already 0, this forces vdel register clear on GRP1
             ; place digits
             lda #TIMER_RESP
-            jsr sub_steps_respxx_r
+            jsr sub_steps_respxx_3cr
             ; prep timer gx
             ldx #0
             lda player_timer + 1
@@ -931,17 +930,9 @@ gx_timer
             jsr sub_write_digit
             
             ; set up HMP shim for next HMOVE
-            lda #$10 
-            sta HMP0
-            lda #$30
+            sta HMCLR
+            lda #$10
             sta HMP1
-
-            ; set up for 32px display
-            lda #3
-            sta NUSIZ0
-            sta NUSIZ1
-            sta VDELP0
-            sta VDELP1
 
             ; set background: not counting but we should be starting sl 214
             ldx #0
@@ -1645,16 +1636,6 @@ _gx_go_redraw_player
             jsr sub_steps_refresh
             jmp gx_update_return
 
-
-gx_show_select
-            jsr sub_vblank_loop
-
-            ldx #12; draw_steps_wsync
-            jsr sub_wsync_loop
-
-            ; select
-            jmp gx_title_start_draw
-
 ; ----------------------------------
 ; TITLE
 
@@ -2066,6 +2047,16 @@ _gx_title_loop_11_jmp
             SLEEP 4                      ;3  61
             jmp (draw_t1_jump_addr)      ;5  66
 
+
+gx_show_select
+            jsr sub_vblank_loop
+
+            ldx #12; draw_steps_wsync
+            jsr sub_wsync_loop
+
+            ; select
+            bmi gx_title_start_draw ; space: Z flag should be set
+
 gx_show_title
             lda #WHITE
             sta COLUP0
@@ -2088,20 +2079,12 @@ _gx_title_setup_loop
 gx_title_start_draw
             sta WSYNC
             lda #TITLE_RESP
-            jsr sub_steps_respxx_r;
-            ldx #$10 ; we are still in HMOVE after the respxx  
-            lda #$20 ; load these values for the *next* (late) hmove 
+            jsr sub_steps_respxx_3cr;
+            lda #$10 ; load this values for the *next* (late) hmove 
             sta WSYNC
-            stx HMP0
+            sta HMCLR
             sta HMP1
             sta HMOVE
-            lda #1
-            sta VDELP0
-            sta VDELP1
-            lda #3
-            sta NUSIZ1
-            sta NUSIZ0
-
             ldy #7                       ;2   2
             lda (draw_t0_p0_addr),y      ;5   7
             sta GRP0                     ;3  10
@@ -2116,12 +2099,15 @@ gx_title_end
             sta COLUP0
             ldx #4
             jsr sub_wsync_loop
+            inx ; SPACE: need 0, x is -1
+            stx GRP1
+            stx GRP0                     
             jsr sub_squirrel_refpxx
-            lda #0
-            sta VDELP0
-            sta VDELP1
             lda #SQUIRREL_GANG_RESP
-            jsr sub_steps_respxx_r
+            jsr sub_steps_respxx_3cr
+            dey ; SPACE: need 0, y is 1
+            sty VDELP0
+            sty VDELP1
             ldy #7                       
 _draw_tx_end_loop
             sta WSYNC
@@ -2261,6 +2247,9 @@ _header_loop
             dex
             bpl _header_loop
             rts
+
+SELECT_ROW
+    byte 5,11,17,23
 
 ; ------------------------
 ; audio tracks
@@ -2604,18 +2593,14 @@ gx_select_footer
             sta draw_s0_addr
             adc #8
             sta draw_s1_addr
-            lda #>SYMBOL_GRAPHICS_EZPZ_0
-            sta draw_s0_addr + 1
-            sta draw_s0_addr + 1
             txa
             clc
-            adc #34
+            adc #31
             jsr sub_steps_respxx_r ;
-            lda #$00 ; 0 HMOVE
-            ldx #$10 ; -1 HMOVE
+            lda #$10 ; -1 HMOVE
             sta WSYNC
-            sta HMP0
-            stx HMP1
+            sta HMCLR
+            sta HMP1
             sta HMOVE
             ldx #3
             ldy #7
@@ -2627,12 +2612,10 @@ gx_select_footer
             sta HMOVE
             ldx #3
             jsr sub_show_motto
-
+            lda #$80
+            sta GRP1
             ldx #2
             jsr sub_wsync_loop
-            lda #3
-            sta NUSIZ0
-            sta NUSIZ1
 
             jmp gx_title_end
 
@@ -2883,20 +2866,23 @@ SYMBOL_GRAPHICS_MEGA_1
 ; SYMBOL_GRAPHICS_STEPS_3
 ;     byte $0,$e2,$6,$ee,$0,$ce,$a8,$ee; 8
 
-SQUIRREL_MOVE_PAT_0 = AUDIO_TRACKS
-SQUIRREL_MOVE_PAT_1 = AUDIO_TRACKS + $1
 
-sub_squirrel_refpxx
-            lda frame
-            lsr
-            and #$70
-            tax
-            lda SQUIRREL_MOVE_PAT_0,x
-            sta REFP0
-            lda SQUIRREL_MOVE_PAT_1,x
-            sta REFP1
-            rts
+TIMER_MASK
+    byte $00,$00,$00,$01,$00,$01,$00,$00,$00
 
+LEVELS
+    byte LAYOUT_EASY  ; EASY
+    byte LAYOUT_MED   ; MED
+    byte LAYOUT_HARD  ; HARD
+    byte LAYOUT_EXTRA ; EXTRA
+
+sub_steps_respxx_3cr
+            ; set up for 3 copies close display
+            ldy #3
+            sty NUSIZ0
+            sty NUSIZ1
+            sty VDELP0
+            sty VDELP1
 sub_steps_respxx_r
             ldy #1 ; most common direction: RESPO first
 sub_steps_respxx
@@ -3056,9 +3042,6 @@ SELECT_ROW_3_DATA
     byte <SELECT_SYMBOL_S
     byte <gx_select_return
 
-SELECT_ROW
-    byte 5,11,17,23
-
 GX_JUMP_LO
     byte <(gx_title-1)
     byte <(gx_select-1)
@@ -3081,16 +3064,19 @@ GX_JUMP_HI
 STEP_MASK
     byte $01,$80
 
-TIMER_MASK
-    byte $00,$00,$00,$01,$00,$01,$00,$00,$00
+SQUIRREL_MOVE_PAT_0 = AUDIO_TRACKS
+SQUIRREL_MOVE_PAT_1 = AUDIO_TRACKS + $1
 
-LEVELS
-    byte LAYOUT_EASY  ; EASY
-    byte LAYOUT_MED   ; MED
-    byte LAYOUT_HARD  ; HARD
-    byte LAYOUT_EXTRA ; EXTRA
-
-; SPACE: finding space
+sub_squirrel_refpxx
+            lda frame
+            lsr
+            and #$70
+            tax
+            lda SQUIRREL_MOVE_PAT_0,x
+            sta REFP0
+            lda SQUIRREL_MOVE_PAT_1,x
+            sta REFP1
+            rts
 
 sub_write_digit
             ; a is digit, x is zero page offset
