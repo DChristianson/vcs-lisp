@@ -329,6 +329,7 @@ draw_t1_data_addr  ds 2
 ;  - sprinkles 1
 ;   - animated squirrels in title and select
 ;   - lava sound volume up if it is close
+;   - sound when damaged
 ;  - sprinkles 2
 ;   - clouds in sky
 ;  - sprinkles 3
@@ -340,11 +341,9 @@ draw_t1_data_addr  ds 2
 ;   - speech stems
 ; TRY
 ;  - sprinkles 1
-;   - sound when damaged
 ;   - some kind of dirge on lose
 ;  - sprinkles 3
 ;   - color flashes in titles
-;   - let's go encouragement
 ; NOT DO
 ;  - code 
 ;   - shrink maze size (replace with generation) - 678 bytes data + code
@@ -353,6 +352,7 @@ draw_t1_data_addr  ds 2
 ;   - less data + code for title - 798 bytes data + code
 ;   - shrink audio size - 256 bytes + 122 bytes code
 ;  - sprinkles 4
+;   - let's go encouragement
 ;   - scroll of menu
 ;   - should be no step edge in ground?
 ;  - visual 3
@@ -624,6 +624,8 @@ _update_lava
             clc
             sbc player_step
             bmi _skip_player_health_drain
+            lda #1
+            sta AUDC1
             dec player_health
             bpl _skip_lava_sound
             jsr sub_steps_lose
@@ -1369,9 +1371,6 @@ _sub_steps_advance_save
             sta draw_player_dir
             jmp sub_steps_refresh ; redraw steps (will rts from there)
 
-sub_steps_lose
-            lda #SEQ_LOSE_GAME
-            byte $2c
 sub_steps_win
             lda #SEQ_WIN_GAME
             sta audio_sequence
@@ -2667,6 +2666,13 @@ LAYOUTS_LR
     byte 6
     byte 6
     byte 2
+
+sub_steps_lose
+            lda #SEQ_LOSE_GAME
+            sta audio_sequence
+            lda #GAME_STATE_END
+            sta game_state
+            rts
 
     ORG $FCF0
     ; this is duplicated at FDFO to simplify cloud display
