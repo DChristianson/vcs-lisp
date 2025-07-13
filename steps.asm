@@ -55,6 +55,9 @@ SCANLINES = 262
 ZARA_COLOR = WHITE_WATER
 GROUND_COLOR = GREEN
 LAVA_COLOR = RED
+DARKS_LOGO = DARK_WATER + 8
+LAVA_LOGO = LAVA_COLOR + 2
+LEETS_LOGO = SKY_YELLOW + 2
 
 CLOCK_HZ = 60
 STAIRS_MARGIN = 2
@@ -205,6 +208,8 @@ temp_cloud_side ds 1
    ; draw registers for title and select screen
    ORG draw_registers_start
 
+; title color register
+draw_c0            ds 1
 ; title drawing registers
 draw_t0
 draw_t0_p0_addr    ds 2
@@ -330,6 +335,7 @@ draw_t1_data_addr  ds 2
 ;   - animated squirrels in title and select
 ;   - lava sound volume up if it is close
 ;   - sound when damaged
+;   - some kind of dirge on lose
 ;  - sprinkles 2
 ;   - clouds in sky
 ;  - sprinkles 3
@@ -339,11 +345,8 @@ draw_t1_data_addr  ds 2
 ;   - some kind of celebration on win
 ;      - go from dark to light for night missions?
 ;   - speech stems
-; TRY
-;  - sprinkles 1
-;   - some kind of dirge on lose
-;  - sprinkles 3
 ;   - color flashes in titles
+;      - fireworks / rainbow / flashing on win
 ; NOT DO
 ;  - code 
 ;   - shrink maze size (replace with generation) - 678 bytes data + code
@@ -364,7 +367,6 @@ draw_t1_data_addr  ds 2
 ;      - go from dark to light?
 ;      - gradient/lightened sky background
 ;   - extra celebration on win
-;      - fireworks / rainbow / flashing
 ;      - good job text
 ;  - gameplay 5
 ;   - player builds maze by dropping numbers?
@@ -1290,45 +1292,47 @@ sub_draw_player_step
             rts
 
 gx_difficulty_up
-            ldx #SEQ_SELECT_UP
             lda #1
-            jmp _sub_difficulty_save_level
+            byte $2c
 gx_difficulty_down
-            ldx #SEQ_SELECT_DOWN
             lda #-1
-_sub_difficulty_save_level
-            stx audio_sequence
             clc
             adc difficulty_level
             and #$0f
 gx_difficulty_set
             sta difficulty_level
-            ; setup visuals
+            ; setup visuals and audio
             lsr
+            ldx #SEQ_SELECT_UP
+            bcc _gx_select_skip_ax_down
+            ldx #SEQ_SELECT_DOWN
+_gx_select_skip_ax_down
+            stx audio_sequence
             lsr
             tax
             lsr
             sta sky_palette
-            lda #$00
+            ldy #0
             sta lava_jump_offset
             bcc _gx_select_skip_lava
-            lda #1
+            iny
 _gx_select_skip_lava
-            sta lava_height
-            sta lava_clock
+            sty lava_height
+            sty lava_clock
             ldy SELECT_ROW,x
-            ldx #11
+            ldx #9
 _gx_select_setup_loop
             lda #>SELECT_GRAPHICS
             sta draw_t0,x
             dex
-            lda SELECT_ROW_0_DATA,y     
+            lda SELECT_ROW_0_DATA,y
             sta draw_t0,x
             dey
             dex 
             bpl _gx_select_setup_loop
-            lda #>gx_select_return
-            sta draw_t0_jump_addr + 1
+            lda SELECT_ROW_0_DATA,y 
+            sta draw_c0
+            ; return
             jmp gx_show_select
 
 sub_steps_advance
@@ -2063,7 +2067,16 @@ _gx_title_loop_11_jmp
 
 
 gx_show_select
+            lda #<gx_select_return
+            sta draw_t0_jump_addr
+            lda #>gx_select_return
+            sta draw_t0_jump_addr + 1
+
             jsr sub_vblank_loop
+
+            lda draw_c0
+            sta COLUP0
+            sta COLUP1
 
             ldx #12; draw_steps_wsync
             jsr sub_wsync_loop
@@ -2072,9 +2085,9 @@ gx_show_select
             bmi gx_title_start_draw ; space: Z flag should be set
 
 gx_show_title
-            lda #WHITE
-            sta COLUP0
-            sta COLUP1
+            ldx #WHITE
+            stx COLUP0
+            stx COLUP1
             jsr sub_vblank_loop
 
             ldx #13
@@ -2190,6 +2203,11 @@ gx_title_11_hmove_7
 gx_select_return
             jsr sub_clear_gx
 
+            lda #ZARA_COLOR
+            sta COLUP0
+            lda #WHITE
+            sta COLUP1
+
             ldx #15
             jsr sub_wsync_loop
 
@@ -2206,7 +2224,7 @@ _gx_show_select_flights_repeat
             ldy #0
             cmp difficulty_level
             bne _gx_show_select_mask
-            ldy #$ff
+            dey ; ldy #$ff ; SPACE: y already 0
 _gx_show_select_mask
             sty temp_select_mask
             sta WSYNC
@@ -2242,28 +2260,9 @@ _gx_show_select_stairs_loop
 
             jmp gx_select_footer
 
-sub_show_motto
-_gx_show_select_motto_loop
-            sta WSYNC
-            lda (draw_s0_addr),y
-            sta GRP0
-            lda (draw_s1_addr),y
-            sta GRP1
-            sta WSYNC
-            dey
-            dex
-            bpl _gx_show_select_motto_loop  ;2   7
-            rts
-            
-sub_wsync_loop
-_header_loop
-            sta WSYNC
-            dex
-            bpl _header_loop
-            rts
 
-SELECT_ROW
-    byte 5,11,17,23
+STEP_MASK
+    byte $01,$80
 
 ; ------------------------
 ; audio tracks
@@ -2506,6 +2505,7 @@ SKY_PALETTE
 SELECT_FLIGHTS_RESPX
     byte 64,80,96,112
 
+
     ORG $FC00
 
 SUN_PAT_SKY
@@ -2534,10 +2534,9 @@ LAYOUT_EXTRA = . - LAYOUTS
 gx_end
             lda player_health
             bmi _player_lose
-
             lda frame
-            sta COLUP0
-            lda #SKY_BLUE
+            and #$7f
+            sta player_health
             byte $2c
 _player_lose
             lda #BLACK
@@ -2601,14 +2600,9 @@ gx_select_footer
             asl
             asl
             asl
-            tax
             clc
-            adc #<SYMBOL_GRAPHICS_EZPZ_0
-            sta draw_s0_addr
-            adc #8
-            sta draw_s1_addr
-            txa
-            clc
+            adc #7
+            pha
             adc #31
             jsr sub_steps_respxx_r ;
             lda #$10 ; -1 HMOVE
@@ -2616,19 +2610,22 @@ gx_select_footer
             sta HMCLR
             sta HMP1
             sta HMOVE
-            ldx #3
+            pla
+            tax
             ldy #7
-            jsr sub_show_motto
-            lda #$90
-            sta HMP0
-            sta HMP1
+_gx_show_select_motto_loop
             sta WSYNC
-            sta HMOVE
-            ldx #3
-            jsr sub_show_motto
+            lda SYMBOL_GRAPHICS_EZPZ_0,x
+            sta GRP0
+            lda SYMBOL_GRAPHICS_EZPZ_1,x
+            sta GRP1
+            sta WSYNC
+            dex
+            dey
+            bpl _gx_show_select_motto_loop  ;2   7
             lda #$80
             sta GRP1
-            ldx #2
+            ldx #3
             jsr sub_wsync_loop
 
             jmp gx_title_end
@@ -2673,6 +2670,9 @@ sub_steps_lose
             lda #GAME_STATE_END
             sta game_state
             rts
+
+SELECT_ROW
+    byte 5,11,17,23
 
     ORG $FCF0
     ; this is duplicated at FDFO to simplify cloud display
@@ -2966,27 +2966,25 @@ MAZE_PTR_HI = . - 2
 
 AUDIO_SEQUENCES
     byte 0
-SEQ_LOSE_GAME = . - AUDIO_SEQUENCES
 SEQ_WIN_GAME = . - AUDIO_SEQUENCES
 SEQ_TITLE = . - AUDIO_SEQUENCES
     byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01
     byte TRACK_TITLE_1_C00,TRACK_TITLE_1_C01
     byte TRACK_TITLE_2_C00,TRACK_TITLE_2_C01
     byte TRACK_TITLE_3_C00,TRACK_TITLE_3_C01
+SEQ_START_SELECT = . - AUDIO_SEQUENCES
+SEQ_LANDING = . - AUDIO_SEQUENCES
+SEQ_LOSE_GAME = . - AUDIO_SEQUENCES
     byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01
     byte 0
 SEQ_START_GAME = . - AUDIO_SEQUENCES
     byte TRACK_TITLE_0_C00,TRACK_TITLE_0_C01
     byte 0
 SEQ_SELECT_UP = . - AUDIO_SEQUENCES
-    byte TRACK_STEP_0_C00,0
+    byte TRACK_STEP_0_C00,TRACK_WAIT
     byte 0
 SEQ_SELECT_DOWN = . - AUDIO_SEQUENCES
-    byte TRACK_STEP_1_C00,0
-    byte 0
-SEQ_START_SELECT = . - AUDIO_SEQUENCES
-SEQ_LANDING = . - AUDIO_SEQUENCES
-    byte TRACK_TITLE_4_C00,TRACK_TITLE_4_C01
+    byte TRACK_STEP_1_C00,TRACK_WAIT
     byte 0
 
 TRACK_FREQ_INDEX
@@ -3038,36 +3036,44 @@ SELECT_SYMBOL_V
     byte $38,$44,$82,$92,$92,$92,$92,$fe; 8
 
 SELECT_ROW_0_DATA
+    byte #ZARA_COLOR
     byte <SELECT_SYMBOL_S
     byte <SELECT_SYMBOL_T
     byte <SELECT_SYMBOL_E
     byte <SELECT_SYMBOL_P
     byte <SELECT_SYMBOL_S
-    byte <gx_select_return
+    ; byte <gx_select_return
+    ; byte >gx_select_return
 
 SELECT_ROW_1_DATA
+    byte #LAVA_LOGO
     byte <SELECT_SYMBOL_L
     byte <SELECT_SYMBOL_A
     byte <SELECT_SYMBOL_V
     byte <SELECT_SYMBOL_A
     byte <SELECT_SYMBOL_S
-    byte <gx_select_return
+    ; byte <gx_select_return
+    ; byte >gx_select_return
 
 SELECT_ROW_2_DATA
+    byte #DARKS_LOGO
     byte <SELECT_SYMBOL_D
     byte <SELECT_SYMBOL_A
     byte <SELECT_SYMBOL_R
     byte <SELECT_SYMBOL_K
     byte <SELECT_SYMBOL_S
-    byte <gx_select_return
+    ; byte <gx_select_return
+    ; byte >gx_select_return
 
 SELECT_ROW_3_DATA
+    byte #LEETS_LOGO
     byte <SELECT_SYMBOL_L
     byte <SELECT_SYMBOL_E
     byte <SELECT_SYMBOL_E
     byte <SELECT_SYMBOL_T
     byte <SELECT_SYMBOL_S
-    byte <gx_select_return
+    ; byte <gx_select_return
+    ; byte >gx_select_return
 
 GX_JUMP_LO
     byte <(gx_title-1)
@@ -3088,9 +3094,6 @@ GX_JUMP_HI
     byte >(gx_fall-1)
     byte >(gx_end-1)
 
-STEP_MASK
-    byte $01,$80
-
 SQUIRREL_MOVE_PAT_0 = AUDIO_TRACKS
 SQUIRREL_MOVE_PAT_1 = AUDIO_TRACKS + $1
 
@@ -3103,6 +3106,13 @@ sub_squirrel_refpxx
             sta REFP0
             lda SQUIRREL_MOVE_PAT_1,x
             sta REFP1
+            rts
+
+sub_wsync_loop
+_header_loop
+            sta WSYNC
+            dex
+            bpl _header_loop
             rts
 
 sub_write_digit
