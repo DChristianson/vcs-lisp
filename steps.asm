@@ -328,6 +328,7 @@ draw_t1_data_addr  ds 2
 ;      - steps obscured
 ;  - sprinkles 1
 ;   - animated squirrels in title and select
+;   - lava sound volume up if it is close
 ;  - sprinkles 2
 ;   - clouds in sky
 ;  - sprinkles 3
@@ -337,23 +338,21 @@ draw_t1_data_addr  ds 2
 ;   - some kind of celebration on win
 ;      - go from dark to light for night missions?
 ;   - speech stems
-; RC 2
+; TRY
 ;  - sprinkles 1
+;   - sound when damaged
 ;   - some kind of dirge on lose
-;   - lava sound volume up if it is close
-; IF WE CAN MAKE SPACE
 ;  - sprinkles 3
+;   - color flashes in titles
 ;   - let's go encouragement
-; ONLY IF NEEDED
+; NOT DO
 ;  - code 
 ;   - shrink maze size (replace with generation) - 678 bytes data + code
 ;     - algorithmic maze gen
 ;     - use incremental maze construction to conserve VBLANK
 ;   - less data + code for title - 798 bytes data + code
 ;   - shrink audio size - 256 bytes + 122 bytes code
-; NOT DO
 ;  - sprinkles 4
-;   - color flashes in titles
 ;   - scroll of menu
 ;   - should be no step edge in ground?
 ;  - visual 3
@@ -626,10 +625,18 @@ _update_lava
             sbc player_step
             bmi _skip_player_health_drain
             dec player_health
-            bpl _skip_player_health_drain
+            bpl _skip_lava_sound
             jsr sub_steps_lose
             jmp gx_continue
 _skip_player_health_drain
+            adc #8
+            bpl _cutoff_lava_sound
+            lda #0
+_cutoff_lava_sound            
+            sta AUDV1
+            lda #3 ; (rumble voice)
+            sta AUDC1
+_skip_lava_sound
             lda frame
             and #LAVA_TIME_MODULUS
             beq _end_lava_update            
