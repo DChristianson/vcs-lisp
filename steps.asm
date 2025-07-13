@@ -314,9 +314,11 @@ draw_t1_data_addr  ds 2
 ;     -  number display timing is funky, and we have a page boundary potentially
 ;   - 265 lines at win/lose
 ;   - glitch in title
-;   - leftmost step cut off?
-;   - rightmost step cut off?
+;   - rightmost step cut off at 1
 ;   - player yellow on last flight
+;   - jumpy looking scroll of sun and cloud
+;   - l/r placement not optimal - steps cut off for extreme left and right 
+;   - absolute leftmost step cut off 
 ;  - gameplay 3
 ;   - lava (time attack) mode - steps "catch fire"?
 ;      - lava should scroll appropriate to stairs scroll but "keep up" relative to bottom step 
@@ -336,20 +338,17 @@ draw_t1_data_addr  ds 2
 ;      - go from dark to light for night missions?
 ;   - speech stems
 ; RC 2
-;  - glitches
-;   - jumpy looking scroll of sun and cloud
-;   - l/r placement not optimal - steps cut off for extreme left and right 
-; IF WE CAN MAKE SPACE
 ;  - sprinkles 1
 ;   - some kind of dirge on lose
 ;   - lava sound volume up if it is close
+; IF WE CAN MAKE SPACE
 ;  - sprinkles 3
 ;   - let's go encouragement
 ; ONLY IF NEEDED
 ;  - code 
-;   - algorithmic maze gen
-;   - use incremental maze construction to conserve VBLANK
 ;   - shrink maze size (replace with generation) - 678 bytes data + code
+;     - algorithmic maze gen
+;     - use incremental maze construction to conserve VBLANK
 ;   - less data + code for title - 798 bytes data + code
 ;   - shrink audio size - 256 bytes + 122 bytes code
 ; NOT DO
@@ -680,8 +679,11 @@ _gx_continue_erase_clouds
 ;---------------------
 ; climb screen
 
+
             jsr sub_vblank_loop
 gx_step_draw           
+            lda draw_steps_wsync
+            sta temp_step_start
             lda #(DRAW_TABLE_SIZE - 1)
             sec
             sbc draw_table_top
@@ -691,6 +693,7 @@ gx_step_draw
             asl
             asl
             adc temp_step_counter
+            adc draw_steps_wsync
             sbc #3
             sta temp_step_counter
             lda #$0d
@@ -724,6 +727,7 @@ _gx_steps_sky_skip_loop
             sta PF1
             sta COLUPF
             sta HMP1
+            sta temp_step_start ; SPACE: take advantage of the zero
             dex
             bpl _gx_steps_sky_loop
             sta REFP1
@@ -766,8 +770,7 @@ _gx_steps_shim_p0_r
             and #$02                          ;2  15
             sta temp_cloud_side               ;3  18
 
-            lda draw_steps_wsync              ;3  21 
-            sta temp_step_start               ;3  24
+            sta WSYNC
 
             ; setup PF addressing
             lda #>CLOUD_PAT_PF1
@@ -883,7 +886,7 @@ _gx_draw_loop
             dec temp_step_counter             ;5  41
             bmi gx_timer                      ;2  43
             sec                               ;2  45
-            bne ._gx_draw_skip_last           ;2  47
+            bne ._gx_draw_skip_last_shim      ;2  47
             sbc draw_steps_wsync              ;3  50
             stx draw_colubk                   ;3  53
 ._gx_draw_skip_last
@@ -895,6 +898,9 @@ _gx_draw_loop
             sty.w GRP0                        ;4  66
             sty.w GRP1                        ;4  70
             jmp _gx_step_draw_loop            ;3  73
+._gx_draw_skip_last_shim
+            SLEEP 2
+            bne ._gx_draw_skip_last ; KLUDGE: balancing out timing
 
 gx_lava
             lda temp_step_counter            ;3  42-43
@@ -915,38 +921,41 @@ gx_timer
             sty COLUPF                        ;3  50
             sty GRP1                          ;3  53 
             sty GRP0                          ;3  56 ; trick, GRP0 already 0, this forces vdel register clear on GRP1
-            ; place digits
-            lda #TIMER_RESP
-            jsr sub_steps_respxx_3cr
+
             ; prep timer gx
-            ldx #0
-            lda player_timer + 1
+            lda player_score
+            ldx #8
             jsr sub_write_digit
             lda player_timer
             ldx #4
             jsr sub_write_digit
-            lda player_score
-            ldx #8
+            ldx #0             
+            lda player_timer + 1
             jsr sub_write_digit
-            
-            ; set up HMP shim for next HMOVE
-            sta HMCLR
-            lda #$10
-            sta HMP1
 
-            ; set background: not counting but we should be starting sl 214
-            ldx #0
-            stx COLUBK
-            stx REFP0
-
-            ; restore s2 addr
             lda #>SYMBOL_GRAPHICS
             sta draw_s2_addr + 1
             sta draw_s3_addr + 1
 
+            ; place digits
+            lda #TIMER_RESP
+            jsr sub_steps_respxx_3cr
+
+            lda #0 ; set background: not counting but we should be starting sl 214
+            sta COLUBK
+            sta REFP0
+
+            ; restore s2 addr
+
+
+            ; set up HMP shim for next HMOVE
+            lda #$10
+
             tsx
             stx temp_timer_stack
             sta WSYNC
+            sta HMCLR
+            sta HMP1
             sta HMOVE
             lda #WHITE
             ldx game_state
@@ -993,7 +1002,7 @@ gx_overscan
             sta GRP1
             sta GRP0
             sta WSYNC
-            ldx #32
+            ldx #31
             jsr sub_wsync_loop
             jmp newFrame
 
@@ -1128,21 +1137,20 @@ _steps_addr_loop
             dex
             dex
             bpl _steps_addr_loop
+            ; jump init
+            lda #$ff
+            sta draw_base_dir
             ; get horizontal offset
+            lda difficulty_level
+            and #$03
+            tax
+            lda LAYOUTS_LR,x
+            sta draw_base_lr
+            ; gen steps
             ldy base_layout_index
             lda LAYOUTS,y
             and #LAYOUT_COUNTER_MASK
             asl
-            tax
-            eor #$ff
-            clc
-            adc #23 ; BUGBUG: we want to be shifted over 1 for longer ones but not too shifted
-            lsr
-            sta draw_base_lr
-            ; jump init
-            lda #$ff
-            sta draw_base_dir
-            txa ; first flight
             jsr sub_gen_steps    ; gen steps
 
 sub_steps_refresh
@@ -2475,9 +2483,9 @@ _end_vblank_loop
             stx VBLANK
             ; end
 sub_clear_gx 
-            sta WSYNC ; SL 35
-            lda draw_colubk
-            sta COLUBK
+            stx WSYNC ; SL 35
+            ldx draw_colubk
+            stx COLUBK
             ldx #$00
             stx REFP0
             stx NUSIZ0
@@ -2646,6 +2654,12 @@ sub_galois  ; 16 bit lfsr from: https:;github.com/bbbradsmith/prng_6502/tree/mas
             eor seed+0
             sta seed+0
             rts    
+
+LAYOUTS_LR 
+    byte 8
+    byte 6
+    byte 6
+    byte 2
 
     ORG $FCF0
     ; this is duplicated at FDFO to simplify cloud display
