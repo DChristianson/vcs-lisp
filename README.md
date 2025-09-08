@@ -46,12 +46,14 @@ The original concept box art was produced with the help of [DALL-E mini](https:/
 
 ### Lisp
  - [Structure and Interpretation of Computer Programs](https://en.wikipedia.org/wiki/Structure_and_Interpretation_of_Computer_Programs) 
- - [PicoLisp](https://picolisp.com/) 
  - R. Kent Dybvig's [Three Implementation Models for Scheme](https://www.cs.unm.edu/~williams/cs491/three-imp.pdf) 
- - [uLisp](http://www.ulisp.com/)
+ - Other Lisp implementations to check out:
+   - [PicoLisp](https://picolisp.com/) - not specifically a "small" Lisp, but the core concepts influenced the design of VCS Lisp
+   - [uLisp](http://www.ulisp.com/) - Lisp for microcontrollers
+   - [SectorLisp](https://github.com/jart/sectorlisp) - a fully featured Lisp that fits in the boot sector of an i8086 
 
 ### Atari 2600 Basic
-Although Lisp is very different from Basic, Warren Robinette's Atari Basic Programming (1979) has been a huge inspiration.
+Warren Robinette's Atari Basic Programming (1979) was a huge inspiration.
  - [Atari 2600 Basic Programming](https://huguesjohnson.com/programming/atari-2600-basic/)
  - [Basic Programming (1979 Atari Cartridge)](https://en.wikipedia.org/wiki/BASIC_Programming)
 
